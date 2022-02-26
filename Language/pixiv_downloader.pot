@@ -1,0 +1,226 @@
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: bili\n"
+"POT-Creation-Date: 2022-02-26 23:42+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.0\n"
+"X-Poedit-Basepath: ../src\n"
+"X-Poedit-SearchPath-0: .\n"
+
+#: cookies.rs:75 cookies.rs:217
+msgid "Warning: Failed to parse URL:"
+msgstr ""
+
+#: cookies.rs:90
+msgid "Warning: Failed to parse cookie's key and value:"
+msgstr ""
+
+#: cookies.rs:107
+msgid "Warning: Expires need a date."
+msgstr ""
+
+#: cookies.rs:117
+msgid "Failed to parse UTC string:"
+msgstr ""
+
+#: cookies.rs:127
+msgid "Warning: Max-Age need a duration."
+msgstr ""
+
+#: cookies.rs:134
+msgid "Failed to parse Max-Age:"
+msgstr ""
+
+#: cookies.rs:142
+msgid "Warning: Domain need a domain."
+msgstr ""
+
+#: cookies.rs:148
+msgid "Warning: Path need a path."
+msgstr ""
+
+#: cookies.rs:155
+msgid "Warning: path is not starts with \"/\":"
+msgstr ""
+
+#: cookies.rs:168
+msgid "Warning: Failed to get domain."
+msgstr ""
+
+#: cookies.rs:314
+msgid "Can not find file:"
+msgstr ""
+
+#: cookies.rs:319
+msgid "Can not open file:"
+msgstr ""
+
+#: cookies.rs:332
+msgid "Invalid cookie:"
+msgstr ""
+
+#: cookies.rs:344
+msgid "Can not parse expired time:"
+msgstr ""
+
+#: cookies.rs:366 settings.rs:392
+msgid "Failed to remove file:"
+msgstr ""
+
+#: cookies.rs:372 settings.rs:399
+msgid "Failed to create file:"
+msgstr ""
+
+#: cookies.rs:379 settings.rs:405
+msgid "Failed to write file:"
+msgstr ""
+
+#: download.rs:9 pixiv.rs:47
+msgid "Failed to initialize pixiv web api client."
+msgstr ""
+
+#: opts.rs:69
+msgid "Warning: The specified config file not found."
+msgstr ""
+
+#: opts.rs:93
+msgid "Usage:"
+msgstr ""
+
+#: opts.rs:95
+msgid "Download an artwork"
+msgstr ""
+
+#: opts.rs:97
+msgid "Fix the config file"
+msgstr ""
+
+#: opts.rs:99
+msgid "Print all available settings"
+msgstr ""
+
+#: opts.rs:107
+msgid "Print help message."
+msgstr ""
+
+#: opts.rs:111
+msgid "The location of config file."
+msgstr ""
+
+#: opts.rs:117 settings_list.rs:8
+msgid "The location of cookies file. Used for web API."
+msgstr ""
+
+#: opts.rs:123 settings_list.rs:9
+msgid "The language of translated tags."
+msgstr ""
+
+#: opts.rs:145
+msgid "Unknown command."
+msgstr ""
+
+#: opts.rs:156
+msgid "No URL specified."
+msgstr ""
+
+#: opts.rs:164
+msgid "No detailed command specified."
+msgstr ""
+
+#: opts.rs:177
+msgid "Unknown config subcommand."
+msgstr ""
+
+#: parser\mainpage.rs:53 parser/mainpage.rs:53
+msgid "Failed to parse JSON:"
+msgstr ""
+
+#: parser\mainpage.rs:75 parser/mainpage.rs:75
+msgid "Failed to parse HTML:"
+msgstr ""
+
+#: parser\mainpage.rs:80 parser/mainpage.rs:80
+msgid "Some errors occured during parsing:"
+msgstr ""
+
+#: pixiv.rs:63 pixiv.rs:68
+msgid "Failed to get main page:"
+msgstr ""
+
+#: pixiv.rs:74
+msgid "Failed to parse main page."
+msgstr ""
+
+#: pixiv.rs:88
+msgid "Warning: Failed to save cookies file:"
+msgstr ""
+
+#: settings.rs:29
+msgid "Multiple type"
+msgstr ""
+
+#: settings.rs:264
+msgid "Can not insert setting to JSON object."
+msgstr ""
+
+#: settings.rs:327
+msgid "Settings file is empty."
+msgstr ""
+
+#: settings.rs:334
+msgid "Can not read from settings file."
+msgstr ""
+
+#: settings.rs:343
+msgid "Can not parse settings file."
+msgstr ""
+
+#: settings.rs:352
+msgid "Unknown settings file."
+msgstr ""
+
+#: settings.rs:363
+msgid "\"<key>\" is invalid, you can use \"pixiv_downloader config fix\" to remove all invalid value."
+msgstr ""
+
+#: settings.rs:382
+msgid "Can not convert settings to JSON object."
+msgstr ""
+
+#: settings.rs:410
+msgid "Failed to flush file:"
+msgstr ""
+
+#: settings_list.rs:7
+msgid "Pixiv's refresh tokens. Used to login."
+msgstr ""
+
+#: webclient.rs:59
+msgid "Failed to parse Set-Cookie header."
+msgstr ""
+
+#: webclient.rs:64
+msgid "Failed to convert to string:"
+msgstr ""
+
+#: webclient.rs:94
+msgid "Error when request:"
+msgstr ""
+
+#: main.rs:46
+msgid "Failed to save config file:"
+msgstr ""
+
+#: main.rs:57
+msgid "All available settings:"
+msgstr ""
+
+#: main.rs:89
+msgid "Can not read config file:"
+msgstr ""

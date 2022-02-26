@@ -1,0 +1,231 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: bili\n"
+"POT-Creation-Date: 2022-02-26 23:42+0800\n"
+"PO-Revision-Date: 2022-02-26 23:43+0800\n"
+"Last-Translator: lifegpc <g1710431395@gmail.com>\n"
+"Language-Team: \n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.0\n"
+"X-Poedit-Basepath: ../src\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Poedit-SearchPath-0: .\n"
+
+#: cookies.rs:75 cookies.rs:217
+msgid "Warning: Failed to parse URL:"
+msgstr "警告：无法解析 URL："
+
+#: cookies.rs:90
+msgid "Warning: Failed to parse cookie's key and value:"
+msgstr "警告：无法解析 cookies 的键与值："
+
+#: cookies.rs:107
+msgid "Warning: Expires need a date."
+msgstr "警告：Expires 需要指定时间。"
+
+#: cookies.rs:117
+msgid "Failed to parse UTC string:"
+msgstr "无法解析UTC时间："
+
+#: cookies.rs:127
+msgid "Warning: Max-Age need a duration."
+msgstr "警告：Max-Age 需要指定时长。"
+
+#: cookies.rs:134
+msgid "Failed to parse Max-Age:"
+msgstr "无法解析 Max-Age："
+
+#: cookies.rs:142
+msgid "Warning: Domain need a domain."
+msgstr "警告：Domain 需要指定域名。"
+
+#: cookies.rs:148
+msgid "Warning: Path need a path."
+msgstr "警告：Path 需要一个路径。"
+
+#: cookies.rs:155
+msgid "Warning: path is not starts with \"/\":"
+msgstr "警告：路径没有以 \"/\" 开头："
+
+#: cookies.rs:168
+msgid "Warning: Failed to get domain."
+msgstr "警告：无法获取域名。"
+
+#: cookies.rs:314
+msgid "Can not find file:"
+msgstr "无法找到文件："
+
+#: cookies.rs:319
+msgid "Can not open file:"
+msgstr "无法打开文件："
+
+#: cookies.rs:332
+msgid "Invalid cookie:"
+msgstr "无效的Cookie："
+
+#: cookies.rs:344
+msgid "Can not parse expired time:"
+msgstr "无法解析过期时间："
+
+#: cookies.rs:366 settings.rs:392
+msgid "Failed to remove file:"
+msgstr "无法删除文件："
+
+#: cookies.rs:372 settings.rs:399
+msgid "Failed to create file:"
+msgstr "无法创建文件："
+
+#: cookies.rs:379 settings.rs:405
+msgid "Failed to write file:"
+msgstr "无法写入文件："
+
+#: download.rs:9 pixiv.rs:47
+msgid "Failed to initialize pixiv web api client."
+msgstr "无法初始化 Pixiv 网页 API 客户端。"
+
+#: opts.rs:69
+msgid "Warning: The specified config file not found."
+msgstr "警告：没有找到指定的设置文件。"
+
+#: opts.rs:93
+msgid "Usage:"
+msgstr "使用方法："
+
+#: opts.rs:95
+msgid "Download an artwork"
+msgstr "下载一个作品"
+
+#: opts.rs:97
+msgid "Fix the config file"
+msgstr "修复设置文件"
+
+#: opts.rs:99
+msgid "Print all available settings"
+msgstr "打印所有可用的设置"
+
+#: opts.rs:107
+msgid "Print help message."
+msgstr "打印帮助信息。"
+
+#: opts.rs:111
+msgid "The location of config file."
+msgstr "设置文件的位置。"
+
+#: opts.rs:117 settings_list.rs:8
+msgid "The location of cookies file. Used for web API."
+msgstr "cookies 文件的位置。用于网页 API。"
+
+#: opts.rs:123 settings_list.rs:9
+msgid "The language of translated tags."
+msgstr "翻译后的标签语言。"
+
+#: opts.rs:145
+msgid "Unknown command."
+msgstr "未知指令。"
+
+#: opts.rs:156
+msgid "No URL specified."
+msgstr "没有指定网址。"
+
+#: opts.rs:164
+msgid "No detailed command specified."
+msgstr "没有指定更详细的指令。"
+
+#: opts.rs:177
+msgid "Unknown config subcommand."
+msgstr "未知的 config 子指令。"
+
+#: parser\mainpage.rs:53 parser/mainpage.rs:53
+msgid "Failed to parse JSON:"
+msgstr "无法解析 JSON："
+
+#: parser\mainpage.rs:75 parser/mainpage.rs:75
+msgid "Failed to parse HTML:"
+msgstr "无法解析 HTML："
+
+#: parser\mainpage.rs:80 parser/mainpage.rs:80
+msgid "Some errors occured during parsing:"
+msgstr "在解析中发生了一些错误："
+
+#: pixiv.rs:63 pixiv.rs:68
+msgid "Failed to get main page:"
+msgstr "无法获取主页："
+
+#: pixiv.rs:74
+msgid "Failed to parse main page."
+msgstr "无法解析主页。"
+
+#: pixiv.rs:88
+msgid "Warning: Failed to save cookies file:"
+msgstr "警告：无法保存 cookies 文件："
+
+#: settings.rs:29
+msgid "Multiple type"
+msgstr "多种类型"
+
+#: settings.rs:264
+msgid "Can not insert setting to JSON object."
+msgstr "无法将设置插入 JSON 对象。"
+
+#: settings.rs:327
+msgid "Settings file is empty."
+msgstr "设置文件是空的。"
+
+#: settings.rs:334
+msgid "Can not read from settings file."
+msgstr "无法读取设置文件。"
+
+#: settings.rs:343
+msgid "Can not parse settings file."
+msgstr "无法解析设置文件。"
+
+#: settings.rs:352
+msgid "Unknown settings file."
+msgstr "未知的设置文件。"
+
+#: settings.rs:363
+msgid ""
+"\"<key>\" is invalid, you can use \"pixiv_downloader config fix\" to remove "
+"all invalid value."
+msgstr ""
+"\"<key>\" 不合法，您可以使用 \"pixiv_downloader config fix\" 来移除所有不合"
+"法的值。"
+
+#: settings.rs:382
+msgid "Can not convert settings to JSON object."
+msgstr "无法将设置转换为 JSON 对象。"
+
+#: settings.rs:410
+msgid "Failed to flush file:"
+msgstr "无法刷新文件缓冲区："
+
+#: settings_list.rs:7
+msgid "Pixiv's refresh tokens. Used to login."
+msgstr "Pixiv 的 refresh tokens。用于登录。"
+
+#: webclient.rs:59
+msgid "Failed to parse Set-Cookie header."
+msgstr "无法解析 Set-Cookie 头部。"
+
+#: webclient.rs:64
+msgid "Failed to convert to string:"
+msgstr "无法转换为字符串："
+
+#: webclient.rs:94
+msgid "Error when request:"
+msgstr "请求时发生错误："
+
+#: main.rs:46
+msgid "Failed to save config file:"
+msgstr "无法保存设置文件："
+
+#: main.rs:57
+msgid "All available settings:"
+msgstr "所有可用的设置："
+
+#: main.rs:89
+msgid "Can not read config file:"
+msgstr "无法读取设置文件："
