@@ -150,6 +150,7 @@ impl I18n {
 }
 
 lazy_static! {
+    #[doc(hidden)]
     static ref I18NT: I18n = I18n::new();
 }
 

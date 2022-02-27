@@ -8,14 +8,16 @@ edition = "2018"
 [dependencies]
 chrono = "0.4"
 dateparser = "0.1.6"
+futures-util = "0.3"
 getopts = "0.2"
 gettext = "0.4"
 html_parser = "0.6.2"
 lazy_static = "1.4"
 json = "0.12"
+regex = "1"
 reqwest = { version = "0.11", features = ["brotli", "deflate", "gzip", "rustls-tls", "socks", "stream"] }
 spin_on = "0.1.1"
-tokio = { version = "1.17", features = ["rt", "macros", "rt-multi-thread"] }
+tokio = { version = "1.17", features = ["rt", "macros", "rt-multi-thread", "time"] }
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3.9", features = ["winnls", "stringapiset"] }

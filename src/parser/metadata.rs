@@ -2,14 +2,19 @@ use crate::gettext;
 use html_parser::Dom;
 use html_parser::Node;
 use json::JsonValue;
+use std::default::Default;
 
-pub struct MainPageParser {
+pub struct MetaDataParser {
+    pub key: String,
     pub value: Option<JsonValue>,
 }
 
-impl MainPageParser {
-    pub fn new() -> Self {
+impl MetaDataParser {
+    /// Create an new instance
+    /// * `key` - meta's name
+    pub fn new(key: &str) -> Self {
         Self {
+            key: key.to_string(),
             value: None,
         }
     }
@@ -26,13 +31,14 @@ impl MainPageParser {
                     if name.is_none() {
                         return false;
                     }
-                    if name.as_ref().unwrap() != "global-data" {
+                    if name.as_ref().unwrap() != self.key.as_str() {
                         return false;
                     }
                     if e.id.is_none() {
                         return false;
                     }
-                    if e.id.as_ref().unwrap() != "meta-global-data" {
+                    let mkey = format!("meta-{}", self.key.as_str());
+                    if e.id.as_ref().unwrap() != mkey.as_str() {
                         return false;
                     }
                     let c = e.attributes.get("content");
@@ -83,5 +89,11 @@ impl MainPageParser {
             }
         }
         false
+    }
+}
+
+impl Default for MetaDataParser {
+    fn default() -> Self {
+        Self::new("global-data")
     }
 }

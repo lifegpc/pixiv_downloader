@@ -1,18 +1,22 @@
 extern crate chrono;
 extern crate dateparser;
+extern crate futures_util;
 extern crate json;
 #[macro_use]
 extern crate lazy_static;
 extern crate tokio;
+extern crate regex;
 extern crate reqwest;
 
 mod cookies;
+mod data;
 mod download;
 mod i18n;
 mod opthelper;
 mod opts;
 mod parser;
-mod pixiv;
+mod pixiv_link;
+mod pixiv_web;
 mod settings;
 mod settings_list;
 mod utils;

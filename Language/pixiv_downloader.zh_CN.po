@@ -1,17 +1,17 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: bili\n"
-"POT-Creation-Date: 2022-02-26 23:42+0800\n"
-"PO-Revision-Date: 2022-02-26 23:43+0800\n"
+"Project-Id-Version: pixiv_downloader\n"
+"POT-Creation-Date: 2022-02-27 17:47+0800\n"
+"PO-Revision-Date: 2022-02-27 17:48+0800\n"
 "Last-Translator: lifegpc <g1710431395@gmail.com>\n"
 "Language-Team: \n"
 "Language: zh_CN\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 3.0\n"
-"X-Poedit-Basepath: ../src\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Poedit 3.0.1\n"
+"X-Poedit-Basepath: ../src\n"
 "X-Poedit-SearchPath-0: .\n"
 
 #: cookies.rs:75 cookies.rs:217
@@ -70,95 +70,171 @@ msgstr "无效的Cookie："
 msgid "Can not parse expired time:"
 msgstr "无法解析过期时间："
 
-#: cookies.rs:366 settings.rs:392
+#: cookies.rs:366 data/json.rs:39 settings.rs:392 webclient.rs:257
 msgid "Failed to remove file:"
 msgstr "无法删除文件："
 
-#: cookies.rs:372 settings.rs:399
+#: cookies.rs:372 data/json.rs:50 settings.rs:399 webclient.rs:263
 msgid "Failed to create file:"
 msgstr "无法创建文件："
 
-#: cookies.rs:379 settings.rs:405
+#: cookies.rs:379 data/json.rs:56 settings.rs:405 webclient.rs:276
 msgid "Failed to write file:"
 msgstr "无法写入文件："
 
-#: download.rs:9 pixiv.rs:47
+#: download.rs:15 pixiv_web.rs:53
 msgid "Failed to initialize pixiv web api client."
 msgstr "无法初始化 Pixiv 网页 API 客户端。"
 
-#: opts.rs:69
+#: download.rs:22
+msgid "Warning: Web api client not logined, some future may not work."
+msgstr "警告：Web API 客户端未登录，一些功能可能无法工作。"
+
+#: download.rs:45
+msgid "Failed to get page count."
+msgstr "无法获取页数。"
+
+#: download.rs:54
+msgid "Failed to get pages' data."
+msgstr "无法获取每页数据。"
+
+#: download.rs:61
+msgid "Failed to save metadata to JSON file."
+msgstr "无法将元数据保存到 JSON 文件。"
+
+#: download.rs:69
+msgid "Failed to get original picture's link."
+msgstr "无法获取原图链接。"
+
+#: download.rs:75
+msgid "Failed to get file name from url:"
+msgstr "无法从 URL 获取文件名："
+
+#: download.rs:82 download.rs:88 pixiv_web.rs:148
+msgid "Failed to download image:"
+msgstr "无法下载图片："
+
+#: download.rs:93
+msgid "Downloaded image:"
+msgstr "已下载图片："
+
+#: opts.rs:76
 msgid "Warning: The specified config file not found."
 msgstr "警告：没有找到指定的设置文件。"
 
-#: opts.rs:93
+#: opts.rs:100
 msgid "Usage:"
 msgstr "使用方法："
 
-#: opts.rs:95
+#: opts.rs:102
 msgid "Download an artwork"
 msgstr "下载一个作品"
 
-#: opts.rs:97
+#: opts.rs:104
 msgid "Fix the config file"
 msgstr "修复设置文件"
 
-#: opts.rs:99
+#: opts.rs:106
 msgid "Print all available settings"
 msgstr "打印所有可用的设置"
 
-#: opts.rs:107
+#: opts.rs:114
 msgid "Print help message."
 msgstr "打印帮助信息。"
 
-#: opts.rs:111
+#: opts.rs:118
 msgid "The location of config file."
 msgstr "设置文件的位置。"
 
-#: opts.rs:117 settings_list.rs:8
+#: opts.rs:124 settings_list.rs:8
 msgid "The location of cookies file. Used for web API."
 msgstr "cookies 文件的位置。用于网页 API。"
 
-#: opts.rs:123 settings_list.rs:9
+#: opts.rs:130 settings_list.rs:9
 msgid "The language of translated tags."
 msgstr "翻译后的标签语言。"
 
-#: opts.rs:145
+#: opts.rs:133
+msgid "Verbose logging."
+msgstr "启用详细内容输出。"
+
+#: opts.rs:134
+msgid "Overwrite existing file."
+msgstr "覆盖已有文件。"
+
+#: opts.rs:135
+msgid "Skip overwrite existing file."
+msgstr "跳过覆盖已有文件。"
+
+#: opts.rs:155
 msgid "Unknown command."
 msgstr "未知指令。"
 
-#: opts.rs:156
-msgid "No URL specified."
-msgstr "没有指定网址。"
+#: opts.rs:165
+msgid "Failed to parse ID:"
+msgstr "无法解析 ID："
 
-#: opts.rs:164
+#: opts.rs:171
+msgid "No URL or ID specified."
+msgstr "没有指定网址或 ID。"
+
+#: opts.rs:179
 msgid "No detailed command specified."
 msgstr "没有指定更详细的指令。"
 
-#: opts.rs:177
+#: opts.rs:192
 msgid "Unknown config subcommand."
 msgstr "未知的 config 子指令。"
 
-#: parser\mainpage.rs:53 parser/mainpage.rs:53
+#: parser/metadata.rs:54 pixiv_web.rs:107
 msgid "Failed to parse JSON:"
 msgstr "无法解析 JSON："
 
-#: parser\mainpage.rs:75 parser/mainpage.rs:75
+#: parser/metadata.rs:76
 msgid "Failed to parse HTML:"
 msgstr "无法解析 HTML："
 
-#: parser\mainpage.rs:80 parser/mainpage.rs:80
+#: parser/metadata.rs:81
 msgid "Some errors occured during parsing:"
 msgstr "在解析中发生了一些错误："
 
-#: pixiv.rs:63 pixiv.rs:68
+#: pixiv_web.rs:68 pixiv_web.rs:73
 msgid "Failed to get main page:"
 msgstr "无法获取主页："
 
-#: pixiv.rs:74
+#: pixiv_web.rs:79
 msgid "Failed to parse main page."
 msgstr "无法解析主页。"
 
-#: pixiv.rs:88
+#: pixiv_web.rs:83
+msgid "Main page's data:"
+msgstr "主页的数据："
+
+#: pixiv_web.rs:98
+msgid "Network error:"
+msgstr "网络错误："
+
+#: pixiv_web.rs:117
+msgid "Failed to detect error."
+msgstr "检测 error 字段失败。"
+
+#: pixiv_web.rs:164 pixiv_web.rs:169
+msgid "Failed to get artwork page:"
+msgstr "无法获取作品页："
+
+#: pixiv_web.rs:175
+msgid "Failed to parse artwork page."
+msgstr "无法解析作品页。"
+
+#: pixiv_web.rs:179
+msgid "Artwork's data:"
+msgstr "作品数据："
+
+#: pixiv_web.rs:193
+msgid "Artwork's page data:"
+msgstr "作品页面数据："
+
+#: pixiv_web.rs:217
 msgid "Warning: Failed to save cookies file:"
 msgstr "警告：无法保存 cookies 文件："
 
@@ -206,26 +282,54 @@ msgstr "无法刷新文件缓冲区："
 msgid "Pixiv's refresh tokens. Used to login."
 msgstr "Pixiv 的 refresh tokens。用于登录。"
 
-#: webclient.rs:59
+#: utils.rs:29
+msgid "Do you want to delete file \"<file>\"?"
+msgstr "你想要删除文件 <file> 吗？"
+
+#: utils.rs:49 webclient.rs:143
+msgid "Can not parse URL:"
+msgstr "无法解析 URL："
+
+#: utils.rs:56
+msgid "Failed to get file name from path:"
+msgstr "无法从路径获取文件名："
+
+#: webclient.rs:103
 msgid "Failed to parse Set-Cookie header."
 msgstr "无法解析 Set-Cookie 头部。"
 
-#: webclient.rs:64
+#: webclient.rs:108
 msgid "Failed to convert to string:"
 msgstr "无法转换为字符串："
 
-#: webclient.rs:94
+#: webclient.rs:150
+msgid "Parameters should be object or array:"
+msgstr "参数应该是对象或数组："
+
+#: webclient.rs:170
+msgid "Parameters should be array:"
+msgstr "参数应该是数组："
+
+#: webclient.rs:174
+msgid "Parameters need at least a value:"
+msgstr "参数需要至少含有一个值："
+
+#: webclient.rs:209
 msgid "Error when request:"
 msgstr "请求时发生错误："
 
-#: main.rs:46
+#: webclient.rs:270
+msgid "Error when downloading file:"
+msgstr "下载文件时发生错误："
+
+#: main.rs:50
 msgid "Failed to save config file:"
 msgstr "无法保存设置文件："
 
-#: main.rs:57
+#: main.rs:61
 msgid "All available settings:"
 msgstr "所有可用的设置："
 
-#: main.rs:89
+#: main.rs:93
 msgid "Can not read config file:"
 msgstr "无法读取设置文件："

@@ -3,9 +3,51 @@ extern crate spin_on;
 use crate::cookies::Cookie;
 use crate::cookies::CookieJar;
 use crate::gettext;
+use crate::utils::ask_need_overwrite;
+use futures_util::StreamExt;
+use json::JsonValue;
 use reqwest::{Client, IntoUrl, RequestBuilder, Response};
-use std::collections::HashMap;
 use spin_on::spin_on;
+use std::collections::HashMap;
+use std::ffi::OsStr;
+use std::fs::File;
+use std::fs::remove_file;
+use std::io::Write;
+use std::path::Path;
+
+pub trait ToHeaders {
+    fn to_headers(&self) -> Option<HashMap<String, String>>;
+}
+
+impl ToHeaders for Option<HashMap<String, String>> {
+    fn to_headers(&self) -> Option<HashMap<String, String>> {
+        self.clone()
+    }
+}
+
+impl ToHeaders for HashMap<String, String> {
+    fn to_headers(&self) -> Option<HashMap<String, String>> {
+        Some(self.clone())
+    }
+}
+
+impl ToHeaders for JsonValue {
+    fn to_headers(&self) -> Option<HashMap<String, String>> {
+        if !self.is_object() {
+            return None;
+        }
+        let mut h = HashMap::new();
+        for (k, v) in self.entries() {
+            let d = if v.is_string() {
+                String::from(v.as_str().unwrap())
+            } else {
+                v.dump()
+            };
+            h.insert(String::from(k), d);
+        }
+        Some(h)
+    }
+}
 
 /// Generate `cookie` header for a url
 /// * `c` - Cookies
@@ -31,6 +73,7 @@ pub struct WebClient {
     /// HTTP Headers
     pub headers: HashMap<String, String>,
     cookies: CookieJar,
+    pub verbose: bool,
 }
 
 impl WebClient {
@@ -39,6 +82,7 @@ impl WebClient {
             client: Client::new(),
             headers: HashMap::new(),
             cookies: CookieJar::new(),
+            verbose: false,
         }
     }
 
@@ -82,10 +126,81 @@ impl WebClient {
     pub fn set_header(&mut self, key: &str, value: &str) -> Option<String> {
         self.headers.insert(String::from(key), String::from(value))
     }
+    /// Send GET requests with parameters
+    /// * `param` - GET parameters. Should be a JSON object/array. If value in map is not a string, will dump it
+    /// # Examples
+    /// ```
+    /// let client = WebClient::new();
+    /// client.verbose = true;
+    /// client.get_with_param("https://test.com/a", json::object!{"data": "param1"});
+    /// client.get_with_param("https://test.com/a", json::object!{"daa": {"ad": "test"}});
+    /// client.get_with_param("https://test.com/a", json::array![["daa", "param1"]]);
+    /// ```
+    /// It will GET `https://test.com/a?data=param1`, `https://test.com/a?daa=%7B%22ad%22%3A%22test%22%7D`, `https://test.com/a?daa=param1`
+    pub fn get_with_param<U: IntoUrl>(&mut self, url: U, param: JsonValue) -> Option<Response> {
+        let u = url.into_url();
+        if u.is_err() {
+            println!("{} \"{}\"", gettext("Can not parse URL:"), u.unwrap_err());
+            return None;
+        }
+        let mut u = u.unwrap();
+        if !param.is_object() && !param.is_array() {
+            println!(
+                "{} \"{}\"",
+                gettext("Parameters should be object or array:"),
+                param
+            );
+            return None;
+        }
+        {
+            let mut query = u.query_pairs_mut();
+            if param.is_object() {
+                for (k, v) in param.entries() {
+                    let s: String;
+                    if v.is_string() {
+                        s = String::from(v.as_str().unwrap());
+                    } else {
+                        s = v.dump();
+                    }
+                    query.append_pair(k, s.as_str());
+                }
+            } else {
+                for v in param.members() {
+                    if !v.is_object() {
+                        println!("{} \"{}\"", gettext("Parameters should be array:"), v);
+                        return None;
+                    }
+                    if v.len() < 2 {
+                        println!("{} \"{}\"", gettext("Parameters need at least a value:"), v);
+                        return None;
+                    }
+                    let okey = &v[0];
+                    let key: String;
+                    if okey.is_string() {
+                        key = String::from(okey.as_str().unwrap());
+                    } else {
+                        key = okey.dump();
+                    }
+                    let mut mems = v.members();
+                    mems.next();
+                    for val in mems {
+                        let s: String;
+                        if val.is_string() {
+                            s = String::from(val.as_str().unwrap());
+                        } else {
+                            s = val.dump();
+                        }
+                        query.append_pair(key.as_str(), s.as_str());
+                    }
+                }
+            }
+        }
+        self.get(u.as_str(), None)
+    }
 
     /// Send GET requests
-    pub fn get<U: IntoUrl>(&mut self, url: U) -> Option<Response> {
-        let r = self.aget(url);
+    pub fn get<U: IntoUrl, H: ToHeaders>(&mut self, url: U, headers: H) -> Option<Response> {
+        let r = self.aget(url, headers);
         let r = r.send();
         let r = spin_on(r);
         match r {
@@ -97,19 +212,71 @@ impl WebClient {
         }
         let r = r.unwrap();
         self.handle_set_cookie(&r);
+        if self.verbose {
+            println!("{}", r.status());
+        }
         Some(r)
     }
 
-    pub fn aget<U: IntoUrl>(&mut self, url: U) -> RequestBuilder {
+    pub fn aget<U: IntoUrl, H: ToHeaders>(&mut self, url: U, headers: H) -> RequestBuilder {
         let s = url.as_str();
+        if self.verbose {
+            println!("GET {}", s);
+        }
         let mut r = self.client.get(s);
         for (k, v) in self.headers.iter() {
             r = r.header(k, v);
+        }
+        let headers = headers.to_headers();
+        if headers.is_some() {
+            let h = headers.unwrap();
+            for (k, v) in h.iter() {
+                r = r.header(k, v);
+            }
         }
         let c = gen_cookie_header(&mut self.cookies, s);
         if c.len() > 0 {
             r = r.header("Cookie", c.as_str());
         }
         r
+    }
+
+    pub fn download_stream<S: AsRef<OsStr> + ?Sized>(file_name: &S, r: Response, overwrite: Option<bool>) -> Result<(), ()> {
+        let p = Path::new(file_name);
+        if p.exists() {
+            let overwrite = if overwrite.is_none() {
+                ask_need_overwrite(p.to_str().unwrap())
+            } else {
+                overwrite.unwrap()
+            };
+            if !overwrite {
+                return Ok(());
+            }
+            let re = remove_file(p);
+            if re.is_err() {
+                println!("{} {}", gettext("Failed to remove file:"), re.unwrap_err());
+                return Err(());
+            }
+        }
+        let f = File::create(p);
+        if f.is_err() {
+            println!("{} {}", gettext("Failed to create file:"), f.unwrap_err());
+            return Err(());
+        }
+        let mut f = f.unwrap();
+        let mut stream = r.bytes_stream();
+        while let Some(data) = spin_on(stream.next()) {
+            if data.is_err() {
+                println!("{} {}", gettext("Error when downloading file:"), data.unwrap_err());
+                return Err(());
+            }
+            let data = data.unwrap();
+            let r = f.write(&data);
+            if r.is_err() {
+                println!("{} {}", gettext("Failed to write file:"), r.unwrap_err());
+                return Err(());
+            }
+        }
+        Ok(())
     }
 }

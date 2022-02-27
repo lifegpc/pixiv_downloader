@@ -1,3 +1,3 @@
 extern crate html_parser;
 
-pub mod mainpage;
+pub mod metadata;

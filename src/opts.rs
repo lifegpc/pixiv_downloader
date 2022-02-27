@@ -1,6 +1,7 @@
 extern crate getopts;
 
 use crate::gettext;
+use crate::pixiv_link::PixivID;
 use crate::utils::check_file_exists;
 use crate::utils::get_exe_path_else_current;
 use getopts::Options;
@@ -35,8 +36,8 @@ impl PartialEq<ConfigCommand> for &ConfigCommand {
 pub struct CommandOpts {
     /// Command
     pub cmd: Command,
-    /// URLs
-    pub urls: Vec<String>,
+    /// IDs
+    pub ids: Vec<PixivID>,
     /// Config location
     pub _config: Option<String>,
     /// Config command
@@ -45,17 +46,23 @@ pub struct CommandOpts {
     pub cookies: Option<String>,
     /// The language of translated tags
     pub language: Option<String>,
+    /// Verbose logging
+    pub verbose: bool,
+    /// Whether to overwrite file
+    pub overwrite: Option<bool>,
 }
 
 impl CommandOpts {
     pub fn new(cmd: Command) -> Self {
         Self {
             cmd,
-            urls: Vec::new(),
+            ids: Vec::new(),
             _config: None,
             config_cmd: None,
             cookies: None,
             language: None,
+            verbose: false,
+            overwrite: None,
         }
     }
 
@@ -87,7 +94,7 @@ impl CommandOpts {
 pub fn print_usage(prog: &str, opts: &Options) {
     let brief = format!(
         "{}
-{} download [options] <url> [<url>]  {}
+{} download [options] <id/url> [<id/url>]  {}
 {} config fix [options] {}
 {} config help [options] {}",
         gettext("Usage:"),
@@ -123,6 +130,9 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         gettext("The language of translated tags."),
         "LANG",
     );
+    opts.optflag("v", "verbose", gettext("Verbose logging."));
+    opts.optflag("y", "yes", gettext("Overwrite existing file."));
+    opts.optflag("n", "no", gettext("Skip overwrite existing file."));
     let result = match opts.parse(&argv[1..]) {
         Ok(m) => m,
         Err(err) => {
@@ -148,16 +158,21 @@ pub fn parse_cmd() -> Option<CommandOpts> {
     }
     match re.as_ref().unwrap().cmd {
         Command::Download => {
-            let mut urls = Vec::new();
+            let mut ids = Vec::new();
             for url in result.free.iter().skip(1) {
-                urls.push(url.to_string());
+                let id = PixivID::parse(url);
+                if id.is_none() {
+                    println!("{} {}", gettext("Failed to parse ID:"), url);
+                    return None;
+                }
+                ids.push(id.unwrap());
             }
-            if urls.is_empty() {
-                println!("{}", gettext("No URL specified."));
+            if ids.is_empty() {
+                println!("{}", gettext("No URL or ID specified."));
                 print_usage(&argv[0], &opts);
                 return None;
             }
-            re.as_mut().unwrap().urls = urls;
+            re.as_mut().unwrap().ids = ids;
         }
         Command::Config => {
             if result.free.len() < 2 {
@@ -189,5 +204,21 @@ pub fn parse_cmd() -> Option<CommandOpts> {
     if result.opt_present("language") {
         re.as_mut().unwrap().language = Some(result.opt_str("language").unwrap());
     }
+    re.as_mut().unwrap().verbose = result.opt_present("verbose");
+    let yes = result.opt_present("yes");
+    let no = result.opt_present("no");
+    re.as_mut().unwrap().overwrite = if yes && no {
+        if result.opt_positions("yes").last().unwrap() > result.opt_positions("no").last().unwrap() {
+            Some(true)
+        } else {
+            Some(false)
+        }
+    } else if yes {
+        Some(true)
+    } else if no {
+        Some(false)
+    } else {
+        None
+    };
     re
 }

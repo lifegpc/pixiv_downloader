@@ -234,7 +234,7 @@ impl Cookie {
         } else {
             self._domain.clone()
         };
-        if subdomain && !host.starts_with(&domain) && host != &domain[1..] {
+        if subdomain && !host.ends_with(&domain) && host != &domain[1..] {
             return false;
         }
         if !subdomain && host != domain {
