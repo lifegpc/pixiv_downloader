@@ -1,6 +1,7 @@
 use crate::data::json::ToJson;
 use json::JsonValue;
 use regex::Regex;
+use std::convert::TryInto;
 
 lazy_static! {
     #[doc(hidden)]
@@ -36,13 +37,21 @@ impl PixivID {
         }
         None
     }
+
+    pub fn to_link(&self) -> String {
+        match self {
+            Self::Artwork(id) => {
+                format!("https://www.pixiv.net/artworks/{}", id)
+            }
+        }
+    }
 }
 
 impl ToJson for PixivID {
     fn to_json(&self) -> Option<JsonValue> {
         match *self {
             PixivID::Artwork(id) => {
-                Some(json::value!({"type": "artwork", "id": id}))
+                Some(json::value!({"type": "artwork", "id": id, "link": self.to_link()}))
             }
         }
     }
@@ -69,5 +78,23 @@ impl ToPixivID for String {
 impl ToPixivID for u64 {
     fn to_pixiv_id(&self) -> Option<PixivID> {
         Some(PixivID::Artwork(*self))
+    }
+}
+
+impl TryInto<u64> for PixivID {
+    type Error = ();
+    fn try_into(self) -> Result<u64, Self::Error> {
+        match self {
+            Self::Artwork(id) => { Ok(id) }
+        }
+    }
+}
+
+impl TryInto<u64> for &PixivID {
+    type Error = ();
+    fn try_into(self) -> Result<u64, Self::Error> {
+        match *self {
+            PixivID::Artwork(id) => { Ok(id) }
+        }
     }
 }

@@ -1,16 +1,27 @@
+#[cfg(feature = "c_fixed_string")]
+extern crate c_fixed_string;
 extern crate chrono;
 extern crate dateparser;
 extern crate futures_util;
 extern crate json;
+#[cfg(feature = "int-enum")]
+extern crate int_enum;
 #[macro_use]
 extern crate lazy_static;
 extern crate tokio;
 extern crate regex;
 extern crate reqwest;
+#[cfg(feature = "utf16string")]
+extern crate utf16string;
 
+#[cfg(feature = "exif")]
+#[doc(hidden)]
+mod _exif;
 mod cookies;
 mod data;
 mod download;
+#[cfg(feature = "exif")]
+mod exif;
 mod i18n;
 mod opthelper;
 mod opts;

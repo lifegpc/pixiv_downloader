@@ -1,6 +1,7 @@
 use crate::gettext;
 use reqwest::IntoUrl;
 use std::env;
+use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -28,6 +29,7 @@ pub fn check_file_exists(path: &str) -> bool {
 pub fn ask_need_overwrite(path: &str) -> bool {
     let s = gettext("Do you want to delete file \"<file>\"?").replace("<file>", path);
     print!("{}(y/n)", s.as_str());
+    std::io::stdout().flush().unwrap();
     let mut d = String::from("");
     loop {
         let re = std::io::stdin().read_line(&mut d);

@@ -1,0 +1,93 @@
+diff --git a/src/basicio.cpp b/src/basicio.cpp
+index 807d75c8..49841f36 100644
+--- a/src/basicio.cpp
++++ b/src/basicio.cpp
+@@ -87,6 +87,64 @@ namespace {
+ }
+ 
+ namespace Exiv2 {
++#if defined(__MINGW__) || (defined(WIN32) && !defined(__CYGWIN__))
++    /// Remove unsuportted options flags
++    unsigned long getMultiByteToWideCharOptions(const unsigned long ori_options, unsigned int cp) {
++        if (cp == CP_ACP) cp = GetACP();
++        if (cp == CP_OEMCP) cp = GetOEMCP();
++        switch (cp)
++        {
++        case 50220:
++        case 50221:
++        case 50222:
++        case 50225:
++        case 50227:
++        case 50229:
++        case CP_UTF7:
++        case 42:
++            return 0;
++        default:
++            break;
++        }
++        if (cp >= 57002 && cp <= 57011) return 0;
++        if (cp == CP_UTF8 || cp == 54936) {
++            return MB_ERR_INVALID_CHARS & ori_options;
++        }
++        return ori_options;
++    }
++    bool str_to_wstr(std::wstring& out, std::string inp, unsigned int cp) {
++        DWORD opt = getMultiByteToWideCharOptions(MB_ERR_INVALID_CHARS, cp);
++        int wlen = MultiByteToWideChar(cp, opt, inp.c_str(), inp.length(), nullptr, 0);
++        if (!wlen) {
++            return false;
++        }
++        wchar_t* wstr = (wchar_t*)malloc(wlen * sizeof(wchar_t));
++        if (wstr == nullptr) {
++            return false;
++        }
++        if (!MultiByteToWideChar(cp, opt, inp.c_str(), inp.length(), wstr, wlen)) {
++            free(wstr);
++            return false;
++        }
++        out = std::wstring(wstr, wlen);
++        free(wstr);
++        return true;
++    }
++    FILE* win32_fopen(const char* path, const char* mode) {
++        std::string p(path), m(mode);
++        FILE* f = nullptr;
++        unsigned long cps[] = { CP_UTF8, CP_ACP, CP_OEMCP };
++        for (int i = 0; i < 3; i++) {
++            std::wstring wp, wm;
++            if (str_to_wstr(wp, p, cps[i]) && str_to_wstr(wm, m, cps[i])) {
++                if ((f = _wfopen(wp.c_str(), wm.c_str()))) {
++                    return f;
++                }
++            }
++        }
++        return std::fopen(path, mode);
++    }
++#endif
+     void BasicIo::readOrThrow(byte* buf, long rcount, ErrorCode err) {
+         const long nread = read(buf, rcount);
+         enforce(nread == rcount, err);
+@@ -201,7 +259,11 @@ namespace Exiv2 {
+         }
+         openMode_ = "r+b";
+         opMode_ = opSeek;
++#if defined(__MINGW__) || (defined(WIN32) && !defined(__CYGWIN__))
++        fp_ = win32_fopen(path_.c_str(), openMode_.c_str());
++#else
+         fp_ = std::fopen(path_.c_str(), openMode_.c_str());
++#endif
+         if (!fp_) return 1;
+         return std::fseek(fp_, offset, SEEK_SET);
+     } // FileIo::Impl::switchMode
+@@ -534,7 +596,11 @@ namespace Exiv2 {
+         close();
+         p_->openMode_ = mode;
+         p_->opMode_ = Impl::opSeek;
++#if defined(__MINGW__) || (defined(WIN32) && !defined(__CYGWIN__))
++        p_->fp_ = win32_fopen(path().c_str(), mode.c_str());
++#else
+         p_->fp_ = ::fopen(path().c_str(), mode.c_str());
++#endif
+         if (!p_->fp_)
+             return 1;
+         return 0;

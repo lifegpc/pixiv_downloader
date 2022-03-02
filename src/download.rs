@@ -1,3 +1,6 @@
+use crate::data::data::PixivData;
+#[cfg(feature = "exif")]
+use crate::data::exif::add_exifdata_to_image;
 use crate::data::json::JSONDataFile;
 use crate::gettext;
 use crate::pixiv_link::PixivID;
@@ -40,7 +43,8 @@ impl Main {
         if re.is_none() {
             return 1;
         }
-        let pages = (&(re.as_ref().unwrap())["illust"][format!("{}", id).as_str()]["sl"]).as_u64();
+        let re = re.unwrap();
+        let pages = (&re["illust"][format!("{}", id).as_str()]["pageCount"]).as_u64();
         if pages.is_none() {
             println!("{}", gettext("Failed to get page count."));
             return 1;
@@ -56,7 +60,9 @@ impl Main {
         }
         let base = PathBuf::from(".");
         let json_file = base.join(format!("{}.json", id));
-        let json_data = JSONDataFile::new(id).unwrap();
+        let mut datas = PixivData::new(id).unwrap();
+        datas.from_web_page_data(&re, true);
+        let json_data = JSONDataFile::from(&datas);
         if !json_data.save(&json_file) {
             println!("{}", gettext("Failed to save metadata to JSON file."));
             return 1;
@@ -93,7 +99,58 @@ impl Main {
                     gettext("Downloaded image:"),
                     link,
                     file_name.to_str().unwrap_or("(null)")
-                )
+                );
+                #[cfg(feature = "exif")]
+                {
+                    if add_exifdata_to_image(&file_name, &datas).is_err() {
+                        println!(
+                            "{} {}",
+                            gettext("Failed to add exif data to image:"),
+                            file_name.to_str().unwrap_or("(null)")
+                        );
+                    }
+                }
+            }
+        } else {
+            let link = (&re["illust"][format!("{}", id)]["urls"]["original"]).as_str();
+            if link.is_none() {
+                println!("{}", gettext("Failed to get original picture's link."));
+                return 1;
+            }
+            let link = link.unwrap();
+            let file_name = get_file_name_from_url(link);
+            if file_name.is_none() {
+                println!("{} {}", gettext("Failed to get file name from url:"), link);
+                return 1;
+            }
+            let file_name = file_name.unwrap();
+            let file_name = base.join(file_name);
+            let r = pw.download_image(link);
+            if r.is_none() {
+                println!("{} {}", gettext("Failed to download image:"), link);
+                return 1;
+            }
+            let r = r.unwrap();
+            let re = WebClient::download_stream(&file_name, r, pw.helper.overwrite());
+            if re.is_err() {
+                println!("{} {}", gettext("Failed to download image:"), link);
+                return 1;
+            }
+            println!(
+                "{} {} -> {}",
+                gettext("Downloaded image:"),
+                link,
+                file_name.to_str().unwrap_or("(null)")
+            );
+            #[cfg(feature = "exif")]
+            {
+                if add_exifdata_to_image(&file_name, &datas).is_err() {
+                    println!(
+                        "{} {}",
+                        gettext("Failed to add exif data to image:"),
+                        file_name.to_str().unwrap_or("(null)")
+                    );
+                }
             }
         }
         0

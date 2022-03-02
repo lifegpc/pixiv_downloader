@@ -1,8 +1,10 @@
+use crate::data::data::PixivData;
 use crate::gettext;
 use crate::pixiv_link::PixivID;
 use crate::pixiv_link::ToPixivID;
 use json::JsonValue;
 use std::collections::HashMap;
+use std::convert::From;
 use std::ffi::OsStr;
 use std::fs::File;
 use std::fs::remove_file;
@@ -20,6 +22,7 @@ pub struct JSONDataFile {
 }
 
 impl JSONDataFile {
+    #[allow(dead_code)]
     pub fn new<T: ToPixivID>(id: T) -> Option<Self> {
         let i = id.to_pixiv_id();
         if i.is_none() {
@@ -29,6 +32,16 @@ impl JSONDataFile {
             id: i.unwrap(),
             maps: HashMap::new(),
         })
+    }
+
+    pub fn add<T: ToJson>(&mut self, key: &str, value: T) -> Result<(), ()> {
+        let v = value.to_json();
+        if v.is_some() {
+            self.maps.insert(String::from(key), v.unwrap());
+            Ok(())
+        } else {
+            Err(())
+        }
     }
 
     pub fn save<S: AsRef<OsStr> + ?Sized>(&self, path: &S) -> bool {
@@ -60,6 +73,28 @@ impl JSONDataFile {
     }
 }
 
+impl From<PixivData> for JSONDataFile {
+    fn from(p: PixivData) -> Self {
+        JSONDataFile::from(&p)
+    }
+}
+
+impl From<&PixivData> for JSONDataFile {
+    fn from(p: &PixivData) -> Self {
+        let mut f = Self {
+            id: p.id.clone(),
+            maps: HashMap::new(),
+        };
+        if p.title.is_some() {
+            f.add("title", p.title.as_ref().unwrap()).unwrap();
+        }
+        if p.author.is_some() {
+            f.add("author", p.author.as_ref().unwrap()).unwrap();
+        }
+        f
+    }
+}
+
 impl ToJson for JSONDataFile {
     fn to_json(&self) -> Option<JsonValue> {
         let mut value = json::object! {};
@@ -72,5 +107,17 @@ impl ToJson for JSONDataFile {
             }
         }
         Some(value)
+    }
+}
+
+impl ToJson for &str {
+    fn to_json(&self) -> Option<JsonValue> {
+        Some(JsonValue::String(String::from(*self)))
+    }
+}
+
+impl ToJson for &String {
+    fn to_json(&self) -> Option<JsonValue> {
+        Some(JsonValue::String((*self).to_string()))
     }
 }
