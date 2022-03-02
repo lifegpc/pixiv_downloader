@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: pixiv_downloader\n"
-"POT-Creation-Date: 2022-02-27 17:47+0800\n"
-"PO-Revision-Date: 2022-02-27 17:48+0800\n"
+"POT-Creation-Date: 2022-03-02 21:58+0800\n"
+"PO-Revision-Date: 2022-03-02 22:02+0800\n"
 "Last-Translator: lifegpc <g1710431395@gmail.com>\n"
 "Language-Team: \n"
 "Language: zh_CN\n"
@@ -70,53 +70,62 @@ msgstr "无效的Cookie："
 msgid "Can not parse expired time:"
 msgstr "无法解析过期时间："
 
-#: cookies.rs:366 data/json.rs:39 settings.rs:392 webclient.rs:257
+#: cookies.rs:366 data/json.rs:53 settings.rs:392 webclient.rs:257
 msgid "Failed to remove file:"
 msgstr "无法删除文件："
 
-#: cookies.rs:372 data/json.rs:50 settings.rs:399 webclient.rs:263
+#: cookies.rs:372 data/json.rs:64 settings.rs:399 webclient.rs:263
 msgid "Failed to create file:"
 msgstr "无法创建文件："
 
-#: cookies.rs:379 data/json.rs:56 settings.rs:405 webclient.rs:276
+#: cookies.rs:379 data/json.rs:70 settings.rs:405 webclient.rs:276
 msgid "Failed to write file:"
 msgstr "无法写入文件："
 
-#: download.rs:15 pixiv_web.rs:53
+#: data/data.rs:62
+msgid "Failed to unescape string:"
+msgstr "无法反转义字符串："
+
+#: download.rs:18 pixiv_web.rs:53
 msgid "Failed to initialize pixiv web api client."
 msgstr "无法初始化 Pixiv 网页 API 客户端。"
 
-#: download.rs:22
+#: download.rs:25
 msgid "Warning: Web api client not logined, some future may not work."
 msgstr "警告：Web API 客户端未登录，一些功能可能无法工作。"
 
-#: download.rs:45
+#: download.rs:49
 msgid "Failed to get page count."
 msgstr "无法获取页数。"
 
-#: download.rs:54
+#: download.rs:58
 msgid "Failed to get pages' data."
 msgstr "无法获取每页数据。"
 
-#: download.rs:61
+#: download.rs:67
 msgid "Failed to save metadata to JSON file."
 msgstr "无法将元数据保存到 JSON 文件。"
 
-#: download.rs:69
+#: download.rs:75 download.rs:117
 msgid "Failed to get original picture's link."
 msgstr "无法获取原图链接。"
 
-#: download.rs:75
+#: download.rs:81 download.rs:123
 msgid "Failed to get file name from url:"
 msgstr "无法从 URL 获取文件名："
 
-#: download.rs:82 download.rs:88 pixiv_web.rs:148
+#: download.rs:88 download.rs:94 download.rs:130 download.rs:136
+#: pixiv_web.rs:148
 msgid "Failed to download image:"
 msgstr "无法下载图片："
 
-#: download.rs:93
+#: download.rs:99 download.rs:141
 msgid "Downloaded image:"
 msgstr "已下载图片："
+
+#: download.rs:108 download.rs:150
+msgid "Failed to add exif data to image:"
+msgstr "无法往图片增加 EXIF 数据："
 
 #: opts.rs:76
 msgid "Warning: The specified config file not found."
@@ -186,17 +195,21 @@ msgstr "没有指定更详细的指令。"
 msgid "Unknown config subcommand."
 msgstr "未知的 config 子指令。"
 
-#: parser/metadata.rs:54 pixiv_web.rs:107
-msgid "Failed to parse JSON:"
-msgstr "无法解析 JSON："
-
-#: parser/metadata.rs:76
+#: parser/description.rs:127 parser/metadata.rs:76
 msgid "Failed to parse HTML:"
 msgstr "无法解析 HTML："
 
-#: parser/metadata.rs:81
+#: parser/description.rs:132 parser/metadata.rs:81
 msgid "Some errors occured during parsing:"
 msgstr "在解析中发生了一些错误："
+
+#: parser/description.rs:143
+msgid "There are some nodes still in stack:"
+msgstr "堆栈中依旧有一些节点："
+
+#: parser/metadata.rs:54 pixiv_web.rs:107
+msgid "Failed to parse JSON:"
+msgstr "无法解析 JSON："
 
 #: pixiv_web.rs:68 pixiv_web.rs:73
 msgid "Failed to get main page:"
@@ -282,15 +295,15 @@ msgstr "无法刷新文件缓冲区："
 msgid "Pixiv's refresh tokens. Used to login."
 msgstr "Pixiv 的 refresh tokens。用于登录。"
 
-#: utils.rs:29
+#: utils.rs:30
 msgid "Do you want to delete file \"<file>\"?"
 msgstr "你想要删除文件 <file> 吗？"
 
-#: utils.rs:49 webclient.rs:143
+#: utils.rs:51 webclient.rs:143
 msgid "Can not parse URL:"
 msgstr "无法解析 URL："
 
-#: utils.rs:56
+#: utils.rs:58
 msgid "Failed to get file name from path:"
 msgstr "无法从路径获取文件名："
 
@@ -322,14 +335,14 @@ msgstr "请求时发生错误："
 msgid "Error when downloading file:"
 msgstr "下载文件时发生错误："
 
-#: main.rs:50
+#: main.rs:62
 msgid "Failed to save config file:"
 msgstr "无法保存设置文件："
 
-#: main.rs:61
+#: main.rs:73
 msgid "All available settings:"
 msgstr "所有可用的设置："
 
-#: main.rs:93
+#: main.rs:105
 msgid "Can not read config file:"
 msgstr "无法读取设置文件："

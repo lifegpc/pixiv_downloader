@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: pixiv_downloader\n"
-"POT-Creation-Date: 2022-02-27 17:47+0800\n"
+"POT-Creation-Date: 2022-03-02 21:58+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -69,52 +69,61 @@ msgstr ""
 msgid "Can not parse expired time:"
 msgstr ""
 
-#: cookies.rs:366 data/json.rs:39 settings.rs:392 webclient.rs:257
+#: cookies.rs:366 data/json.rs:53 settings.rs:392 webclient.rs:257
 msgid "Failed to remove file:"
 msgstr ""
 
-#: cookies.rs:372 data/json.rs:50 settings.rs:399 webclient.rs:263
+#: cookies.rs:372 data/json.rs:64 settings.rs:399 webclient.rs:263
 msgid "Failed to create file:"
 msgstr ""
 
-#: cookies.rs:379 data/json.rs:56 settings.rs:405 webclient.rs:276
+#: cookies.rs:379 data/json.rs:70 settings.rs:405 webclient.rs:276
 msgid "Failed to write file:"
 msgstr ""
 
-#: download.rs:15 pixiv_web.rs:53
+#: data/data.rs:62
+msgid "Failed to unescape string:"
+msgstr ""
+
+#: download.rs:18 pixiv_web.rs:53
 msgid "Failed to initialize pixiv web api client."
 msgstr ""
 
-#: download.rs:22
+#: download.rs:25
 msgid "Warning: Web api client not logined, some future may not work."
 msgstr ""
 
-#: download.rs:45
+#: download.rs:49
 msgid "Failed to get page count."
 msgstr ""
 
-#: download.rs:54
+#: download.rs:58
 msgid "Failed to get pages' data."
 msgstr ""
 
-#: download.rs:61
+#: download.rs:67
 msgid "Failed to save metadata to JSON file."
 msgstr ""
 
-#: download.rs:69
+#: download.rs:75 download.rs:117
 msgid "Failed to get original picture's link."
 msgstr ""
 
-#: download.rs:75
+#: download.rs:81 download.rs:123
 msgid "Failed to get file name from url:"
 msgstr ""
 
-#: download.rs:82 download.rs:88 pixiv_web.rs:148
+#: download.rs:88 download.rs:94 download.rs:130 download.rs:136
+#: pixiv_web.rs:148
 msgid "Failed to download image:"
 msgstr ""
 
-#: download.rs:93
+#: download.rs:99 download.rs:141
 msgid "Downloaded image:"
+msgstr ""
+
+#: download.rs:108 download.rs:150
+msgid "Failed to add exif data to image:"
 msgstr ""
 
 #: opts.rs:76
@@ -185,16 +194,20 @@ msgstr ""
 msgid "Unknown config subcommand."
 msgstr ""
 
-#: parser/metadata.rs:54 pixiv_web.rs:107
-msgid "Failed to parse JSON:"
-msgstr ""
-
-#: parser/metadata.rs:76
+#: parser/description.rs:127 parser/metadata.rs:76
 msgid "Failed to parse HTML:"
 msgstr ""
 
-#: parser/metadata.rs:81
+#: parser/description.rs:132 parser/metadata.rs:81
 msgid "Some errors occured during parsing:"
+msgstr ""
+
+#: parser/description.rs:143
+msgid "There are some nodes still in stack:"
+msgstr ""
+
+#: parser/metadata.rs:54 pixiv_web.rs:107
+msgid "Failed to parse JSON:"
 msgstr ""
 
 #: pixiv_web.rs:68 pixiv_web.rs:73
@@ -277,15 +290,15 @@ msgstr ""
 msgid "Pixiv's refresh tokens. Used to login."
 msgstr ""
 
-#: utils.rs:29
+#: utils.rs:30
 msgid "Do you want to delete file \"<file>\"?"
 msgstr ""
 
-#: utils.rs:49 webclient.rs:143
+#: utils.rs:51 webclient.rs:143
 msgid "Can not parse URL:"
 msgstr ""
 
-#: utils.rs:56
+#: utils.rs:58
 msgid "Failed to get file name from path:"
 msgstr ""
 
@@ -317,14 +330,14 @@ msgstr ""
 msgid "Error when downloading file:"
 msgstr ""
 
-#: main.rs:50
+#: main.rs:62
 msgid "Failed to save config file:"
 msgstr ""
 
-#: main.rs:61
+#: main.rs:73
 msgid "All available settings:"
 msgstr ""
 
-#: main.rs:93
+#: main.rs:105
 msgid "Can not read config file:"
 msgstr ""

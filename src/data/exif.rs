@@ -4,6 +4,7 @@ use crate::exif::ExifImage;
 use crate::exif::ExifKey;
 use crate::exif::ExifTypeID;
 use crate::exif::ExifValue;
+use crate::parser::description::parse_description;
 use std::convert::TryFrom;
 use std::ffi::OsStr;
 use utf16string::LittleEndian;
@@ -48,12 +49,31 @@ fn add_image_author(data: &mut ExifData, d: &PixivData) -> Result<(), ()> {
     Ok(())
 }
 
+fn add_image_comment(data: &mut ExifData, d: &PixivData) -> Result<(), ()> {
+    if d.description.is_none() {
+        return Ok(());
+    }
+    let desc = parse_description(d.description.as_ref().unwrap());
+    let desc = if desc.is_some() {
+        desc.as_ref().unwrap()
+    } else {
+        d.description.as_ref().unwrap()
+    };
+    let key = ExifKey::try_from("Exif.Image.XPComment")?;
+    let mut value = ExifValue::try_from(ExifTypeID::BYTE)?;
+    let s: WString<LittleEndian> = WString::from(desc);
+    value.read(s.as_bytes(), None)?;
+    data.add(&key, &value)?;
+    Ok(())
+}
+
 pub fn add_exifdata_to_image<S: AsRef<OsStr> + ?Sized>(file_name: &S, data: &PixivData) -> Result<(), ()> {
     let mut f = ExifImage::new(file_name)?;
     let mut d = ExifData::new()?;
     add_image_id(&mut d, data)?;
     add_image_title(&mut d, data)?;
     add_image_author(&mut d, data)?;
+    add_image_comment(&mut d, data)?;
     f.set_exif_data(&d)?;
     f.write_metadata()?;
     Ok(())

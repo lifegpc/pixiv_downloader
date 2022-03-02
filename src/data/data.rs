@@ -1,7 +1,9 @@
+use crate::gettext;
 use crate::pixiv_link::ToPixivID;
 use crate::pixiv_link::PixivID;
 use json::JsonValue;
 use std::convert::TryInto;
+use xml::unescape;
 
 /// Pixiv's basic data
 pub struct PixivData {
@@ -11,6 +13,7 @@ pub struct PixivData {
     pub title: Option<String>,
     /// The author
     pub author: Option<String>,
+    pub description: Option<String>,
 }
 
 impl PixivData {
@@ -23,6 +26,7 @@ impl PixivData {
             id: i.unwrap(),
             title: None,
             author: None,
+            description: None,
         })
     }
 
@@ -43,6 +47,21 @@ impl PixivData {
             let author = value["illust"][ids.as_str()]["userName"].as_str();
             if author.is_some() {
                 self.author = Some(String::from(author.unwrap()));
+            }
+        }
+        if self.description.is_none() || allow_overwrite {
+            let mut description = value["illust"][ids.as_str()]["description"].as_str();
+            if description.is_none() {
+                description = value["illust"][ids.as_str()]["illustComment"].as_str();
+            }
+            if description.is_some() {
+                let re = unescape(description.unwrap());
+                match re {
+                    Ok(s) => { self.description = Some(s); }
+                    Err(s) => {
+                        println!("{} {}", gettext("Failed to unescape string:"), s.as_str());
+                    }
+                }
             }
         }
     }

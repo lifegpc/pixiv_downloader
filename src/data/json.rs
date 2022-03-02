@@ -1,5 +1,6 @@
 use crate::data::data::PixivData;
 use crate::gettext;
+use crate::parser::description::parse_description;
 use crate::pixiv_link::PixivID;
 use crate::pixiv_link::ToPixivID;
 use json::JsonValue;
@@ -91,6 +92,13 @@ impl From<&PixivData> for JSONDataFile {
         if p.author.is_some() {
             f.add("author", p.author.as_ref().unwrap()).unwrap();
         }
+        if p.description.is_some() {
+            f.add("description", p.description.as_ref().unwrap()).unwrap();
+            let pd = parse_description(p.description.as_ref().unwrap());
+            if pd.is_some() {
+                f.add("parsed_description", pd.unwrap()).unwrap();
+            }
+        }
         f
     }
 }
@@ -119,5 +127,11 @@ impl ToJson for &str {
 impl ToJson for &String {
     fn to_json(&self) -> Option<JsonValue> {
         Some(JsonValue::String((*self).to_string()))
+    }
+}
+
+impl ToJson for String {
+    fn to_json(&self) -> Option<JsonValue> {
+        Some(JsonValue::String(self.to_string()))
     }
 }

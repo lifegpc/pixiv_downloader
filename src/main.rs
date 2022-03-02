@@ -13,6 +13,7 @@ extern crate regex;
 extern crate reqwest;
 #[cfg(feature = "utf16string")]
 extern crate utf16string;
+extern crate xml;
 
 #[cfg(feature = "exif")]
 #[doc(hidden)]
