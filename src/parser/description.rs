@@ -1,4 +1,5 @@
 use crate::gettext;
+use crate::pixiv_link::remove_track;
 use html_parser::Dom;
 use html_parser::Node;
 use std::collections::HashMap;
@@ -98,7 +99,8 @@ impl DescriptionParser {
                     if href.is_some() {
                         let href = href.unwrap();
                         if href.is_some() {
-                            node.add_attr("href", href.as_ref().unwrap());
+                            let link = remove_track(href.as_ref().unwrap());
+                            node.add_attr("href", link.as_str());
                         }
                     }
                 }
@@ -171,4 +173,8 @@ fn test_parse_description() {
         Some(String::from("a [a\n[bc](a.com)d](b.com)\ndata")),
         parse_description("a <a href=\"b.com\">a<br/><a href=\"a.com\">bc</a>d</a><br>data")
     );
+    assert_eq!(
+        Some(String::from("https://a.com")),
+        parse_description("<a href=\"/jump.php?https%3A%2F%2Fa.com\">https://a.com</a>")
+    )
 }

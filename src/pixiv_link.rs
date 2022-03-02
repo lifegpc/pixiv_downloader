@@ -1,6 +1,7 @@
 use crate::data::json::ToJson;
 use json::JsonValue;
 use regex::Regex;
+use reqwest::IntoUrl;
 use std::convert::TryInto;
 
 lazy_static! {
@@ -97,4 +98,20 @@ impl TryInto<u64> for &PixivID {
             PixivID::Artwork(id) => { Ok(id) }
         }
     }
+}
+
+pub fn remove_track<U: IntoUrl>(url: U) -> String {
+    let s = String::from(url.as_str());
+    let u = urlparse::urlparse(s.as_str());
+    let path = u.path.as_str();
+    if path.ends_with("/jump.php") {
+        if u.query.is_some() {
+            let q = u.query.as_ref().unwrap();
+            let re = urlparse::unquote(q);
+            if re.is_ok() {
+                return re.unwrap();
+            }
+        }
+    }
+    s
 }

@@ -16,12 +16,13 @@ html_parser = "0.6.2"
 int-enum = { version = "0.4", optional = true }
 lazy_static = "1.4"
 json = "0.12"
-utf16string = { version= "0.2", optional = true }
 regex = "1"
 reqwest = { version = "0.11", features = ["brotli", "deflate", "gzip", "rustls-tls", "socks", "stream"] }
 RustyXML = "0.3"
 spin_on = "0.1.1"
 tokio = { version = "1.17", features = ["rt", "macros", "rt-multi-thread", "time"] }
+urlparse = "0.7"
+utf16string = { version= "0.2", optional = true }
 
 [build-dependencies]
 cmake = "0.1"
