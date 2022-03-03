@@ -477,7 +477,7 @@ impl ExifValue {
         if n >= c {
             return None;
         }
-        let r = unsafe { _exif::exif_value_to_int64(self.value, n as i32) };
+        let r = unsafe { _exif::exif_value_to_int64(self.value, n as c_long) };
         if !self.ok() {
             return None;
         }

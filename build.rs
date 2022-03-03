@@ -28,13 +28,13 @@ fn main() {
         let mut f = File::open(dep_path).unwrap();
         let mut s = String::from("");
         f.read_to_string(&mut s).unwrap();
-        println!("cargo:rustc-link-lib=static=exif");
         let l: Vec<&str> = s.split(";").collect();
         for i in l.iter() {
             let mut p = PathBuf::from(i);
             let p2 = p.clone();
             let file_name = p2.file_stem().unwrap();
             let file_name = file_name.to_str().unwrap();
+            let file_name = file_name.trim_start_matches("lib");
             p.pop();
             let pa = p.to_str().unwrap();
             if pa != "" {
@@ -70,6 +70,7 @@ fn main() {
             let p2 = p.clone();
             let file_name = p2.file_stem().unwrap();
             let file_name = file_name.to_str().unwrap();
+            let file_name = file_name.trim_start_matches("lib");
             p.pop();
             println!("cargo:rustc-link-search={}", p.to_str().unwrap());
             println!("cargo:rustc-link-lib={}", file_name);
