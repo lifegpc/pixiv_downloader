@@ -78,14 +78,20 @@ end:
     return nullptr;
 }
 
-const char* exif_get_key_key(ExifKey* key) {
+char* exif_get_key_key(ExifKey* key) {
     if (!key || !key->key) return nullptr;
-    return std::move(key->key->key().c_str());
+    auto s = key->key->key();
+    char* re = nullptr;
+    if (!string2char(s, re)) return nullptr;
+    return re;
 }
 
-const char* exif_get_key_family_name(ExifKey* key) {
+char* exif_get_key_family_name(ExifKey* key) {
     if (!key || !key->key) return nullptr;
-    return key->key->familyName();
+    auto s = key->key->familyName();
+    char* re = nullptr;
+    if (!string2char(s, re)) return nullptr;
+    return re;
 }
 
 char* exif_get_key_group_name(ExifKey* key) {

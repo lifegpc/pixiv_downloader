@@ -163,6 +163,8 @@ impl ExifKey {
             return None;
         }
         let s = unsafe { CStr::from_ptr(r) };
+        let s = s.to_owned();
+        unsafe { _exif::exif_free(r as *mut ::std::os::raw::c_void) };
         let s = s.to_str();
         if s.is_err() {
             return None;
@@ -181,6 +183,8 @@ impl ExifKey {
             return None;
         }
         let s = unsafe { CStr::from_ptr(r) };
+        let s = s.to_owned();
+        unsafe { _exif::exif_free(r as *mut ::std::os::raw::c_void) };
         let s = s.to_str();
         if s.is_err() {
             return None;
