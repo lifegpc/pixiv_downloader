@@ -36,6 +36,7 @@ jobs:
         python3 get_cache_key.py exiv2 || exit 1
     - name: Cache
       id: cache
+      uses: actions/cache@v2
       with:
         path: clib/
         key: ${{ runner.os }}-${{ steps.cache_key.outputs.cache_key }}
