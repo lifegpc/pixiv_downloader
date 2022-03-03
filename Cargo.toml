@@ -29,7 +29,10 @@ cmake = "0.1"
 bindgen = "0.59"
 
 [features]
-exif = ["c_fixed_string", "int-enum", "utf16string"]
+exif = ["c_fixed_string", "link-cplusplus", "int-enum", "utf16string"]
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3.9", features = ["winnls", "stringapiset"] }
+
+[target.'cfg(target_env = "gnu")'.dependencies]
+link-cplusplus = { version = "1.0", features = ["libstdc++"], optional = true }

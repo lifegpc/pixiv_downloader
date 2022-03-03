@@ -8,6 +8,8 @@ extern crate json;
 extern crate int_enum;
 #[macro_use]
 extern crate lazy_static;
+#[cfg(all(feature = "link-cplusplus", target_env = "gnu"))]
+extern crate link_cplusplus;
 extern crate tokio;
 extern crate regex;
 extern crate reqwest;
