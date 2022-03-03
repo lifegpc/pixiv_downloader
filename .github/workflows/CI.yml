@@ -21,3 +21,34 @@ jobs:
       run: cargo build --verbose
     - name: Run tests
       run: cargo test --verbose
+  build-exif:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check Out
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        submodules: true
+    - name: Get cache key
+      id: cache_key
+      run: |
+        cd scripts
+        python3 get_cache_key.py exiv2 || exit 1
+    - name: Cache
+      id: cache
+      with:
+        path: clib/
+        key: ${{ runner.os }}-${{ steps.cache_key.outputs.cache_key }}
+    - name: Build thirdparty library
+      if: steps.cache.outputs.cache-hit != 'true'
+      run: |
+        cp scripts/build_*.sh -v ./ || exit 1
+        ./build_exiv2.sh || exit 1
+    - name: Build
+      run: |
+        export CMAKE_PREFIX_PATH=`pwd`/clib
+        cargo build --features exif --verbose || exit 1
+    - name: Test
+      run: |
+        export CMAKE_PREFIX_PATH=`pwd`/clib
+        cargo test --features exif --verbose -- --show-output || exit 1
