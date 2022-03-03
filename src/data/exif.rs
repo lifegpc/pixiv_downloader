@@ -1,4 +1,5 @@
 use crate::data::data::PixivData;
+use crate::exif::ExifByteOrder;
 use crate::exif::ExifData;
 use crate::exif::ExifImage;
 use crate::exif::ExifKey;
@@ -46,6 +47,10 @@ fn add_image_author(data: &mut ExifData, d: &PixivData) -> Result<(), ()> {
     let s: WString<LittleEndian> = WString::from(author);
     value.read(s.as_bytes(), None)?;
     data.add(&key, &value)?;
+    let key = ExifKey::try_from("Exif.Image.Artist")?;
+    let mut value = ExifValue::try_from(ExifTypeID::AsciiString)?;
+    value.read(author.as_bytes(), None)?;
+    data.add(&key, &value)?;
     Ok(())
 }
 
@@ -67,13 +72,22 @@ fn add_image_comment(data: &mut ExifData, d: &PixivData) -> Result<(), ()> {
     Ok(())
 }
 
-pub fn add_exifdata_to_image<S: AsRef<OsStr> + ?Sized>(file_name: &S, data: &PixivData) -> Result<(), ()> {
+fn add_image_page(data: &mut ExifData, page: u16) -> Result<(), ()> {
+    let key = ExifKey::try_from("Exif.Image.PageNumber")?;
+    let mut value = ExifValue::try_from(ExifTypeID::UShort)?;
+    value.read(&page.to_le_bytes(), Some(ExifByteOrder::Little))?;
+    data.add(&key, &value)?;
+    Ok(())
+}
+
+pub fn add_exifdata_to_image<S: AsRef<OsStr> + ?Sized>(file_name: &S, data: &PixivData, page: u16) -> Result<(), ()> {
     let mut f = ExifImage::new(file_name)?;
     let mut d = ExifData::new()?;
     add_image_id(&mut d, data)?;
     add_image_title(&mut d, data)?;
     add_image_author(&mut d, data)?;
     add_image_comment(&mut d, data)?;
+    add_image_page(&mut d, page)?;
     f.set_exif_data(&d)?;
     f.write_metadata()?;
     Ok(())

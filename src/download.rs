@@ -68,6 +68,8 @@ impl Main {
             return 1;
         }
         if pages_data.is_some() {
+            #[cfg(feature = "exif")]
+            let mut np = 0u16;
             let pages_data = pages_data.as_ref().unwrap();
             for page in pages_data.members() {
                 let link = &page["urls"]["original"];
@@ -102,13 +104,14 @@ impl Main {
                 );
                 #[cfg(feature = "exif")]
                 {
-                    if add_exifdata_to_image(&file_name, &datas).is_err() {
+                    if add_exifdata_to_image(&file_name, &datas, np).is_err() {
                         println!(
                             "{} {}",
                             gettext("Failed to add exif data to image:"),
                             file_name.to_str().unwrap_or("(null)")
                         );
                     }
+                    np += 1;
                 }
             }
         } else {
@@ -144,7 +147,7 @@ impl Main {
             );
             #[cfg(feature = "exif")]
             {
-                if add_exifdata_to_image(&file_name, &datas).is_err() {
+                if add_exifdata_to_image(&file_name, &datas, 0).is_err() {
                     println!(
                         "{} {}",
                         gettext("Failed to add exif data to image:"),
