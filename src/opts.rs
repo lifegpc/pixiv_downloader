@@ -50,6 +50,8 @@ pub struct CommandOpts {
     pub verbose: bool,
     /// Whether to overwrite file
     pub overwrite: Option<bool>,
+    /// Max retry count.
+    pub retry: Option<u64>,
 }
 
 impl CommandOpts {
@@ -63,6 +65,7 @@ impl CommandOpts {
             language: None,
             verbose: false,
             overwrite: None,
+            retry: None,
         }
     }
 
@@ -133,6 +136,12 @@ pub fn parse_cmd() -> Option<CommandOpts> {
     opts.optflag("v", "verbose", gettext("Verbose logging."));
     opts.optflag("y", "yes", gettext("Overwrite existing file."));
     opts.optflag("n", "no", gettext("Skip overwrite existing file."));
+    opts.optopt(
+        "r",
+        "retry",
+        gettext("Max retry count if request failed."),
+        "COUNT",
+    );
     let result = match opts.parse(&argv[1..]) {
         Ok(m) => m,
         Err(err) => {
@@ -220,5 +229,15 @@ pub fn parse_cmd() -> Option<CommandOpts> {
     } else {
         None
     };
+    if result.opt_present("retry") {
+        let s = result.opt_str("retry").unwrap();
+        let s = s.trim();
+        let c = s.parse::<u64>();
+        if c.is_err() {
+            println!("{} {}", gettext("Retry count must be an non-negative integer:"), c.unwrap_err());
+            return None;
+        }
+        re.as_mut().unwrap().retry = Some(c.unwrap());
+    }
     re
 }

@@ -74,6 +74,8 @@ pub struct WebClient {
     pub headers: HashMap<String, String>,
     cookies: CookieJar,
     pub verbose: bool,
+    /// Retry times, 0 means disable
+    pub retry: u64,
 }
 
 impl WebClient {
@@ -83,6 +85,7 @@ impl WebClient {
             headers: HashMap::new(),
             cookies: CookieJar::new(),
             verbose: false,
+            retry: 3,
         }
     }
 
@@ -137,7 +140,7 @@ impl WebClient {
     /// client.get_with_param("https://test.com/a", json::array![["daa", "param1"]]);
     /// ```
     /// It will GET `https://test.com/a?data=param1`, `https://test.com/a?daa=%7B%22ad%22%3A%22test%22%7D`, `https://test.com/a?daa=param1`
-    pub fn get_with_param<U: IntoUrl>(&mut self, url: U, param: JsonValue) -> Option<Response> {
+    pub fn get_with_param<U: IntoUrl + Clone>(&mut self, url: U, param: JsonValue) -> Option<Response> {
         let u = url.into_url();
         if u.is_err() {
             println!("{} \"{}\"", gettext("Can not parse URL:"), u.unwrap_err());
@@ -198,8 +201,23 @@ impl WebClient {
         self.get(u.as_str(), None)
     }
 
+    pub fn get<U: IntoUrl + Clone, H: ToHeaders + Clone>(&mut self, url: U, headers: H) -> Option<Response> {
+        let mut count = 0u64;
+        while count <= self.retry {
+            let r = self._get(url.clone(), headers.clone());
+            if r.is_some() {
+                return r;
+            }
+            count += 1;
+            if count <= self.retry {
+                println!("{}", gettext("Retry <count> times now.").replace("<count>", format!("{}", count).as_str()).as_str());
+            }
+        }
+        None
+    }
+
     /// Send GET requests
-    pub fn get<U: IntoUrl, H: ToHeaders>(&mut self, url: U, headers: H) -> Option<Response> {
+    pub fn _get<U: IntoUrl, H: ToHeaders>(&mut self, url: U, headers: H) -> Option<Response> {
         let r = self.aget(url, headers);
         let r = r.send();
         let r = spin_on(r);

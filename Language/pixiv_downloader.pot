@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: pixiv_downloader\n"
-"POT-Creation-Date: 2022-03-02 21:58+0800\n"
+"POT-Creation-Date: 2022-03-08 18:02+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -69,15 +69,15 @@ msgstr ""
 msgid "Can not parse expired time:"
 msgstr ""
 
-#: cookies.rs:366 data/json.rs:53 settings.rs:392 webclient.rs:257
+#: cookies.rs:366 data/json.rs:53 settings.rs:396 webclient.rs:275
 msgid "Failed to remove file:"
 msgstr ""
 
-#: cookies.rs:372 data/json.rs:64 settings.rs:399 webclient.rs:263
+#: cookies.rs:372 data/json.rs:64 settings.rs:403 webclient.rs:281
 msgid "Failed to create file:"
 msgstr ""
 
-#: cookies.rs:379 data/json.rs:70 settings.rs:405 webclient.rs:276
+#: cookies.rs:379 data/json.rs:70 settings.rs:409 webclient.rs:294
 msgid "Failed to write file:"
 msgstr ""
 
@@ -85,7 +85,7 @@ msgstr ""
 msgid "Failed to unescape string:"
 msgstr ""
 
-#: download.rs:18 pixiv_web.rs:53
+#: download.rs:18 pixiv_web.rs:57
 msgid "Failed to initialize pixiv web api client."
 msgstr ""
 
@@ -105,148 +105,156 @@ msgstr ""
 msgid "Failed to save metadata to JSON file."
 msgstr ""
 
-#: download.rs:75 download.rs:117
+#: download.rs:77 download.rs:120
 msgid "Failed to get original picture's link."
 msgstr ""
 
-#: download.rs:81 download.rs:123
+#: download.rs:83 download.rs:126
 msgid "Failed to get file name from url:"
 msgstr ""
 
-#: download.rs:88 download.rs:94 download.rs:130 download.rs:136
-#: pixiv_web.rs:148
+#: download.rs:90 download.rs:96 download.rs:133 download.rs:139
+#: pixiv_web.rs:152
 msgid "Failed to download image:"
 msgstr ""
 
-#: download.rs:99 download.rs:141
+#: download.rs:101 download.rs:144
 msgid "Downloaded image:"
 msgstr ""
 
-#: download.rs:108 download.rs:150
+#: download.rs:110 download.rs:153
 msgid "Failed to add exif data to image:"
 msgstr ""
 
-#: opts.rs:76
+#: opts.rs:79
 msgid "Warning: The specified config file not found."
 msgstr ""
 
-#: opts.rs:100
+#: opts.rs:103
 msgid "Usage:"
 msgstr ""
 
-#: opts.rs:102
+#: opts.rs:105
 msgid "Download an artwork"
 msgstr ""
 
-#: opts.rs:104
+#: opts.rs:107
 msgid "Fix the config file"
 msgstr ""
 
-#: opts.rs:106
+#: opts.rs:109
 msgid "Print all available settings"
 msgstr ""
 
-#: opts.rs:114
+#: opts.rs:117
 msgid "Print help message."
 msgstr ""
 
-#: opts.rs:118
+#: opts.rs:121
 msgid "The location of config file."
 msgstr ""
 
-#: opts.rs:124 settings_list.rs:8
+#: opts.rs:127 settings_list.rs:8
 msgid "The location of cookies file. Used for web API."
 msgstr ""
 
-#: opts.rs:130 settings_list.rs:9
+#: opts.rs:133 settings_list.rs:9
 msgid "The language of translated tags."
 msgstr ""
 
-#: opts.rs:133
+#: opts.rs:136
 msgid "Verbose logging."
 msgstr ""
 
-#: opts.rs:134
+#: opts.rs:137
 msgid "Overwrite existing file."
 msgstr ""
 
-#: opts.rs:135
+#: opts.rs:138
 msgid "Skip overwrite existing file."
 msgstr ""
 
-#: opts.rs:155
+#: opts.rs:142 settings_list.rs:10
+msgid "Max retry count if request failed."
+msgstr ""
+
+#: opts.rs:164
 msgid "Unknown command."
 msgstr ""
 
-#: opts.rs:165
+#: opts.rs:174
 msgid "Failed to parse ID:"
 msgstr ""
 
-#: opts.rs:171
+#: opts.rs:180
 msgid "No URL or ID specified."
 msgstr ""
 
-#: opts.rs:179
+#: opts.rs:188
 msgid "No detailed command specified."
 msgstr ""
 
-#: opts.rs:192
+#: opts.rs:201
 msgid "Unknown config subcommand."
 msgstr ""
 
-#: parser/description.rs:127 parser/metadata.rs:76
+#: opts.rs:237
+msgid "Retry count must be an non-negative integer:"
+msgstr ""
+
+#: parser/description.rs:129 parser/metadata.rs:76
 msgid "Failed to parse HTML:"
 msgstr ""
 
-#: parser/description.rs:132 parser/metadata.rs:81
+#: parser/description.rs:134 parser/metadata.rs:81
 msgid "Some errors occured during parsing:"
 msgstr ""
 
-#: parser/description.rs:143
+#: parser/description.rs:145
 msgid "There are some nodes still in stack:"
 msgstr ""
 
-#: parser/metadata.rs:54 pixiv_web.rs:107
+#: parser/metadata.rs:54 pixiv_web.rs:111
 msgid "Failed to parse JSON:"
 msgstr ""
 
-#: pixiv_web.rs:68 pixiv_web.rs:73
+#: pixiv_web.rs:72 pixiv_web.rs:77
 msgid "Failed to get main page:"
 msgstr ""
 
-#: pixiv_web.rs:79
+#: pixiv_web.rs:83
 msgid "Failed to parse main page."
 msgstr ""
 
-#: pixiv_web.rs:83
+#: pixiv_web.rs:87
 msgid "Main page's data:"
 msgstr ""
 
-#: pixiv_web.rs:98
+#: pixiv_web.rs:102
 msgid "Network error:"
 msgstr ""
 
-#: pixiv_web.rs:117
+#: pixiv_web.rs:121
 msgid "Failed to detect error."
 msgstr ""
 
-#: pixiv_web.rs:164 pixiv_web.rs:169
+#: pixiv_web.rs:168 pixiv_web.rs:173
 msgid "Failed to get artwork page:"
 msgstr ""
 
-#: pixiv_web.rs:175
+#: pixiv_web.rs:179
 msgid "Failed to parse artwork page."
 msgstr ""
 
-#: pixiv_web.rs:179
+#: pixiv_web.rs:183
 msgid "Artwork's data:"
 msgstr ""
 
-#: pixiv_web.rs:193
+#: pixiv_web.rs:197
 msgid "Artwork's page data:"
 msgstr ""
 
-#: pixiv_web.rs:217
+#: pixiv_web.rs:221
 msgid "Warning: Failed to save cookies file:"
 msgstr ""
 
@@ -258,31 +266,31 @@ msgstr ""
 msgid "Can not insert setting to JSON object."
 msgstr ""
 
-#: settings.rs:327
+#: settings.rs:331
 msgid "Settings file is empty."
 msgstr ""
 
-#: settings.rs:334
+#: settings.rs:338
 msgid "Can not read from settings file."
 msgstr ""
 
-#: settings.rs:343
+#: settings.rs:347
 msgid "Can not parse settings file."
 msgstr ""
 
-#: settings.rs:352
+#: settings.rs:356
 msgid "Unknown settings file."
 msgstr ""
 
-#: settings.rs:363
+#: settings.rs:367
 msgid "\"<key>\" is invalid, you can use \"pixiv_downloader config fix\" to remove all invalid value."
 msgstr ""
 
-#: settings.rs:382
+#: settings.rs:386
 msgid "Can not convert settings to JSON object."
 msgstr ""
 
-#: settings.rs:410
+#: settings.rs:414
 msgid "Failed to flush file:"
 msgstr ""
 
@@ -294,7 +302,7 @@ msgstr ""
 msgid "Do you want to delete file \"<file>\"?"
 msgstr ""
 
-#: utils.rs:51 webclient.rs:143
+#: utils.rs:51 webclient.rs:146
 msgid "Can not parse URL:"
 msgstr ""
 
@@ -302,42 +310,46 @@ msgstr ""
 msgid "Failed to get file name from path:"
 msgstr ""
 
-#: webclient.rs:103
+#: webclient.rs:106
 msgid "Failed to parse Set-Cookie header."
 msgstr ""
 
-#: webclient.rs:108
+#: webclient.rs:111
 msgid "Failed to convert to string:"
 msgstr ""
 
-#: webclient.rs:150
+#: webclient.rs:153
 msgid "Parameters should be object or array:"
 msgstr ""
 
-#: webclient.rs:170
+#: webclient.rs:173
 msgid "Parameters should be array:"
 msgstr ""
 
-#: webclient.rs:174
+#: webclient.rs:177
 msgid "Parameters need at least a value:"
 msgstr ""
 
-#: webclient.rs:209
+#: webclient.rs:213
+msgid "Retry <count> times now."
+msgstr ""
+
+#: webclient.rs:227
 msgid "Error when request:"
 msgstr ""
 
-#: webclient.rs:270
+#: webclient.rs:288
 msgid "Error when downloading file:"
 msgstr ""
 
-#: main.rs:62
+#: main.rs:65
 msgid "Failed to save config file:"
 msgstr ""
 
-#: main.rs:73
+#: main.rs:76
 msgid "All available settings:"
 msgstr ""
 
-#: main.rs:105
+#: main.rs:108
 msgid "Can not read config file:"
 msgstr ""

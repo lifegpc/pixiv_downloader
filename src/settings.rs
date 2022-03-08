@@ -284,6 +284,10 @@ impl SettingStore {
         }
     }
 
+    pub fn get(&self, key: &str) -> Option<JsonValue> {
+        self.data.get(key)
+    }
+
     pub fn get_str(&self, key: &str) -> Option<String> {
         let obj = self.data.get(key);
         if obj.is_none() {

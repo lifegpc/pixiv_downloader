@@ -42,6 +42,10 @@ impl<'a> PixivWebClient<'a> {
             self.client.set_header("Accept-Language", "ja");
         }
         self.client.verbose = self.helper.verbose();
+        let retry = self.helper.retry();
+        if retry.is_some() {
+            self.client.retry = retry.unwrap();
+        }
         self.inited = true;
         true
     }
@@ -135,7 +139,7 @@ impl<'a> PixivWebClient<'a> {
         Some(body.clone())
     }
 
-    pub fn download_image<U: IntoUrl>(&mut self, url: U) -> Option<Response> {
+    pub fn download_image<U: IntoUrl + Clone>(&mut self, url: U) -> Option<Response> {
         self.auto_init();
         let r = self.client.get(url, json::object!{"referer": "https://www.pixiv.net/"});
         if r.is_none() {

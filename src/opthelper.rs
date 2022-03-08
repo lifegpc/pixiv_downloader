@@ -44,4 +44,16 @@ impl<'a> OptHelper<'a> {
     pub fn verbose(&self) -> bool {
         self.opt.verbose
     }
+
+    /// Return retry count
+    pub fn retry(&self) -> Option<u64> {
+        if self.opt.retry.is_some() {
+            return Some(self.opt.retry.unwrap());
+        }
+        let re = self.settings.get("retry");
+        if re.is_some() {
+            return Some(re.unwrap().as_u64().unwrap());
+        }
+        None
+    }
 }
