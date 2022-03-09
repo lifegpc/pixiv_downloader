@@ -1,11 +1,14 @@
 extern crate getopts;
 
 use crate::gettext;
+use crate::list::NonTailList;
 use crate::pixiv_link::PixivID;
+use crate::retry_interval::parse_retry_interval_from_str;
 use crate::utils::check_file_exists;
 use crate::utils::get_exe_path_else_current;
 use getopts::Options;
 use std::env;
+use std::time::Duration;
 
 /// Command Line command
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -52,6 +55,8 @@ pub struct CommandOpts {
     pub overwrite: Option<bool>,
     /// Max retry count.
     pub retry: Option<u64>,
+    /// Retry interval
+    pub retry_interval: Option<NonTailList<Duration>>,
 }
 
 impl CommandOpts {
@@ -66,6 +71,7 @@ impl CommandOpts {
             verbose: false,
             overwrite: None,
             retry: None,
+            retry_interval: None,
         }
     }
 
@@ -141,6 +147,12 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         "retry",
         gettext("Max retry count if request failed."),
         "COUNT",
+    );
+    opts.optopt(
+        "",
+        "retry-interval",
+        gettext("The interval (in seconds) between two retries."),
+        "LIST",
     );
     let result = match opts.parse(&argv[1..]) {
         Ok(m) => m,
@@ -238,6 +250,15 @@ pub fn parse_cmd() -> Option<CommandOpts> {
             return None;
         }
         re.as_mut().unwrap().retry = Some(c.unwrap());
+    }
+    if result.opt_present("retry-interval") {
+        let s = result.opt_str("retry-interval").unwrap();
+        let r = parse_retry_interval_from_str(s.as_str());
+        if r.is_err() {
+            println!("{} {}", gettext("Failed to parse retry interval:"), r.unwrap_err());
+            return None;
+        }
+        re.as_mut().unwrap().retry_interval = Some(r.unwrap());
     }
     re
 }

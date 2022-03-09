@@ -1,4 +1,5 @@
 use crate::gettext;
+use crate::retry_interval::check_retry_interval;
 use crate::settings::SettingDes;
 use crate::settings::JsonValueType;
 use json::JsonValue;
@@ -9,6 +10,7 @@ pub fn get_settings_list() -> Vec<SettingDes> {
         SettingDes::new("cookies", gettext("The location of cookies file. Used for web API."), JsonValueType::Str, None).unwrap(),
         SettingDes::new("language", gettext("The language of translated tags."), JsonValueType::Str, None).unwrap(),
         SettingDes::new("retry", gettext("Max retry count if request failed."), JsonValueType::Number, Some(check_u64)).unwrap(),
+        SettingDes::new("retry-interval", gettext("The interval (in seconds) between two retries."), JsonValueType::Multiple, Some(check_retry_interval)).unwrap(),
     ]
 }
 

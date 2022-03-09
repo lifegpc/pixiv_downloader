@@ -1,5 +1,8 @@
 use crate::opts::CommandOpts;
+use crate::list::NonTailList;
+use crate::retry_interval::parse_retry_interval_from_json;
 use crate::settings::SettingStore;
+use std::time::Duration;
 
 /// An sturct to access all available settings/command line switches
 #[derive(Clone)]
@@ -8,6 +11,7 @@ pub struct OptHelper<'a> {
     opt: &'a CommandOpts,
     /// Settings
     settings: &'a SettingStore,
+    default_retry_interval: NonTailList<Duration>,
 }
 
 impl<'a> OptHelper<'a> {
@@ -34,7 +38,13 @@ impl<'a> OptHelper<'a> {
     }
 
     pub fn new(opt: &'a CommandOpts, settings: &'a SettingStore) -> Self {
-        Self { opt, settings }
+        let mut l = NonTailList::default();
+        l += Duration::new(3, 0);
+        Self {
+            opt,
+            settings,
+            default_retry_interval: l,
+        }
     }
 
     pub fn overwrite(&self) -> Option<bool> {
@@ -55,5 +65,17 @@ impl<'a> OptHelper<'a> {
             return Some(re.unwrap().as_u64().unwrap());
         }
         None
+    }
+
+    /// Return retry interval
+    pub fn retry_interval(&self) -> NonTailList<Duration> {
+        if self.opt.retry_interval.is_some() {
+            return self.opt.retry_interval.as_ref().unwrap().clone();
+        }
+        if self.settings.have("retry-interval") {
+            let v = self.settings.get("retry-interval").unwrap();
+            return parse_retry_interval_from_json(v).unwrap();
+        }
+        self.default_retry_interval.clone()
     }
 }

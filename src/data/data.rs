@@ -31,7 +31,7 @@ impl PixivData {
     }
 
     /// Read data from JSON object.
-    /// The object is from https://www.pixiv.net/artworks/<id>
+    /// The object is from `https://www.pixiv.net/artworks/<id>`
     /// * `value` - The JSON object
     /// * `allow_overwrite` - Allow overwrite the data existing.
     pub fn from_web_page_data(&mut self, value: &JsonValue, allow_overwrite: bool) {

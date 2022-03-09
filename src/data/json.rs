@@ -135,3 +135,15 @@ impl ToJson for String {
         Some(JsonValue::String(self.to_string()))
     }
 }
+
+impl ToJson for JsonValue {
+    fn to_json(&self) -> Option<JsonValue> {
+        Some(self.clone())
+    }
+}
+
+impl ToJson for &JsonValue {
+    fn to_json(&self) -> Option<JsonValue> {
+        Some((*self).clone())
+    }
+}

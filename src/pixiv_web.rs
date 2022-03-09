@@ -46,6 +46,7 @@ impl<'a> PixivWebClient<'a> {
         if retry.is_some() {
             self.client.retry = retry.unwrap();
         }
+        self.client.retry_interval = Some(self.helper.retry_interval());
         self.inited = true;
         true
     }

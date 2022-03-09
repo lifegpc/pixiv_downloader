@@ -255,6 +255,10 @@ impl SettingJar {
         None
     }
 
+    pub fn have(&self, key: &str) -> bool {
+        self.settings.contains_key(key)
+    }
+
     pub fn to_json(&self) -> Option<JsonValue> {
         let mut v = JsonValue::new_object();
         for (_, val) in self.settings.iter() {
@@ -299,6 +303,10 @@ impl SettingStore {
         } else {
             Some(String::from(obj.as_str().unwrap()))
         }
+    }
+
+    pub fn have(&self, key: &str) -> bool {
+        self.data.have(key)
     }
 
     pub fn have_str(&self, key: &str) -> bool {

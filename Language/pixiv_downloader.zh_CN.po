@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: pixiv_downloader\n"
-"POT-Creation-Date: 2022-03-08 18:02+0800\n"
-"PO-Revision-Date: 2022-03-08 18:02+0800\n"
+"POT-Creation-Date: 2022-03-09 22:44+0800\n"
+"PO-Revision-Date: 2022-03-09 22:45+0800\n"
 "Last-Translator: lifegpc <g1710431395@gmail.com>\n"
 "Language-Team: \n"
 "Language: zh_CN\n"
@@ -70,15 +70,15 @@ msgstr "无效的Cookie："
 msgid "Can not parse expired time:"
 msgstr "无法解析过期时间："
 
-#: cookies.rs:366 data/json.rs:53 settings.rs:396 webclient.rs:275
+#: cookies.rs:366 data/json.rs:53 settings.rs:404 webclient.rs:288
 msgid "Failed to remove file:"
 msgstr "无法删除文件："
 
-#: cookies.rs:372 data/json.rs:64 settings.rs:403 webclient.rs:281
+#: cookies.rs:372 data/json.rs:64 settings.rs:411 webclient.rs:294
 msgid "Failed to create file:"
 msgstr "无法创建文件："
 
-#: cookies.rs:379 data/json.rs:70 settings.rs:409 webclient.rs:294
+#: cookies.rs:379 data/json.rs:70 settings.rs:417 webclient.rs:307
 msgid "Failed to write file:"
 msgstr "无法写入文件："
 
@@ -86,7 +86,7 @@ msgstr "无法写入文件："
 msgid "Failed to unescape string:"
 msgstr "无法反转义字符串："
 
-#: download.rs:18 pixiv_web.rs:57
+#: download.rs:18 pixiv_web.rs:58
 msgid "Failed to initialize pixiv web api client."
 msgstr "无法初始化 Pixiv 网页 API 客户端。"
 
@@ -115,7 +115,7 @@ msgid "Failed to get file name from url:"
 msgstr "无法从 URL 获取文件名："
 
 #: download.rs:90 download.rs:96 download.rs:133 download.rs:139
-#: pixiv_web.rs:152
+#: pixiv_web.rs:153
 msgid "Failed to download image:"
 msgstr "无法下载图片："
 
@@ -127,81 +127,93 @@ msgstr "已下载图片："
 msgid "Failed to add exif data to image:"
 msgstr "无法往图片增加 EXIF 数据："
 
-#: opts.rs:79
+#: dur.rs:73
+msgid "Failed to parse duration from string."
+msgstr "无法解析从字符串解析时长："
+
+#: opts.rs:85
 msgid "Warning: The specified config file not found."
 msgstr "警告：没有找到指定的设置文件。"
 
-#: opts.rs:103
+#: opts.rs:109
 msgid "Usage:"
 msgstr "使用方法："
 
-#: opts.rs:105
+#: opts.rs:111
 msgid "Download an artwork"
 msgstr "下载一个作品"
 
-#: opts.rs:107
+#: opts.rs:113
 msgid "Fix the config file"
 msgstr "修复设置文件"
 
-#: opts.rs:109
+#: opts.rs:115
 msgid "Print all available settings"
 msgstr "打印所有可用的设置"
 
-#: opts.rs:117
+#: opts.rs:123
 msgid "Print help message."
 msgstr "打印帮助信息。"
 
-#: opts.rs:121
+#: opts.rs:127
 msgid "The location of config file."
 msgstr "设置文件的位置。"
 
-#: opts.rs:127 settings_list.rs:8
+#: opts.rs:133 settings_list.rs:10
 msgid "The location of cookies file. Used for web API."
 msgstr "cookies 文件的位置。用于网页 API。"
 
-#: opts.rs:133 settings_list.rs:9
+#: opts.rs:139 settings_list.rs:11
 msgid "The language of translated tags."
 msgstr "翻译后的标签语言。"
 
-#: opts.rs:136
+#: opts.rs:142
 msgid "Verbose logging."
 msgstr "启用详细内容输出。"
 
-#: opts.rs:137
+#: opts.rs:143
 msgid "Overwrite existing file."
 msgstr "覆盖已有文件。"
 
-#: opts.rs:138
+#: opts.rs:144
 msgid "Skip overwrite existing file."
 msgstr "跳过覆盖已有文件。"
 
-#: opts.rs:142 settings_list.rs:10
+#: opts.rs:148 settings_list.rs:12
 msgid "Max retry count if request failed."
 msgstr "请求失败时最大重试次数。"
 
-#: opts.rs:164
+#: opts.rs:154 settings_list.rs:13
+msgid "The interval (in seconds) between two retries."
+msgstr "两次尝试的间隔时间（单位：秒）。"
+
+#: opts.rs:176
 msgid "Unknown command."
 msgstr "未知指令。"
 
-#: opts.rs:174
+#: opts.rs:186
 msgid "Failed to parse ID:"
 msgstr "无法解析 ID："
 
-#: opts.rs:180
+#: opts.rs:192
 msgid "No URL or ID specified."
 msgstr "没有指定网址或 ID。"
 
-#: opts.rs:188
+#: opts.rs:200
 msgid "No detailed command specified."
 msgstr "没有指定更详细的指令。"
 
-#: opts.rs:201
+#: opts.rs:213
 msgid "Unknown config subcommand."
 msgstr "未知的 config 子指令。"
 
-#: opts.rs:237
+#: opts.rs:249
 msgid "Retry count must be an non-negative integer:"
 msgstr "重试次数不能是负数："
+
+#: opts.rs:258
+msgid "Failed to parse retry interval:"
+msgstr "无法解析间隔时间："
 
 #: parser/description.rs:129 parser/metadata.rs:76
 msgid "Failed to parse HTML:"
@@ -215,75 +227,87 @@ msgstr "在解析中发生了一些错误："
 msgid "There are some nodes still in stack:"
 msgstr "堆栈中依旧有一些节点："
 
-#: parser/metadata.rs:54 pixiv_web.rs:111
+#: parser/metadata.rs:54 pixiv_web.rs:112
 msgid "Failed to parse JSON:"
 msgstr "无法解析 JSON："
 
-#: pixiv_web.rs:72 pixiv_web.rs:77
+#: pixiv_web.rs:73 pixiv_web.rs:78
 msgid "Failed to get main page:"
 msgstr "无法获取主页："
 
-#: pixiv_web.rs:83
+#: pixiv_web.rs:84
 msgid "Failed to parse main page."
 msgstr "无法解析主页。"
 
-#: pixiv_web.rs:87
+#: pixiv_web.rs:88
 msgid "Main page's data:"
 msgstr "主页的数据："
 
-#: pixiv_web.rs:102
+#: pixiv_web.rs:103
 msgid "Network error:"
 msgstr "网络错误："
 
-#: pixiv_web.rs:121
+#: pixiv_web.rs:122
 msgid "Failed to detect error."
 msgstr "检测 error 字段失败。"
 
-#: pixiv_web.rs:168 pixiv_web.rs:173
+#: pixiv_web.rs:169 pixiv_web.rs:174
 msgid "Failed to get artwork page:"
 msgstr "无法获取作品页："
 
-#: pixiv_web.rs:179
+#: pixiv_web.rs:180
 msgid "Failed to parse artwork page."
 msgstr "无法解析作品页。"
 
-#: pixiv_web.rs:183
+#: pixiv_web.rs:184
 msgid "Artwork's data:"
 msgstr "作品数据："
 
-#: pixiv_web.rs:197
+#: pixiv_web.rs:198
 msgid "Artwork's page data:"
 msgstr "作品页面数据："
 
-#: pixiv_web.rs:221
+#: pixiv_web.rs:222
 msgid "Warning: Failed to save cookies file:"
 msgstr "警告：无法保存 cookies 文件："
+
+#: retry_interval.rs:22
+msgid "Failed to get JSON object."
+msgstr "无法获取 JSON 对象。"
+
+#: retry_interval.rs:37 retry_interval.rs:55
+msgid "Failed to parse JSON number."
+msgstr "无法解析 JSON 数字："
+
+#: retry_interval.rs:61 retry_interval.rs:65
+msgid "Unsupported JSON type."
+msgstr "不支持的 JSON 类型。"
 
 #: settings.rs:29
 msgid "Multiple type"
 msgstr "多种类型"
 
-#: settings.rs:264
+#: settings.rs:268
 msgid "Can not insert setting to JSON object."
 msgstr "无法将设置插入 JSON 对象。"
 
-#: settings.rs:331
+#: settings.rs:339
 msgid "Settings file is empty."
 msgstr "设置文件是空的。"
 
-#: settings.rs:338
+#: settings.rs:346
 msgid "Can not read from settings file."
 msgstr "无法读取设置文件。"
 
-#: settings.rs:347
+#: settings.rs:355
 msgid "Can not parse settings file."
 msgstr "无法解析设置文件。"
 
-#: settings.rs:356
+#: settings.rs:364
 msgid "Unknown settings file."
 msgstr "未知的设置文件。"
 
-#: settings.rs:367
+#: settings.rs:375
 msgid ""
 "\"<key>\" is invalid, you can use \"pixiv_downloader config fix\" to remove "
 "all invalid value."
@@ -291,15 +315,15 @@ msgstr ""
 "\"<key>\" 不合法，您可以使用 \"pixiv_downloader config fix\" 来移除所有不合"
 "法的值。"
 
-#: settings.rs:386
+#: settings.rs:394
 msgid "Can not convert settings to JSON object."
 msgstr "无法将设置转换为 JSON 对象。"
 
-#: settings.rs:414
+#: settings.rs:422
 msgid "Failed to flush file:"
 msgstr "无法刷新文件缓冲区："
 
-#: settings_list.rs:7
+#: settings_list.rs:9
 msgid "Pixiv's refresh tokens. Used to login."
 msgstr "Pixiv 的 refresh tokens。用于登录。"
 
@@ -307,7 +331,7 @@ msgstr "Pixiv 的 refresh tokens。用于登录。"
 msgid "Do you want to delete file \"<file>\"?"
 msgstr "你想要删除文件 <file> 吗？"
 
-#: utils.rs:51 webclient.rs:146
+#: utils.rs:51 webclient.rs:152
 msgid "Can not parse URL:"
 msgstr "无法解析 URL："
 
@@ -315,46 +339,50 @@ msgstr "无法解析 URL："
 msgid "Failed to get file name from path:"
 msgstr "无法从路径获取文件名："
 
-#: webclient.rs:106
+#: webclient.rs:112
 msgid "Failed to parse Set-Cookie header."
 msgstr "无法解析 Set-Cookie 头部。"
 
-#: webclient.rs:111
+#: webclient.rs:117
 msgid "Failed to convert to string:"
 msgstr "无法转换为字符串："
 
-#: webclient.rs:153
+#: webclient.rs:159
 msgid "Parameters should be object or array:"
 msgstr "参数应该是对象或数组："
 
-#: webclient.rs:173
+#: webclient.rs:179
 msgid "Parameters should be array:"
 msgstr "参数应该是数组："
 
-#: webclient.rs:177
+#: webclient.rs:183
 msgid "Parameters need at least a value:"
 msgstr "参数需要至少含有一个值："
 
-#: webclient.rs:213
+#: webclient.rs:222
+msgid "Retry after <num> seconds."
+msgstr "<num> 秒后重试。"
+
+#: webclient.rs:226
 msgid "Retry <count> times now."
 msgstr "正在进行第 <count> 次重试。"
 
-#: webclient.rs:227
+#: webclient.rs:240
 msgid "Error when request:"
 msgstr "请求时发生错误："
 
-#: webclient.rs:288
+#: webclient.rs:301
 msgid "Error when downloading file:"
 msgstr "下载文件时发生错误："
 
-#: main.rs:65
+#: main.rs:68
 msgid "Failed to save config file:"
 msgstr "无法保存设置文件："
 
-#: main.rs:76
+#: main.rs:79
 msgid "All available settings:"
 msgstr "所有可用的设置："
 
-#: main.rs:108
+#: main.rs:111
 msgid "Can not read config file:"
 msgstr "无法读取设置文件："

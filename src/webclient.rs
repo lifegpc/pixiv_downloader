@@ -3,17 +3,20 @@ extern crate spin_on;
 use crate::cookies::Cookie;
 use crate::cookies::CookieJar;
 use crate::gettext;
+use crate::list::NonTailList;
 use crate::utils::ask_need_overwrite;
 use futures_util::StreamExt;
 use json::JsonValue;
 use reqwest::{Client, IntoUrl, RequestBuilder, Response};
 use spin_on::spin_on;
 use std::collections::HashMap;
+use std::convert::TryInto;
 use std::ffi::OsStr;
 use std::fs::File;
 use std::fs::remove_file;
 use std::io::Write;
 use std::path::Path;
+use std::time::Duration;
 
 pub trait ToHeaders {
     fn to_headers(&self) -> Option<HashMap<String, String>>;
@@ -76,6 +79,8 @@ pub struct WebClient {
     pub verbose: bool,
     /// Retry times, 0 means disable
     pub retry: u64,
+    /// Retry interval
+    pub retry_interval: Option<NonTailList<Duration>>,
 }
 
 impl WebClient {
@@ -86,6 +91,7 @@ impl WebClient {
             cookies: CookieJar::new(),
             verbose: false,
             retry: 3,
+            retry_interval: None,
         }
     }
 
@@ -210,6 +216,13 @@ impl WebClient {
             }
             count += 1;
             if count <= self.retry {
+                if self.retry_interval.is_some() {
+                    let t = self.retry_interval.as_ref().unwrap()[(count - 1).try_into().unwrap()];
+                    if !t.is_zero() {
+                        println!("{}", gettext("Retry after <num> seconds.").replace("<num>", format!("{}", t.as_secs_f64()).as_str()).as_str());
+                        spin_on(tokio::time::sleep(t));
+                    }
+                }
                 println!("{}", gettext("Retry <count> times now.").replace("<count>", format!("{}", count).as_str()).as_str());
             }
         }
