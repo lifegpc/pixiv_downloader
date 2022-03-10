@@ -1,3 +1,4 @@
+use crate::author_name_filter::check_author_name_filters;
 use crate::gettext;
 use crate::retry_interval::check_retry_interval;
 use crate::settings::SettingDes;
@@ -12,6 +13,7 @@ pub fn get_settings_list() -> Vec<SettingDes> {
         SettingDes::new("retry", gettext("Max retry count if request failed."), JsonValueType::Number, Some(check_u64)).unwrap(),
         SettingDes::new("retry-interval", gettext("The interval (in seconds) between two retries."), JsonValueType::Multiple, Some(check_retry_interval)).unwrap(),
         SettingDes::new("use-webpage", gettext("Use data from webpage first."), JsonValueType::Boolean, None).unwrap(),
+        SettingDes::new("author-name-filters", gettext("Remove the part which after these parttens."), JsonValueType::Array, Some(check_author_name_filters)).unwrap(),
     ]
 }
 

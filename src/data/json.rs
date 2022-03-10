@@ -74,13 +74,13 @@ impl JSONDataFile {
     }
 }
 
-impl From<PixivData> for JSONDataFile {
+impl<'a> From<PixivData<'a>> for JSONDataFile {
     fn from(p: PixivData) -> Self {
         JSONDataFile::from(&p)
     }
 }
 
-impl From<&PixivData> for JSONDataFile {
+impl<'a> From<&'a PixivData<'a>> for JSONDataFile {
     fn from(p: &PixivData) -> Self {
         let mut f = Self {
             id: p.id.clone(),

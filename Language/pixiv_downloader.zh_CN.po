@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: pixiv_downloader\n"
-"POT-Creation-Date: 2022-03-10 17:17+0800\n"
-"PO-Revision-Date: 2022-03-10 17:20+0800\n"
+"POT-Creation-Date: 2022-03-10 22:29+0800\n"
+"PO-Revision-Date: 2022-03-10 22:30+0800\n"
 "Last-Translator: lifegpc <g1710431395@gmail.com>\n"
 "Language-Team: \n"
 "Language: zh_CN\n"
@@ -13,6 +13,35 @@ msgstr ""
 "X-Generator: Poedit 3.0.1\n"
 "X-Poedit-Basepath: ../src\n"
 "X-Poedit-SearchPath-0: .\n"
+
+#: author_name_filter.rs:21
+msgid "Failed to parse regex:"
+msgstr "无法解析正则："
+
+#: author_name_filter.rs:46 retry_interval.rs:22
+msgid "Failed to get JSON object."
+msgstr "无法获取 JSON 对象。"
+
+#: author_name_filter.rs:48 author_name_filter.rs:130 retry_interval.rs:61
+#: retry_interval.rs:65
+msgid "Unsupported JSON type."
+msgstr "不支持的 JSON 类型。"
+
+#: author_name_filter.rs:120
+msgid "Failed to get filter's type."
+msgstr "无法获取过滤器类型。"
+
+#: author_name_filter.rs:121
+msgid "Failed to get filter's rule."
+msgstr "无法获取过滤器规则。"
+
+#: author_name_filter.rs:127
+msgid "Unknown filter's type:"
+msgstr "未知的过滤器类型："
+
+#: author_name_filter.rs:139
+msgid "Failed parse author name filters:"
+msgstr "无法解析作者名称过滤器："
 
 #: cookies.rs:75 cookies.rs:217
 msgid "Warning: Failed to parse URL:"
@@ -82,7 +111,7 @@ msgstr "无法创建文件："
 msgid "Failed to write file:"
 msgstr "无法写入文件："
 
-#: data/data.rs:70
+#: data/data.rs:78
 msgid "Failed to unescape string:"
 msgstr "无法反转义字符串："
 
@@ -159,11 +188,11 @@ msgstr "打印帮助信息。"
 msgid "The location of config file."
 msgstr "设置文件的位置。"
 
-#: opts.rs:136 settings_list.rs:10
+#: opts.rs:136 settings_list.rs:11
 msgid "The location of cookies file. Used for web API."
 msgstr "cookies 文件的位置。用于网页 API。"
 
-#: opts.rs:142 settings_list.rs:11
+#: opts.rs:142 settings_list.rs:12
 msgid "The language of translated tags."
 msgstr "翻译后的标签语言。"
 
@@ -179,15 +208,15 @@ msgstr "覆盖已有文件。"
 msgid "Skip overwrite existing file."
 msgstr "跳过覆盖已有文件。"
 
-#: opts.rs:151 settings_list.rs:12
+#: opts.rs:151 settings_list.rs:13
 msgid "Max retry count if request failed."
 msgstr "请求失败时最大重试次数。"
 
-#: opts.rs:157 settings_list.rs:13
+#: opts.rs:157 settings_list.rs:14
 msgid "The interval (in seconds) between two retries."
 msgstr "两次尝试的间隔时间（单位：秒）。"
 
-#: opts.rs:160 settings_list.rs:14
+#: opts.rs:160 settings_list.rs:15
 msgid "Use data from webpage first."
 msgstr "优先使用来自网页的数据。"
 
@@ -275,17 +304,9 @@ msgstr "作品页面数据："
 msgid "Warning: Failed to save cookies file:"
 msgstr "警告：无法保存 cookies 文件："
 
-#: retry_interval.rs:22
-msgid "Failed to get JSON object."
-msgstr "无法获取 JSON 对象。"
-
 #: retry_interval.rs:37 retry_interval.rs:55
 msgid "Failed to parse JSON number."
 msgstr "无法解析 JSON 数字。"
-
-#: retry_interval.rs:61 retry_interval.rs:65
-msgid "Unsupported JSON type."
-msgstr "不支持的 JSON 类型。"
 
 #: settings.rs:29
 msgid "Multiple type"
@@ -327,9 +348,13 @@ msgstr "无法将设置转换为 JSON 对象。"
 msgid "Failed to flush file:"
 msgstr "无法刷新文件缓冲区："
 
-#: settings_list.rs:9
+#: settings_list.rs:10
 msgid "Pixiv's refresh tokens. Used to login."
 msgstr "Pixiv 的 refresh tokens。用于登录。"
+
+#: settings_list.rs:16
+msgid "Remove the part which after these parttens."
+msgstr "移除匹配的部分。"
 
 #: utils.rs:30
 msgid "Do you want to delete file \"<file>\"?"
@@ -379,14 +404,14 @@ msgstr "请求时发生错误："
 msgid "Error when downloading file:"
 msgstr "下载文件时发生错误："
 
-#: main.rs:68
+#: main.rs:71
 msgid "Failed to save config file:"
 msgstr "无法保存设置文件："
 
-#: main.rs:79
+#: main.rs:82
 msgid "All available settings:"
 msgstr "所有可用的设置："
 
-#: main.rs:111
+#: main.rs:114
 msgid "Can not read config file:"
 msgstr "无法读取设置文件："

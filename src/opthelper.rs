@@ -1,3 +1,4 @@
+use crate::author_name_filter::AuthorNameFilter;
 use crate::opts::CommandOpts;
 use crate::list::NonTailList;
 use crate::retry_interval::parse_retry_interval_from_json;
@@ -12,9 +13,17 @@ pub struct OptHelper<'a> {
     /// Settings
     settings: &'a SettingStore,
     default_retry_interval: NonTailList<Duration>,
+    _author_name_filters: Option<Vec<AuthorNameFilter>>,
 }
 
 impl<'a> OptHelper<'a> {
+    pub fn author_name_filters(&self) -> Option<&Vec<AuthorNameFilter>> {
+        if self.settings.have("author-name-filters") {
+            return self._author_name_filters.as_ref();
+        }
+        None
+    }
+
     /// return cookies location, no any check
     pub fn cookies(&self) -> Option<String> {
         if self.opt.cookies.is_some() {
@@ -40,10 +49,16 @@ impl<'a> OptHelper<'a> {
     pub fn new(opt: &'a CommandOpts, settings: &'a SettingStore) -> Self {
         let mut l = NonTailList::default();
         l += Duration::new(3, 0);
+        let _author_name_filters = if settings.have("author-name-filters") {
+            Some(AuthorNameFilter::from_json(settings.get("author-name-filters").unwrap()).unwrap())
+        } else {
+            None
+        };
         Self {
             opt,
             settings,
             default_retry_interval: l,
+            _author_name_filters: _author_name_filters,
         }
     }
 

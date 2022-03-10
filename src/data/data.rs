@@ -1,4 +1,6 @@
+use crate::author_name_filter::AuthorFiler;
 use crate::gettext;
+use crate::opthelper::OptHelper;
 use crate::pixiv_link::ToPixivID;
 use crate::pixiv_link::PixivID;
 use json::JsonValue;
@@ -6,7 +8,7 @@ use std::convert::TryInto;
 use xml::unescape;
 
 /// Pixiv's basic data
-pub struct PixivData {
+pub struct PixivData<'a> {
     /// ID
     pub id: PixivID,
     /// The title
@@ -14,10 +16,11 @@ pub struct PixivData {
     /// The author
     pub author: Option<String>,
     pub description: Option<String>,
+    helper: OptHelper<'a>,
 }
 
-impl PixivData {
-    pub fn new<T: ToPixivID>(id: T) -> Option<Self> {
+impl<'a> PixivData<'a> {
+    pub fn new<T: ToPixivID>(id: T, helper: OptHelper<'a>) -> Option<Self> {
         let i = id.to_pixiv_id();
         if i.is_none() {
             return None;
@@ -27,6 +30,7 @@ impl PixivData {
             title: None,
             author: None,
             description: None,
+            helper: helper,
         })
     }
 
@@ -54,7 +58,11 @@ impl PixivData {
         if self.author.is_none() || allow_overwrite {
             let author = value["userName"].as_str();
             if author.is_some() {
-                self.author = Some(String::from(author.unwrap()));
+                let au = author.unwrap();
+                match self.helper.author_name_filters() {
+                    Some(l) => { self.author = Some(l.filter(au)) }
+                    None => { self.author = Some(String::from(author.unwrap())); }
+                }
             }
         }
         if self.description.is_none() || allow_overwrite {

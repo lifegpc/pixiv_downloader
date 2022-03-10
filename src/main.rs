@@ -2,6 +2,7 @@
 extern crate c_fixed_string;
 extern crate chrono;
 extern crate dateparser;
+extern crate derive_more;
 extern crate futures_util;
 extern crate json;
 #[cfg(feature = "int-enum")]
@@ -21,6 +22,7 @@ extern crate xml;
 #[cfg(feature = "exif")]
 #[doc(hidden)]
 mod _exif;
+mod author_name_filter;
 mod cookies;
 mod data;
 mod download;
@@ -37,6 +39,7 @@ mod pixiv_web;
 mod retry_interval;
 mod settings;
 mod settings_list;
+mod stdext;
 mod utils;
 mod webclient;
 

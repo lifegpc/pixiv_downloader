@@ -74,7 +74,7 @@ impl Main {
         }
         let base = PathBuf::from(".");
         let json_file = base.join(format!("{}.json", id));
-        let mut datas = PixivData::new(id).unwrap();
+        let mut datas = PixivData::new(id, pw.helper.clone()).unwrap();
         if ajax_ver {
             datas.from_web_page_ajax_data(&re, true);
         } else {
