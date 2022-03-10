@@ -18,7 +18,9 @@ impl Main {
             println!("{}", gettext("Failed to initialize pixiv web api client."));
             return 1;
         }
-        pw.check_login();
+        if !pw.check_login() {
+            return 1;
+        }
         if !pw.logined() {
             println!(
                 "{}",
