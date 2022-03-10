@@ -59,13 +59,13 @@ impl AuthorFiler for AuthorNameFilter {
     fn filter(&self, author: &str) -> String {
         match self {
             Self::Simple(s) => {
-                match author.find(s) {
+                match author.rfind(s) {
                     Some(i) => { String::from(&author[..i]) }
                     None => { String::from(author) }
                 }
             }
             Self::Regex(r) => {
-                r.replace(author, "").to_owned().to_string()
+                r.replace_all(author, "").to_owned().to_string()
             }
         }
     }
@@ -153,4 +153,6 @@ fn test_author_name_filter() {
     let l = AuthorNameFilter::from_json(json::array![{"type": "simple", "rule": "🌸"}, {"type": "regex", "rule": ".?お仕事募集中"}]).unwrap();
     assert_eq!(l, vec![AuthorNameFilter::from("🌸"), AuthorNameFilter::from(r)]);
     assert_eq!(l.filter("moco<お仕事募集中🌸お仕事募集中"), String::from("moco<お仕事募集中"));
+    assert_eq!(l.filter("sss@ss@お仕事募集中"), "sss@ss");
+    assert_eq!(l.filter("sss🌸ss🌸お仕事募集中"), "sss🌸ss");
 }
