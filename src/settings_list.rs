@@ -11,6 +11,7 @@ pub fn get_settings_list() -> Vec<SettingDes> {
         SettingDes::new("language", gettext("The language of translated tags."), JsonValueType::Str, None).unwrap(),
         SettingDes::new("retry", gettext("Max retry count if request failed."), JsonValueType::Number, Some(check_u64)).unwrap(),
         SettingDes::new("retry-interval", gettext("The interval (in seconds) between two retries."), JsonValueType::Multiple, Some(check_retry_interval)).unwrap(),
+        SettingDes::new("use-webpage", gettext("Use data from webpage first."), JsonValueType::Boolean, None).unwrap(),
     ]
 }
 

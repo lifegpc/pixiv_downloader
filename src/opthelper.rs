@@ -78,4 +78,15 @@ impl<'a> OptHelper<'a> {
         }
         self.default_retry_interval.clone()
     }
+
+    /// Return whether to use data from webpage first.
+    pub fn use_webpage(&self) -> bool {
+        if self.opt.use_webpage {
+            return true;
+        }
+        if self.settings.have_bool("use-webpage") {
+            return self.settings.get_bool("use-webpage").unwrap();
+        }
+        false
+    }
 }

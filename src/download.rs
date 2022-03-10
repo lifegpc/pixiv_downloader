@@ -41,12 +41,24 @@ impl Main {
     }
 
     pub fn download_artwork(&self, pw: &mut PixivWebClient, id: u64) -> i32 {
-        let re = pw.get_artwork(id);
+        let mut re = None;
+        let pages;
+        let mut ajax_ver = true;
+        if pw.helper.use_webpage() {
+            re = pw.get_artwork(id);
+            if re.is_some() {
+                ajax_ver = false;
+            }
+        }
         if re.is_none() {
-            return 1;
+            re = pw.get_artwork_ajax(id);
         }
         let re = re.unwrap();
-        let pages = (&re["illust"][format!("{}", id).as_str()]["pageCount"]).as_u64();
+        if ajax_ver {
+            pages = (&re["pageCount"]).as_u64();
+        } else {
+            pages = (&re["illust"][format!("{}", id).as_str()]["pageCount"]).as_u64();
+        }
         if pages.is_none() {
             println!("{}", gettext("Failed to get page count."));
             return 1;
@@ -63,7 +75,11 @@ impl Main {
         let base = PathBuf::from(".");
         let json_file = base.join(format!("{}.json", id));
         let mut datas = PixivData::new(id).unwrap();
-        datas.from_web_page_data(&re, true);
+        if ajax_ver {
+            datas.from_web_page_ajax_data(&re, true);
+        } else {
+            datas.from_web_page_data(&re, true);
+        }
         let json_data = JSONDataFile::from(&datas);
         if !json_data.save(&json_file) {
             println!("{}", gettext("Failed to save metadata to JSON file."));
@@ -117,7 +133,11 @@ impl Main {
                 }
             }
         } else {
-            let link = (&re["illust"][format!("{}", id)]["urls"]["original"]).as_str();
+            let link = if ajax_ver {
+                (&re["urls"]["original"]).as_str()
+            } else {
+                (&re["illust"][format!("{}", id)]["urls"]["original"]).as_str()
+            };
             if link.is_none() {
                 println!("{}", gettext("Failed to get original picture's link."));
                 return 1;

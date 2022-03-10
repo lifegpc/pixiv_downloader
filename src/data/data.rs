@@ -37,22 +37,30 @@ impl PixivData {
     pub fn from_web_page_data(&mut self, value: &JsonValue, allow_overwrite: bool) {
         let id: u64 = (&self.id).try_into().unwrap();
         let ids = format!("{}", id);
+        self.from_web_page_ajax_data(&value["illust"][ids.as_str()], allow_overwrite)
+    }
+
+    /// Read data from JSON object.
+    /// The object is from `https://www.pixiv.net/illust/ajax/<id>`
+    /// * `value` - The JSON object
+    /// * `allow_overwrite` - Allow overwrite the data existing.
+    pub fn from_web_page_ajax_data(&mut self, value: &JsonValue, allow_overwrite: bool) {
         if self.title.is_none() || allow_overwrite {
-            let title = value["illust"][ids.as_str()]["illustTitle"].as_str();
+            let title = value["illustTitle"].as_str();
             if title.is_some() {
                 self.title = Some(String::from(title.unwrap()));
             }
         }
         if self.author.is_none() || allow_overwrite {
-            let author = value["illust"][ids.as_str()]["userName"].as_str();
+            let author = value["userName"].as_str();
             if author.is_some() {
                 self.author = Some(String::from(author.unwrap()));
             }
         }
         if self.description.is_none() || allow_overwrite {
-            let mut description = value["illust"][ids.as_str()]["description"].as_str();
+            let mut description = value["description"].as_str();
             if description.is_none() {
-                description = value["illust"][ids.as_str()]["illustComment"].as_str();
+                description = value["illustComment"].as_str();
             }
             if description.is_some() {
                 let re = unescape(description.unwrap());

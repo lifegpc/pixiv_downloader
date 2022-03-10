@@ -156,6 +156,20 @@ impl<'a> PixivWebClient<'a> {
         Some(r)
     }
 
+    pub fn get_artwork_ajax(&mut self, id: u64) -> Option<JsonValue> {
+        self.auto_init();
+        let r = self.client.get(format!("https://www.pixiv.net/ajax/illust/{}", id), None);
+        if r.is_none() {
+            return None;
+        }
+        let r = r.unwrap();
+        let v = self.deal_json(r);
+        if self.helper.verbose() && v.is_some() {
+            println!("{} {}", gettext("Artwork's data:"), v.as_ref().unwrap().pretty(2));
+        }
+        v
+    }
+
     pub fn get_artwork(&mut self, id: u64) -> Option<JsonValue> {
         self.auto_init();
         let r = self.client.get(format!("https://www.pixiv.net/artworks/{}", id), None);
@@ -194,7 +208,7 @@ impl<'a> PixivWebClient<'a> {
         }
         let r = r.unwrap();
         let v = self.deal_json(r);
-        if self.helper.verbose() {
+        if self.helper.verbose() && v.is_some() {
             println!("{} {}", gettext("Artwork's page data:"), v.as_ref().unwrap().pretty(2));
         }
         v

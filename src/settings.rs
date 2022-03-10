@@ -292,6 +292,13 @@ impl SettingStore {
         self.data.get(key)
     }
 
+    pub fn get_bool(&self, key: &str) -> Option<bool> {
+        match self.data.get(key) {
+            Some(obj) => { obj.as_bool() }
+            None => { None }
+        }
+    }
+
     pub fn get_str(&self, key: &str) -> Option<String> {
         let obj = self.data.get(key);
         if obj.is_none() {
@@ -307,6 +314,13 @@ impl SettingStore {
 
     pub fn have(&self, key: &str) -> bool {
         self.data.have(key)
+    }
+
+    pub fn have_bool(&self, key: &str) -> bool {
+        match self.data.get(key) {
+            Some(obj) => { obj.is_boolean() }
+            None => { false }
+        }
     }
 
     pub fn have_str(&self, key: &str) -> bool {

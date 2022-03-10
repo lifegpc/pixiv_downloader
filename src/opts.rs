@@ -57,6 +57,8 @@ pub struct CommandOpts {
     pub retry: Option<u64>,
     /// Retry interval
     pub retry_interval: Option<NonTailList<Duration>>,
+    /// Use data from webpage first
+    pub use_webpage: bool,
 }
 
 impl CommandOpts {
@@ -72,6 +74,7 @@ impl CommandOpts {
             overwrite: None,
             retry: None,
             retry_interval: None,
+            use_webpage: false,
         }
     }
 
@@ -154,6 +157,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         gettext("The interval (in seconds) between two retries."),
         "LIST",
     );
+    opts.optflag("", "use-webpage", gettext("Use data from webpage first."));
     let result = match opts.parse(&argv[1..]) {
         Ok(m) => m,
         Err(err) => {
@@ -260,5 +264,6 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         }
         re.as_mut().unwrap().retry_interval = Some(r.unwrap());
     }
+    re.as_mut().unwrap().use_webpage = result.opt_present("use-webpage");
     re
 }
