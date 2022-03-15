@@ -5,6 +5,7 @@ use crate::data::json::JSONDataFile;
 use crate::gettext;
 use crate::pixiv_link::PixivID;
 use crate::pixiv_web::PixivWebClient;
+use crate::utils::ask_need_overwrite;
 use crate::utils::get_file_name_from_url;
 use crate::webclient::WebClient;
 use crate::Main;
@@ -103,13 +104,31 @@ impl Main {
                 }
                 let file_name = file_name.unwrap();
                 let file_name = base.join(file_name);
+                if file_name.exists() {
+                    match pw.helper.overwrite() {
+                        Some(overwrite) => {
+                            if !overwrite {
+                                #[cfg(feature = "exif")]
+                                {
+                                    np += 1;
+                                }
+                                continue;
+                            }
+                        }
+                        None => {
+                            if !ask_need_overwrite(file_name.to_str().unwrap()) {
+                                continue;
+                            }
+                        }
+                    }
+                }
                 let r = pw.download_image(link);
                 if r.is_none() {
                     println!("{} {}", gettext("Failed to download image:"), link);
                     return 1;
                 }
                 let r = r.unwrap();
-                let re = WebClient::download_stream(&file_name, r, pw.helper.overwrite());
+                let re = WebClient::download_stream(&file_name, r);
                 if re.is_err() {
                     println!("{} {}", gettext("Failed to download image:"), link);
                     return 1;
@@ -150,13 +169,26 @@ impl Main {
             }
             let file_name = file_name.unwrap();
             let file_name = base.join(file_name);
+            if file_name.exists() {
+                let overwrite = match pw.helper.overwrite() {
+                    Some(overwrite) => {
+                        overwrite
+                    }
+                    None => {
+                        ask_need_overwrite(file_name.to_str().unwrap())
+                    }
+                };
+                if !overwrite {
+                    return 0;
+                }
+            }
             let r = pw.download_image(link);
             if r.is_none() {
                 println!("{} {}", gettext("Failed to download image:"), link);
                 return 1;
             }
             let r = r.unwrap();
-            let re = WebClient::download_stream(&file_name, r, pw.helper.overwrite());
+            let re = WebClient::download_stream(&file_name, r);
             if re.is_err() {
                 println!("{} {}", gettext("Failed to download image:"), link);
                 return 1;

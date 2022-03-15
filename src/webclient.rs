@@ -4,7 +4,6 @@ use crate::cookies::Cookie;
 use crate::cookies::CookieJar;
 use crate::gettext;
 use crate::list::NonTailList;
-use crate::utils::ask_need_overwrite;
 use futures_util::StreamExt;
 use json::JsonValue;
 use reqwest::{Client, IntoUrl, RequestBuilder, Response};
@@ -272,17 +271,13 @@ impl WebClient {
         r
     }
 
-    pub fn download_stream<S: AsRef<OsStr> + ?Sized>(file_name: &S, r: Response, overwrite: Option<bool>) -> Result<(), ()> {
+    /// Download a stream
+    /// * `file_name` - File name
+    /// * `r` - Response
+    /// Note: If file already exists, will remove existing file first.
+    pub fn download_stream<S: AsRef<OsStr> + ?Sized>(file_name: &S, r: Response) -> Result<(), ()> {
         let p = Path::new(file_name);
         if p.exists() {
-            let overwrite = if overwrite.is_none() {
-                ask_need_overwrite(p.to_str().unwrap())
-            } else {
-                overwrite.unwrap()
-            };
-            if !overwrite {
-                return Ok(());
-            }
             let re = remove_file(p);
             if re.is_err() {
                 println!("{} {}", gettext("Failed to remove file:"), re.unwrap_err());
