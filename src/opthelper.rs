@@ -105,6 +105,7 @@ impl<'a> OptHelper<'a> {
         false
     }
 
+    #[cfg(feature = "exif")]
     /// Return whether to add/update exif information to image files even
     /// when overwrite are disabled.
     pub fn update_exif(&self) -> bool {

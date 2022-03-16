@@ -59,6 +59,7 @@ pub struct CommandOpts {
     pub retry_interval: Option<NonTailList<Duration>>,
     /// Use data from webpage first
     pub use_webpage: bool,
+    #[cfg(feature = "exif")]
     /// Add/Update exif information to image files even when overwrite are disabled
     pub update_exif: bool,
 }
@@ -77,6 +78,7 @@ impl CommandOpts {
             retry: None,
             retry_interval: None,
             use_webpage: false,
+            #[cfg(feature = "exif")]
             update_exif: false,
         }
     }
@@ -161,6 +163,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         "LIST",
     );
     opts.optflag("", "use-webpage", gettext("Use data from webpage first."));
+    #[cfg(feature = "exif")]
     opts.optflag(
         "",
         "update-exif",
@@ -273,6 +276,9 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         re.as_mut().unwrap().retry_interval = Some(r.unwrap());
     }
     re.as_mut().unwrap().use_webpage = result.opt_present("use-webpage");
-    re.as_mut().unwrap().update_exif = result.opt_present("update-exif");
+    #[cfg(feature = "exif")]
+    {
+        re.as_mut().unwrap().update_exif = result.opt_present("update-exif");
+    }
     re
 }
