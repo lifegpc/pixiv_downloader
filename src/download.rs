@@ -188,6 +188,7 @@ impl Main {
                     }
                 };
                 if !overwrite {
+                    #[cfg(feature = "exif")]
                     if pw.helper.update_exif() {
                         if add_exifdata_to_image(&file_name, &datas, 0).is_err() {
                             println!(
