@@ -59,6 +59,8 @@ pub struct CommandOpts {
     pub retry_interval: Option<NonTailList<Duration>>,
     /// Use data from webpage first
     pub use_webpage: bool,
+    /// Add/Update exif information to image files even when overwrite are disabled
+    pub update_exif: bool,
 }
 
 impl CommandOpts {
@@ -75,6 +77,7 @@ impl CommandOpts {
             retry: None,
             retry_interval: None,
             use_webpage: false,
+            update_exif: false,
         }
     }
 
@@ -158,6 +161,11 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         "LIST",
     );
     opts.optflag("", "use-webpage", gettext("Use data from webpage first."));
+    opts.optflag(
+        "",
+        "update-exif",
+        gettext("Add/Update exif information to image files even when overwrite are disabled."),
+    );
     let result = match opts.parse(&argv[1..]) {
         Ok(m) => m,
         Err(err) => {
@@ -265,5 +273,6 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         re.as_mut().unwrap().retry_interval = Some(r.unwrap());
     }
     re.as_mut().unwrap().use_webpage = result.opt_present("use-webpage");
+    re.as_mut().unwrap().update_exif = result.opt_present("update-exif");
     re
 }

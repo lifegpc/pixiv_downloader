@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: pixiv_downloader\n"
-"POT-Creation-Date: 2022-03-10 22:29+0800\n"
+"POT-Creation-Date: 2022-03-16 20:03+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -98,15 +98,15 @@ msgstr ""
 msgid "Can not parse expired time:"
 msgstr ""
 
-#: cookies.rs:366 data/json.rs:53 settings.rs:418 webclient.rs:288
+#: cookies.rs:366 data/json.rs:53 settings.rs:418 webclient.rs:283
 msgid "Failed to remove file:"
 msgstr ""
 
-#: cookies.rs:372 data/json.rs:64 settings.rs:425 webclient.rs:294
+#: cookies.rs:372 data/json.rs:64 settings.rs:425 webclient.rs:289
 msgid "Failed to create file:"
 msgstr ""
 
-#: cookies.rs:379 data/json.rs:70 settings.rs:431 webclient.rs:307
+#: cookies.rs:379 data/json.rs:70 settings.rs:431 webclient.rs:302
 msgid "Failed to write file:"
 msgstr ""
 
@@ -114,136 +114,140 @@ msgstr ""
 msgid "Failed to unescape string:"
 msgstr ""
 
-#: download.rs:18 pixiv_web.rs:58
+#: download.rs:19 pixiv_web.rs:58
 msgid "Failed to initialize pixiv web api client."
 msgstr ""
 
-#: download.rs:27
+#: download.rs:28
 msgid "Warning: Web api client not logined, some future may not work."
 msgstr ""
 
-#: download.rs:63
+#: download.rs:64
 msgid "Failed to get page count."
 msgstr ""
 
-#: download.rs:72
+#: download.rs:73
 msgid "Failed to get pages' data."
 msgstr ""
 
-#: download.rs:85
+#: download.rs:86
 msgid "Failed to save metadata to JSON file."
 msgstr ""
 
-#: download.rs:95 download.rs:142
+#: download.rs:96 download.rs:170
 msgid "Failed to get original picture's link."
 msgstr ""
 
-#: download.rs:101 download.rs:148
+#: download.rs:102 download.rs:176
 msgid "Failed to get file name from url:"
 msgstr ""
 
-#: download.rs:108 download.rs:114 download.rs:155 download.rs:161
+#: download.rs:117 download.rs:156 download.rs:195 download.rs:225
+msgid "Failed to add exif data to image:"
+msgstr ""
+
+#: download.rs:136 download.rs:142 download.rs:205 download.rs:211
 #: pixiv_web.rs:153
 msgid "Failed to download image:"
 msgstr ""
 
-#: download.rs:119 download.rs:166
+#: download.rs:147 download.rs:216
 msgid "Downloaded image:"
-msgstr ""
-
-#: download.rs:128 download.rs:175
-msgid "Failed to add exif data to image:"
 msgstr ""
 
 #: dur.rs:73
 msgid "Failed to parse duration from string."
 msgstr ""
 
-#: opts.rs:88
+#: opts.rs:91
 msgid "Warning: The specified config file not found."
 msgstr ""
 
-#: opts.rs:112
+#: opts.rs:115
 msgid "Usage:"
 msgstr ""
 
-#: opts.rs:114
+#: opts.rs:117
 msgid "Download an artwork"
 msgstr ""
 
-#: opts.rs:116
+#: opts.rs:119
 msgid "Fix the config file"
 msgstr ""
 
-#: opts.rs:118
+#: opts.rs:121
 msgid "Print all available settings"
 msgstr ""
 
-#: opts.rs:126
+#: opts.rs:129
 msgid "Print help message."
 msgstr ""
 
-#: opts.rs:130
+#: opts.rs:133
 msgid "The location of config file."
 msgstr ""
 
-#: opts.rs:136 settings_list.rs:11
+#: opts.rs:139 settings_list.rs:11
 msgid "The location of cookies file. Used for web API."
 msgstr ""
 
-#: opts.rs:142 settings_list.rs:12
+#: opts.rs:145 settings_list.rs:12
 msgid "The language of translated tags."
 msgstr ""
 
-#: opts.rs:145
+#: opts.rs:148
 msgid "Verbose logging."
 msgstr ""
 
-#: opts.rs:146
+#: opts.rs:149
 msgid "Overwrite existing file."
 msgstr ""
 
-#: opts.rs:147
+#: opts.rs:150
 msgid "Skip overwrite existing file."
 msgstr ""
 
-#: opts.rs:151 settings_list.rs:13
+#: opts.rs:154 settings_list.rs:13
 msgid "Max retry count if request failed."
 msgstr ""
 
-#: opts.rs:157 settings_list.rs:14
+#: opts.rs:160 settings_list.rs:14
 msgid "The interval (in seconds) between two retries."
 msgstr ""
 
-#: opts.rs:160 settings_list.rs:15
+#: opts.rs:163 settings_list.rs:15
 msgid "Use data from webpage first."
 msgstr ""
 
-#: opts.rs:180
+#: opts.rs:167 settings_list.rs:18
+msgid "Add/Update exif information to image files even when overwrite are disabled."
+msgstr ""
+
+#: opts.rs:188
 msgid "Unknown command."
 msgstr ""
 
-#: opts.rs:190
+#: opts.rs:198
 msgid "Failed to parse ID:"
 msgstr ""
 
-#: opts.rs:196
+#: opts.rs:204
 msgid "No URL or ID specified."
 msgstr ""
 
-#: opts.rs:204
+#: opts.rs:212
 msgid "No detailed command specified."
 msgstr ""
 
-#: opts.rs:217
+#: opts.rs:225
 msgid "Unknown config subcommand."
 msgstr ""
 
-#: opts.rs:253
+#: opts.rs:261
 msgid "Retry count must be an non-negative integer:"
 msgstr ""
 
-#: opts.rs:262
+#: opts.rs:270
 msgid "Failed to parse retry interval:"
 msgstr ""
 
@@ -355,7 +359,7 @@ msgstr ""
 msgid "Do you want to delete file \"<file>\"?"
 msgstr ""
 
-#: utils.rs:51 webclient.rs:152
+#: utils.rs:51 webclient.rs:151
 msgid "Can not parse URL:"
 msgstr ""
 
@@ -363,39 +367,39 @@ msgstr ""
 msgid "Failed to get file name from path:"
 msgstr ""
 
-#: webclient.rs:112
+#: webclient.rs:111
 msgid "Failed to parse Set-Cookie header."
 msgstr ""
 
-#: webclient.rs:117
+#: webclient.rs:116
 msgid "Failed to convert to string:"
 msgstr ""
 
-#: webclient.rs:159
+#: webclient.rs:158
 msgid "Parameters should be object or array:"
 msgstr ""
 
-#: webclient.rs:179
+#: webclient.rs:178
 msgid "Parameters should be array:"
 msgstr ""
 
-#: webclient.rs:183
+#: webclient.rs:182
 msgid "Parameters need at least a value:"
 msgstr ""
 
-#: webclient.rs:222
+#: webclient.rs:221
 msgid "Retry after <num> seconds."
 msgstr ""
 
-#: webclient.rs:226
+#: webclient.rs:225
 msgid "Retry <count> times now."
 msgstr ""
 
-#: webclient.rs:240
+#: webclient.rs:239
 msgid "Error when request:"
 msgstr ""
 
-#: webclient.rs:301
+#: webclient.rs:296
 msgid "Error when downloading file:"
 msgstr ""
 

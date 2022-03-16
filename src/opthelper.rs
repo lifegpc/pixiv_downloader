@@ -104,4 +104,16 @@ impl<'a> OptHelper<'a> {
         }
         false
     }
+
+    /// Return whether to add/update exif information to image files even
+    /// when overwrite are disabled.
+    pub fn update_exif(&self) -> bool {
+        if self.opt.update_exif {
+            return true;
+        }
+        if self.settings.have_bool("update-exif") {
+            return self.settings.get_bool("update-exif").unwrap();
+        }
+        false
+    }
 }

@@ -110,6 +110,15 @@ impl Main {
                             if !overwrite {
                                 #[cfg(feature = "exif")]
                                 {
+                                    if pw.helper.update_exif() {
+                                        if add_exifdata_to_image(&file_name, &datas, np).is_err() {
+                                            println!(
+                                                "{} {}",
+                                                gettext("Failed to add exif data to image:"),
+                                                file_name.to_str().unwrap_or("(null)")
+                                            );
+                                        }
+                                    }
                                     np += 1;
                                 }
                                 continue;
@@ -179,6 +188,15 @@ impl Main {
                     }
                 };
                 if !overwrite {
+                    if pw.helper.update_exif() {
+                        if add_exifdata_to_image(&file_name, &datas, 0).is_err() {
+                            println!(
+                                "{} {}",
+                                gettext("Failed to add exif data to image:"),
+                                file_name.to_str().unwrap_or("(null)")
+                            );
+                        }
+                    }
                     return 0;
                 }
             }
