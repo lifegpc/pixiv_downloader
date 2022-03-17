@@ -1,10 +1,17 @@
+#[cfg(feature = "bindgen")]
 extern crate bindgen;
+#[cfg(feature = "cmake")]
 extern crate cmake;
 
+#[cfg(any(feature = "exif"))]
 use std::env;
+#[cfg(any(feature = "exif"))]
 use std::fs::create_dir;
+#[cfg(any(feature = "exif"))]
 use std::fs::File;
+#[cfg(any(feature = "exif"))]
 use std::io::Read;
+#[cfg(any(feature = "exif"))]
 use std::path::PathBuf;
 
 fn main() {

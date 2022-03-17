@@ -26,11 +26,11 @@ urlparse = "0.7"
 utf16string = { version= "0.2", optional = true }
 
 [build-dependencies]
-cmake = "0.1"
-bindgen = "0.59"
+bindgen = { version = "0.59", optional = true }
+cmake = { version = "0.1", optional = true }
 
 [features]
-exif = ["c_fixed_string", "link-cplusplus", "int-enum", "utf16string"]
+exif = ["bindgen", "c_fixed_string", "cmake", "link-cplusplus", "int-enum", "utf16string"]
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3.9", features = ["winnls", "stringapiset"] }
