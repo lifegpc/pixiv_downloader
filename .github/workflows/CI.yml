@@ -18,7 +18,7 @@ jobs:
     - name: Check Out
       uses: actions/checkout@v2
     - name: Build
-      run: cargo build --verbose
+      run: cargo build -vv
     - name: Run tests
       run: cargo test --verbose
   build-exif:
@@ -48,7 +48,7 @@ jobs:
     - name: Build
       run: |
         export CMAKE_PREFIX_PATH=`pwd`/clib
-        cargo build --features exif --verbose || exit 1
+        cargo build --features exif -vv || exit 1
     - name: Test
       run: |
         export CMAKE_PREFIX_PATH=`pwd`/clib
