@@ -20,8 +20,8 @@ endif()
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/../utils")
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-find_package(Exiv2)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../cmake")
+find_package(Exiv2 REQUIRED)
 
 include_directories(${Exiv2_INCLUDE_DIRS})
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}")

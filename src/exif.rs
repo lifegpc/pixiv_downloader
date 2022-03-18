@@ -1,4 +1,5 @@
 use crate::_exif;
+use crate::ext::rawhandle::ToRawHandle;
 use c_fixed_string::CFixedStr;
 use int_enum::IntEnum;
 use std::convert::TryFrom;
@@ -88,12 +89,6 @@ pub enum ExifByteOrder {
 /// See [all available keys](https://exiv2.org/tags.html).
 pub struct ExifKey {
     key: *mut _exif::ExifKey,
-}
-
-/// Return raw pointer of the handle
-pub trait ToRawHandle<T> {
-    /// Return raw pointer of the handle
-    unsafe fn to_raw_handle(&self) -> *mut T;
 }
 
 impl TryFrom<CString> for ExifKey {

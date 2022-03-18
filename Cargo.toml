@@ -10,6 +10,7 @@ c_fixed_string = { version = "0.2", optional = true }
 chrono = "0.4"
 dateparser = "0.1.6"
 derive_more = "0.99"
+flagset = { version = "0.4", optional = true }
 futures-util = "0.3"
 getopts = "0.2"
 gettext = "0.4"
@@ -30,7 +31,9 @@ bindgen = { version = "0.59", optional = true }
 cmake = { version = "0.1", optional = true }
 
 [features]
+avdict = ["bindgen", "cmake", "flagset"]
 exif = ["bindgen", "c_fixed_string", "cmake", "link-cplusplus", "int-enum", "utf16string"]
+ugoira = ["avdict", "bindgen", "cmake"]
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3.9", features = ["winnls", "stringapiset"] }

@@ -3,6 +3,8 @@ extern crate c_fixed_string;
 extern crate chrono;
 extern crate dateparser;
 extern crate derive_more;
+#[cfg(feature = "flagset")]
+extern crate flagset;
 extern crate futures_util;
 extern crate json;
 #[cfg(feature = "int-enum")]
@@ -19,16 +21,23 @@ extern crate urlparse;
 extern crate utf16string;
 extern crate xml;
 
+#[cfg(feature = "avdict")]
+#[doc(hidden)]
+mod _avdict;
 #[cfg(feature = "exif")]
 #[doc(hidden)]
 mod _exif;
 mod author_name_filter;
+#[cfg(feature = "avdict")]
+mod avdict;
 mod cookies;
 mod data;
 mod download;
 mod dur;
 #[cfg(feature = "exif")]
 mod exif;
+/// Used to extend some thirdparty library
+mod ext;
 mod i18n;
 mod list;
 mod opthelper;

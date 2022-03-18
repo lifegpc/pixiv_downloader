@@ -3,15 +3,15 @@ extern crate bindgen;
 #[cfg(feature = "cmake")]
 extern crate cmake;
 
-#[cfg(any(feature = "exif"))]
+#[cfg(any(feature = "avdict", feature = "exif"))]
 use std::env;
-#[cfg(any(feature = "exif"))]
+#[cfg(any(feature = "avdict", feature = "exif"))]
 use std::fs::create_dir;
-#[cfg(any(feature = "exif"))]
+#[cfg(any(feature = "avdict", feature = "exif"))]
 use std::fs::File;
-#[cfg(any(feature = "exif"))]
+#[cfg(any(feature = "avdict", feature = "exif"))]
 use std::io::Read;
-#[cfg(any(feature = "exif"))]
+#[cfg(any(feature = "avdict", feature = "exif"))]
 use std::path::PathBuf;
 
 fn main() {
@@ -50,6 +50,52 @@ fn main() {
             println!("cargo:rustc-link-lib={}", file_name);
         }
         println!("cargo:rerun-if-changed=utils/");
+    }
+    #[cfg(feature = "avdict")]
+    {
+        let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
+        let avdict_build_path = out_path.join("avdict");
+        if !avdict_build_path.exists() {
+            create_dir(&avdict_build_path).unwrap();
+        }
+        cmake::Config::new("avdict")
+            .define("CMAKE_INSTALL_PREFIX", out_path.to_str().unwrap())
+            .out_dir(avdict_build_path)
+            .define("CMAKE_BUILD_TYPE", "Release")
+            .build();
+        println!("cargo:rustc-link-search=native={}/lib", out_path.display());
+        let dep_path = out_path.join("avdict_dep.txt");
+        let mut f = File::open(dep_path).unwrap();
+        let mut s = String::from("");
+        f.read_to_string(&mut s).unwrap();
+        println!("cargo:rustc-link-lib=static=avdict");
+        let l: Vec<&str> = s.split(";").collect();
+        for i in l.iter() {
+            let mut p = PathBuf::from(i);
+            let p2 = p.clone();
+            let file_name = p2.file_stem().unwrap();
+            let file_name = file_name.to_str().unwrap();
+            let file_name = file_name.trim_start_matches("lib");
+            p.pop();
+            println!("cargo:rustc-link-search={}", p.to_str().unwrap());
+            println!("cargo:rustc-link-lib={}", file_name);
+        }
+        println!("cargo:rerun-if-changed=avdict/");
+        let bindings = bindgen::Builder::default()
+            // The input header we would like to generate
+            // bindings for.
+            .header("avdict/avdict.h")
+            // Tell cargo to invalidate the built crate whenever any of the
+            // included header files changed.
+            .parse_callbacks(Box::new(bindgen::CargoCallbacks))
+            // Finish the builder and generate the bindings.
+            .generate()
+            // Unwrap the Result and panic on failure.
+            .expect("Unable to generate bindings");
+
+        bindings
+            .write_to_file(out_path.join("avdict.rs"))
+            .expect("Couldn't write bindings!");
     }
     #[cfg(feature = "exif")]
     {
