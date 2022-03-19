@@ -373,5 +373,5 @@ fn test_ugoira_frames() {
 #[test]
 fn test_ugoira_zip_error() {
     let e = UgoiraZipError::from(3);
-    assert_eq!(Ok(String::from("Closing zip archive failed: No error")), e.to_str());
+    assert!(e.to_str().is_ok())
 }
