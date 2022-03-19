@@ -95,4 +95,5 @@ jobs:
         export CMAKE_PREFIX_PATH=`pwd`/clib
         export "LIBRARY_PATH=$LIBRARY_PATH:`pwd`/clib/lib"
         export "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/clib/lib"
+        export RUSTFLAGS='-C link-arg=-lswresample -C link-arg=-lx264'
         cargo test --features ugoira --verbose -- --show-output || exit 1
