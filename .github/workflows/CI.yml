@@ -73,6 +73,9 @@ jobs:
       with:
         path: clib/
         key: ${{ runner.os }}-${{ steps.cache_key.outputs.cache_key }}
+    - name: Setup NASM
+      if: steps.cache.outputs.cache-hit != 'true'
+      uses: ilammy/setup-nasm@v1
     - name: Build thirdparty library
       if: steps.cache.outputs.cache-hit != 'true'
       run: |
