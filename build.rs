@@ -35,6 +35,7 @@ fn main() {
         let mut f = File::open(dep_path).unwrap();
         let mut s = String::from("");
         f.read_to_string(&mut s).unwrap();
+        println!("cargo:rustc-link-lib=utils");
         let l: Vec<&str> = s.split(";").collect();
         for i in l.iter() {
             let mut p = PathBuf::from(i);
