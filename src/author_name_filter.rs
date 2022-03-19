@@ -1,4 +1,4 @@
-use crate::data::json::ToJson;
+use crate::ext::json::ToJson;
 use crate::gettext;
 use crate::stdext::TryErr;
 use json::JsonValue;

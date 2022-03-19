@@ -1,3 +1,4 @@
+extern crate atty;
 #[cfg(feature = "c_fixed_string")]
 extern crate c_fixed_string;
 extern crate chrono;
@@ -7,6 +8,7 @@ extern crate derive_more;
 extern crate flagset;
 extern crate futures_util;
 extern crate json;
+extern crate indicatif;
 #[cfg(feature = "int-enum")]
 extern crate int_enum;
 #[macro_use]
@@ -22,11 +24,11 @@ extern crate utf16string;
 extern crate xml;
 
 #[cfg(feature = "avdict")]
-#[doc(hidden)]
 mod _avdict;
 #[cfg(feature = "exif")]
-#[doc(hidden)]
 mod _exif;
+#[cfg(feature = "ugoira")]
+mod _ugoira;
 mod author_name_filter;
 #[cfg(feature = "avdict")]
 mod avdict;
@@ -49,6 +51,8 @@ mod retry_interval;
 mod settings;
 mod settings_list;
 mod stdext;
+#[cfg(feature = "ugoira")]
+mod ugoira;
 mod utils;
 mod webclient;
 

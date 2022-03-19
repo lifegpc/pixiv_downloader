@@ -117,4 +117,9 @@ impl<'a> OptHelper<'a> {
         }
         false
     }
+
+    /// Return whether to use progress bar.
+    pub fn use_progress_bar(&self) -> bool {
+        atty::is(atty::Stream::Stdout)
+    }
 }

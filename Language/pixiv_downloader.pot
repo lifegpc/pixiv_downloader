@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: pixiv_downloader\n"
-"POT-Creation-Date: 2022-03-16 20:03+0800\n"
+"POT-Creation-Date: 2022-03-19 17:08+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,12 +17,12 @@ msgstr ""
 msgid "Failed to parse regex:"
 msgstr ""
 
-#: author_name_filter.rs:46 retry_interval.rs:22
+#: author_name_filter.rs:46 retry_interval.rs:22 ugoira.rs:280
 msgid "Failed to get JSON object."
 msgstr ""
 
 #: author_name_filter.rs:48 author_name_filter.rs:130 retry_interval.rs:61
-#: retry_interval.rs:65
+#: retry_interval.rs:65 ugoira.rs:282 ugoira.rs:287
 msgid "Unsupported JSON type."
 msgstr ""
 
@@ -40,6 +40,22 @@ msgstr ""
 
 #: author_name_filter.rs:139
 msgid "Failed parse author name filters:"
+msgstr ""
+
+#: avdict.rs:44 ugoira.rs:50
+msgid "Failed to decode string with UTF-8:"
+msgstr ""
+
+#: avdict.rs:60 ugoira.rs:106 ugoira.rs:146 ugoira.rs:181 ugoira.rs:270
+msgid "Out of memory."
+msgstr ""
+
+#: avdict.rs:77 ugoira.rs:158 ugoira.rs:204
+msgid "Failed to get error message:"
+msgstr ""
+
+#: avdict.rs:169
+msgid "Failed to get value for entry."
 msgstr ""
 
 #: cookies.rs:75 cookies.rs:217
@@ -98,15 +114,15 @@ msgstr ""
 msgid "Can not parse expired time:"
 msgstr ""
 
-#: cookies.rs:366 data/json.rs:53 settings.rs:418 webclient.rs:283
+#: cookies.rs:366 data/json.rs:50 settings.rs:418 webclient.rs:302
 msgid "Failed to remove file:"
 msgstr ""
 
-#: cookies.rs:372 data/json.rs:64 settings.rs:425 webclient.rs:289
+#: cookies.rs:372 data/json.rs:61 settings.rs:425 webclient.rs:312
 msgid "Failed to create file:"
 msgstr ""
 
-#: cookies.rs:379 data/json.rs:70 settings.rs:431 webclient.rs:302
+#: cookies.rs:379 data/json.rs:67 settings.rs:431 webclient.rs:329
 msgid "Failed to write file:"
 msgstr ""
 
@@ -114,44 +130,84 @@ msgstr ""
 msgid "Failed to unescape string:"
 msgstr ""
 
-#: download.rs:19 pixiv_web.rs:58
+#: download.rs:25 pixiv_web.rs:58
 msgid "Failed to initialize pixiv web api client."
 msgstr ""
 
-#: download.rs:28
+#: download.rs:34
 msgid "Warning: Web api client not logined, some future may not work."
 msgstr ""
 
-#: download.rs:64
+#: download.rs:70
 msgid "Failed to get page count."
 msgstr ""
 
-#: download.rs:73
+#: download.rs:79
 msgid "Failed to get pages' data."
 msgstr ""
 
-#: download.rs:86
+#: download.rs:92
 msgid "Failed to save metadata to JSON file."
 msgstr ""
 
-#: download.rs:96 download.rs:170
-msgid "Failed to get original picture's link."
+#: download.rs:107
+msgid "Failed to get ugoira's data."
 msgstr ""
 
-#: download.rs:102 download.rs:176
+#: download.rs:113
+msgid "Can not find source link for ugoira."
+msgstr ""
+
+#: download.rs:119 download.rs:197 download.rs:271
 msgid "Failed to get file name from url:"
 msgstr ""
 
-#: download.rs:117 download.rs:156 download.rs:195 download.rs:225
+#: download.rs:135 download.rs:141
+msgid "Failed to download ugoira:"
+msgstr ""
+
+#: download.rs:146
+msgid "Downloaded ugoira:"
+msgstr ""
+
+#: download.rs:156
+msgid "Warning: Failed to generate video's metadata:"
+msgstr ""
+
+#: download.rs:166
+msgid "Failed to convert from ugoira to mp4 video file:"
+msgstr ""
+
+#: download.rs:169
+msgid "Converted <src> -> <dest>"
+msgstr ""
+
+#: download.rs:172
+msgid "Failed to parse frames:"
+msgstr ""
+
+#: download.rs:179
+msgid "Warning: Unknown illust type:"
+msgstr ""
+
+#: download.rs:182
+msgid "Warning: Failed to get illust's type."
+msgstr ""
+
+#: download.rs:191 download.rs:265
+msgid "Failed to get original picture's link."
+msgstr ""
+
+#: download.rs:212 download.rs:251 download.rs:291 download.rs:321
 msgid "Failed to add exif data to image:"
 msgstr ""
 
-#: download.rs:136 download.rs:142 download.rs:205 download.rs:211
+#: download.rs:231 download.rs:237 download.rs:301 download.rs:307
 #: pixiv_web.rs:153
 msgid "Failed to download image:"
 msgstr ""
 
-#: download.rs:147 download.rs:216
+#: download.rs:242 download.rs:312
 msgid "Downloaded image:"
 msgstr ""
 
@@ -159,95 +215,95 @@ msgstr ""
 msgid "Failed to parse duration from string."
 msgstr ""
 
-#: opts.rs:91
+#: opts.rs:93
 msgid "Warning: The specified config file not found."
 msgstr ""
 
-#: opts.rs:115
+#: opts.rs:117
 msgid "Usage:"
 msgstr ""
 
-#: opts.rs:117
+#: opts.rs:119
 msgid "Download an artwork"
 msgstr ""
 
-#: opts.rs:119
+#: opts.rs:121
 msgid "Fix the config file"
 msgstr ""
 
-#: opts.rs:121
+#: opts.rs:123
 msgid "Print all available settings"
 msgstr ""
 
-#: opts.rs:129
+#: opts.rs:131
 msgid "Print help message."
 msgstr ""
 
-#: opts.rs:133
+#: opts.rs:135
 msgid "The location of config file."
 msgstr ""
 
-#: opts.rs:139 settings_list.rs:11
+#: opts.rs:141 settings_list.rs:11
 msgid "The location of cookies file. Used for web API."
 msgstr ""
 
-#: opts.rs:145 settings_list.rs:12
+#: opts.rs:147 settings_list.rs:12
 msgid "The language of translated tags."
 msgstr ""
 
-#: opts.rs:148
+#: opts.rs:150
 msgid "Verbose logging."
 msgstr ""
 
-#: opts.rs:149
+#: opts.rs:151
 msgid "Overwrite existing file."
 msgstr ""
 
-#: opts.rs:150
+#: opts.rs:152
 msgid "Skip overwrite existing file."
 msgstr ""
 
-#: opts.rs:154 settings_list.rs:13
+#: opts.rs:156 settings_list.rs:13
 msgid "Max retry count if request failed."
 msgstr ""
 
-#: opts.rs:160 settings_list.rs:14
+#: opts.rs:162 settings_list.rs:14
 msgid "The interval (in seconds) between two retries."
 msgstr ""
 
-#: opts.rs:163 settings_list.rs:15
+#: opts.rs:165 settings_list.rs:15
 msgid "Use data from webpage first."
 msgstr ""
 
-#: opts.rs:167 settings_list.rs:18
+#: opts.rs:170 settings_list.rs:18
 msgid "Add/Update exif information to image files even when overwrite are disabled."
 msgstr ""
 
-#: opts.rs:188
+#: opts.rs:191
 msgid "Unknown command."
 msgstr ""
 
-#: opts.rs:198
+#: opts.rs:201
 msgid "Failed to parse ID:"
 msgstr ""
 
-#: opts.rs:204
+#: opts.rs:207
 msgid "No URL or ID specified."
 msgstr ""
 
-#: opts.rs:212
+#: opts.rs:215
 msgid "No detailed command specified."
 msgstr ""
 
-#: opts.rs:225
+#: opts.rs:228
 msgid "Unknown config subcommand."
 msgstr ""
 
-#: opts.rs:261
+#: opts.rs:264
 msgid "Retry count must be an non-negative integer:"
 msgstr ""
 
-#: opts.rs:270
+#: opts.rs:273
 msgid "Failed to parse retry interval:"
 msgstr ""
 
@@ -303,7 +359,11 @@ msgstr ""
 msgid "Artwork's page data:"
 msgstr ""
 
-#: pixiv_web.rs:236
+#: pixiv_web.rs:226
+msgid "Ugoira's data:"
+msgstr ""
+
+#: pixiv_web.rs:250
 msgid "Warning: Failed to save cookies file:"
 msgstr ""
 
@@ -355,11 +415,75 @@ msgstr ""
 msgid "Remove the part which after these parttens."
 msgstr ""
 
+#: ugoira.rs:101
+msgid "Arguments have null pointers."
+msgstr ""
+
+#: ugoira.rs:102
+msgid "Invalid max fps."
+msgstr ""
+
+#: ugoira.rs:103
+msgid "Invalid frames."
+msgstr ""
+
+#: ugoira.rs:104
+msgid "Invalid crf."
+msgstr ""
+
+#: ugoira.rs:105
+msgid "Can not remove output file."
+msgstr ""
+
+#: ugoira.rs:107
+msgid "No video stream available in the file."
+msgstr ""
+
+#: ugoira.rs:108
+msgid "No available decoder."
+msgstr ""
+
+#: ugoira.rs:109
+msgid "No available encoder."
+msgstr ""
+
+#: ugoira.rs:110
+msgid "Failed to open output file."
+msgstr ""
+
+#: ugoira.rs:111
+msgid "Unable to scale image."
+msgstr ""
+
+#: ugoira.rs:112
+msgid "Unknown error."
+msgstr ""
+
+#: ugoira.rs:177
+msgid "No error."
+msgstr ""
+
+#: ugoira.rs:266
+msgid "Delay should be greater than 0."
+msgstr ""
+
+#: ugoira.rs:289
+msgid "File is needed."
+msgstr ""
+
+#: ugoira.rs:290
+msgid "Delay is needed."
+msgstr ""
+
+#: ugoira.rs:350 ugoira.rs:351
+msgid "Failed to convert path."
+msgstr ""
+
 #: utils.rs:30
 msgid "Do you want to delete file \"<file>\"?"
 msgstr ""
 
-#: utils.rs:51 webclient.rs:151
+#: utils.rs:51 webclient.rs:154
 msgid "Can not parse URL:"
 msgstr ""
 
@@ -367,50 +491,54 @@ msgstr ""
 msgid "Failed to get file name from path:"
 msgstr ""
 
-#: webclient.rs:111
+#: webclient.rs:114
 msgid "Failed to parse Set-Cookie header."
 msgstr ""
 
-#: webclient.rs:116
+#: webclient.rs:119
 msgid "Failed to convert to string:"
 msgstr ""
 
-#: webclient.rs:158
+#: webclient.rs:161
 msgid "Parameters should be object or array:"
 msgstr ""
 
-#: webclient.rs:178
+#: webclient.rs:181
 msgid "Parameters should be array:"
 msgstr ""
 
-#: webclient.rs:182
+#: webclient.rs:185
 msgid "Parameters need at least a value:"
 msgstr ""
 
-#: webclient.rs:221
+#: webclient.rs:224
 msgid "Retry after <num> seconds."
 msgstr ""
 
-#: webclient.rs:225
+#: webclient.rs:228
 msgid "Retry <count> times now."
 msgstr ""
 
-#: webclient.rs:239
+#: webclient.rs:242
 msgid "Error when request:"
 msgstr ""
 
-#: webclient.rs:296
+#: webclient.rs:308
+msgid "Downloading \"<loc>\"."
+msgstr ""
+
+#: webclient.rs:319
 msgid "Error when downloading file:"
 msgstr ""
 
-#: main.rs:71
+#: main.rs:84
 msgid "Failed to save config file:"
 msgstr ""
 
-#: main.rs:82
+#: main.rs:95
 msgid "All available settings:"
 msgstr ""
 
-#: main.rs:114
+#: main.rs:127
 msgid "Can not read config file:"
 msgstr ""

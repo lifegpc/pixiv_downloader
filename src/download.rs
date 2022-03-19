@@ -1,10 +1,16 @@
+#[cfg(feature = "avdict")]
+use crate::avdict::AVDict;
 use crate::data::data::PixivData;
 #[cfg(feature = "exif")]
 use crate::data::exif::add_exifdata_to_image;
 use crate::data::json::JSONDataFile;
+#[cfg(feature = "ugoira")]
+use crate::data::video::get_video_metadata;
 use crate::gettext;
 use crate::pixiv_link::PixivID;
 use crate::pixiv_web::PixivWebClient;
+#[cfg(feature = "ugoira")]
+use crate::ugoira::{UgoiraFrames, convert_ugoira_to_mp4};
 use crate::utils::ask_need_overwrite;
 use crate::utils::get_file_name_from_url;
 use crate::webclient::WebClient;
@@ -86,6 +92,95 @@ impl Main {
             println!("{}", gettext("Failed to save metadata to JSON file."));
             return 1;
         }
+        let illust_type = if ajax_ver {
+            (&re["illustType"]).as_i64()
+        } else {
+            (&re["illust"][format!("{}", id).as_str()]["illustType"]).as_i64()
+        };
+        if illust_type.is_some() {
+            let illust_type = illust_type.unwrap();
+            match illust_type {
+                0 => { }
+                2 => {
+                    let ugoira_data = pw.get_ugoira(id);
+                    if ugoira_data.is_none() {
+                        println!("{}", gettext("Failed to get ugoira's data."));
+                        return 1;
+                    }
+                    let ugoira_data = ugoira_data.unwrap();
+                    let src = (&ugoira_data["originalSrc"]).as_str();
+                    if src.is_none() {
+                        println!("{}", gettext("Can not find source link for ugoira."));
+                        return 1;
+                    }
+                    let src = src.unwrap();
+                    let file_name = get_file_name_from_url(src);
+                    if file_name.is_none() {
+                        println!("{} {}", gettext("Failed to get file name from url:"), src);
+                        return 1;
+                    }
+                    let file_name = file_name.unwrap();
+                    let file_name = base.join(file_name);
+                    let dw = if file_name.exists() {
+                        match pw.helper.overwrite() {
+                            Some(overwrite) => { overwrite }
+                            None => { ask_need_overwrite(file_name.to_str().unwrap()) }
+                        }
+                    } else {
+                        true
+                    };
+                    if dw {
+                        let r = pw.download_image(src);
+                        if r.is_none() {
+                            println!("{} {}", gettext("Failed to download ugoira:"), src);
+                            return 1;
+                        }
+                        let r = r.unwrap();
+                        let re = WebClient::download_stream(&file_name, r, &pw.helper);
+                        if re.is_err() {
+                            println!("{} {}", gettext("Failed to download ugoira:"), src);
+                            return 1;
+                        }
+                        println!(
+                            "{} {} -> {}",
+                            gettext("Downloaded ugoira:"),
+                            src,
+                            file_name.to_str().unwrap_or("(null)")
+                        );
+                    }
+                    #[cfg(feature = "ugoira")]
+                    {
+                        let metadata = match get_video_metadata(&datas) {
+                            Ok(m) => { m }
+                            Err(e) => {
+                                println!("{} {}", gettext("Warning: Failed to generate video's metadata:"), e);
+                                AVDict::new()
+                            }
+                        };
+                        let options = AVDict::new();
+                        match UgoiraFrames::from_json(&ugoira_data["frames"]) {
+                            Ok(frames) => {
+                                let output_file_name = base.join(format!("{}.mp4", id));
+                                let re = convert_ugoira_to_mp4(&file_name, &output_file_name, &frames, 60f32, &options, &metadata);
+                                if re.is_err() {
+                                    println!("{} {}", gettext("Failed to convert from ugoira to mp4 video file:"), re.unwrap_err());
+                                    return 1;
+                                }
+                                println!("{}", gettext("Converted <src> -> <dest>").replace("<src>", file_name.to_str().unwrap_or("(null)")).replace("<dest>", output_file_name.to_str().unwrap_or("(null)")).as_str());
+                            }
+                            Err(e) => {
+                                println!("{} {}", gettext("Failed to parse frames:"), e);
+                                return 1;
+                            }
+                        }
+                    }
+                    return 0;
+                }
+                _ => { println!("{} {}", gettext("Warning: Unknown illust type:"), illust_type) }
+            }
+        } else {
+            println!("{}", gettext("Warning: Failed to get illust's type."));
+        }
         if pages_data.is_some() {
             #[cfg(feature = "exif")]
             let mut np = 0u16;
@@ -137,7 +232,7 @@ impl Main {
                     return 1;
                 }
                 let r = r.unwrap();
-                let re = WebClient::download_stream(&file_name, r);
+                let re = WebClient::download_stream(&file_name, r, &pw.helper);
                 if re.is_err() {
                     println!("{} {}", gettext("Failed to download image:"), link);
                     return 1;
@@ -207,7 +302,7 @@ impl Main {
                 return 1;
             }
             let r = r.unwrap();
-            let re = WebClient::download_stream(&file_name, r);
+            let re = WebClient::download_stream(&file_name, r, &pw.helper);
             if re.is_err() {
                 println!("{} {}", gettext("Failed to download image:"), link);
                 return 1;

@@ -42,8 +42,8 @@ impl Display for AVDictError {
         match self {
             Self::String(s) => { f.write_str(s) }
             Self::Utf8Error(s) => { f.write_fmt(format_args!("{} {}", gettext("Failed to decode string with UTF-8:"), s)) }
-            Self::CodeError(s) => { s.fmt(f) }
-            Self::ToCstr(s) => { s.fmt(f) }
+            Self::CodeError(s) => { f.write_fmt(format_args!("{}", s)) }
+            Self::ToCstr(s) => { f.write_fmt(format_args!("{}", s)) }
         }
     }
 }
@@ -109,7 +109,7 @@ flagset::flags! {
 }
 
 pub struct AVDict {
-    m: *mut _avdict::AVDict,
+    pub m: *mut _avdict::AVDict,
 }
 
 #[allow(dead_code)]
