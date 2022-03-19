@@ -98,3 +98,48 @@ jobs:
         export "LIBRARY_PATH=$LIBRARY_PATH:`pwd`/clib/lib"
         export "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/clib/lib"
         cargo test --features ugoira --verbose -- --show-output || exit 1
+  build-all:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check Out
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+        submodules: true
+    - name: Get cache key
+      id: cache_key
+      run: |
+        cd scripts
+        python3 get_cache_key.py exiv2 libzip x264 ffmpeg || exit 1
+    - name: Cache
+      id: cache
+      uses: actions/cache@v2
+      with:
+        path: clib/
+        key: ${{ runner.os }}-${{ steps.cache_key.outputs.cache_key }}
+    - name: Setup NASM
+      if: steps.cache.outputs.cache-hit != 'true'
+      uses: ilammy/setup-nasm@v1
+    - name: Build thirdparty library
+      if: steps.cache.outputs.cache-hit != 'true'
+      run: |
+        export PKG_CONFIG_PATH=`pwd`/clib/lib/pkgconfig
+        cp scripts/build_*.sh -v ./ || exit 1
+        ./build_exiv2.sh || exit 1
+        ./build_libzip.sh || exit 1
+        ./build_x264.sh || exit 1
+        ./build_ffmpeg.sh || exit 1
+    - name: Build
+      run: |
+        export PKG_CONFIG_PATH=`pwd`/clib/lib/pkgconfig
+        export CMAKE_PREFIX_PATH=`pwd`/clib
+        export "LIBRARY_PATH=$LIBRARY_PATH:`pwd`/clib/lib"
+        export "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/clib/lib"
+        cargo build --features all -vv || exit 1
+    - name: Test
+      run: |
+        export PKG_CONFIG_PATH=`pwd`/clib/lib/pkgconfig
+        export CMAKE_PREFIX_PATH=`pwd`/clib
+        export "LIBRARY_PATH=$LIBRARY_PATH:`pwd`/clib/lib"
+        export "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/clib/lib"
+        cargo test --features all --verbose -- --show-output || exit 1

@@ -33,6 +33,7 @@ bindgen = { version = "0.59", optional = true }
 cmake = { version = "0.1", optional = true }
 
 [features]
+all = ["exif", "ugoira"]
 avdict = ["bindgen", "cmake", "flagset"]
 exif = ["bindgen", "c_fixed_string", "cmake", "link-cplusplus", "int-enum", "utf16string"]
 ugoira = ["avdict", "bindgen", "cmake", "link-cplusplus"]
