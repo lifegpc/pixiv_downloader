@@ -68,7 +68,7 @@ fn main() {
         let mut f = File::open(dep_path).unwrap();
         let mut s = String::from("");
         f.read_to_string(&mut s).unwrap();
-        println!("cargo:rustc-link-lib=static=avdict");
+        println!("cargo:rustc-link-lib=avdict");
         let l: Vec<&str> = s.split(";").collect();
         for i in l.iter() {
             let mut p = PathBuf::from(i);
@@ -116,7 +116,7 @@ fn main() {
         let mut f = File::open(dep_path).unwrap();
         let mut s = String::from("");
         f.read_to_string(&mut s).unwrap();
-        println!("cargo:rustc-link-lib=static=exif");
+        println!("cargo:rustc-link-lib=exif");
         let l: Vec<&str> = s.split(";").collect();
         for i in l.iter() {
             let mut p = PathBuf::from(i);
@@ -164,7 +164,7 @@ fn main() {
         let mut f = File::open(dep_path).unwrap();
         let mut s = String::from("");
         f.read_to_string(&mut s).unwrap();
-        println!("cargo:rustc-link-lib=static=ugoira");
+        println!("cargo:rustc-link-lib=ugoira");
         let l: Vec<&str> = s.split(";").collect();
         for i in l.iter() {
             let mut p = PathBuf::from(i);
