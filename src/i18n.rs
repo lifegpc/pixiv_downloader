@@ -102,11 +102,10 @@ pub struct I18n {
 }
 
 fn open_mo_file(molang: &str) -> Option<File> {
-    let mut pb = get_exe_path_else_current();
+    let pb = get_exe_path_else_current();
     let base = String::from("pixiv_downloader");
     let fname = base + "." + molang.replace("-", "_").as_str() + ".mo";
-    pb.push(fname);
-    let p = pb.as_path();
+    let p = pb.join(fname);
     if p.exists() {
         let f = File::open(p);
         match f {
@@ -114,6 +113,21 @@ fn open_mo_file(molang: &str) -> Option<File> {
                 return Some(f);
             }
             Err(_) => {}
+        }
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let mut p = pb.clone();
+        p.pop();
+        p.push(format!("share/locale/{}/LC_MESSAGES/pixiv_downloader.po", molang.replace("-", "_").as_str()));
+        if p.exists() {
+            let f = File::open(p);
+            match f {
+                Ok(f) => {
+                    return Some(f);
+                }
+                Err(_) => {}
+            }
         }
     }
     return None;
