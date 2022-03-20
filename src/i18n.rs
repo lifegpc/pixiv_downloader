@@ -119,7 +119,7 @@ fn open_mo_file(molang: &str) -> Option<File> {
     {
         let mut p = pb.clone();
         p.pop();
-        p.push(format!("share/locale/{}/LC_MESSAGES/pixiv_downloader.po", molang.replace("-", "_").as_str()));
+        p.push(format!("share/locale/{}/LC_MESSAGES/pixiv_downloader.mo", molang.replace("-", "_").as_str()));
         if p.exists() {
             let f = File::open(p);
             match f {
