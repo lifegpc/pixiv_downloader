@@ -36,7 +36,7 @@ try:
             raise ValueError('Failed to get output file name.')
         out_dir = dirname(out)
         if not exists(out_dir):
-            makedirs(out_dir, 755, exist_ok=True)
+            makedirs(out_dir, 644, exist_ok=True)
         if call('msgfmt', fn, '--output', out, '--no-hash') != 0:
             raise ValueError('Failed to run msgfmt.')
 except Exception:
