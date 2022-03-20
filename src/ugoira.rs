@@ -13,9 +13,15 @@ use std::ffi::CStr;
 use std::ffi::OsStr;
 use std::fmt::Debug;
 use std::fmt::Display;
+#[cfg(test)]
+use std::fs::{File, create_dir};
+#[cfg(test)]
+use std::io::Read;
 use std::ops::Drop;
 use std::os::raw::c_int;
 use std::os::raw::c_void;
+#[cfg(test)]
+use std::path::Path;
 use std::str::Utf8Error;
 
 const UGOIRA_OK: c_int = _ugoira::UGOIRA_OK as c_int;
@@ -374,4 +380,29 @@ fn test_ugoira_frames() {
 fn test_ugoira_zip_error() {
     let e = UgoiraZipError::from(3);
     assert!(e.to_str().is_ok())
+}
+
+#[test]
+fn test_convert_ugoira_to_mp4() -> Result<(), UgoiraError> {
+    let frames_path = Path::new("./testdata/74841737_frames.json");
+    if !frames_path.exists() {
+        Err("Can not find frames file.")?;
+    }
+    let mut f = File::open(frames_path).unwrap();
+    let mut s = String::from("");
+    f.read_to_string(&mut s).unwrap();
+    let o = json::parse(s.as_str()).unwrap();
+    let frames = UgoiraFrames::from_json(o)?;
+    assert_eq!(90, frames.len());
+    let p = Path::new("./test");
+    if !p.exists() {
+        let re = create_dir("./test");
+        assert!(re.is_ok() || p.exists());
+    }
+    let target = "./test/74841737.mp4";
+    let mut metadata = AVDict::new();
+    metadata.set("title", "動く nachoneko :3", None).unwrap();
+    metadata.set("artist", "甘城なつき", None).unwrap();
+    let options = AVDict::new();
+    convert_ugoira_to_mp4("./testdata/74841737_ugoira600x600.zip", target, &frames, 60f32, &options, &metadata)
 }

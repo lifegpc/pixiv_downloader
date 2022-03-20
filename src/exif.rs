@@ -702,7 +702,8 @@ fn test_exif_data() {
 fn test_exif_image() {
     let p = Path::new("./test");
     if !p.exists() {
-        create_dir("./test").unwrap();
+        let re = create_dir("./test");
+        assert!(re.is_ok() || p.exists());
     }
     let target = "./test/夏のチマメ隊🏖️_91055644_p0.jpg";
     copy("./testdata/夏のチマメ隊🏖️_91055644_p0.jpg", target).unwrap();
