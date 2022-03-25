@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: pixiv_downloader\n"
-"POT-Creation-Date: 2022-03-19 17:08+0800\n"
+"POT-Creation-Date: 2022-03-25 22:17+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,12 +17,12 @@ msgstr ""
 msgid "Failed to parse regex:"
 msgstr ""
 
-#: author_name_filter.rs:46 retry_interval.rs:22 ugoira.rs:280
+#: author_name_filter.rs:46 retry_interval.rs:22 ugoira.rs:286
 msgid "Failed to get JSON object."
 msgstr ""
 
 #: author_name_filter.rs:48 author_name_filter.rs:130 retry_interval.rs:61
-#: retry_interval.rs:65 ugoira.rs:282 ugoira.rs:287
+#: retry_interval.rs:65 ugoira.rs:288 ugoira.rs:293
 msgid "Unsupported JSON type."
 msgstr ""
 
@@ -42,15 +42,15 @@ msgstr ""
 msgid "Failed parse author name filters:"
 msgstr ""
 
-#: avdict.rs:44 ugoira.rs:50
+#: avdict.rs:44 ugoira.rs:56
 msgid "Failed to decode string with UTF-8:"
 msgstr ""
 
-#: avdict.rs:60 ugoira.rs:106 ugoira.rs:146 ugoira.rs:181 ugoira.rs:270
+#: avdict.rs:60 ugoira.rs:112 ugoira.rs:152 ugoira.rs:187 ugoira.rs:276
 msgid "Out of memory."
 msgstr ""
 
-#: avdict.rs:77 ugoira.rs:158 ugoira.rs:204
+#: avdict.rs:77 ugoira.rs:164 ugoira.rs:210
 msgid "Failed to get error message:"
 msgstr ""
 
@@ -415,67 +415,71 @@ msgstr ""
 msgid "Remove the part which after these parttens."
 msgstr ""
 
-#: ugoira.rs:101
-msgid "Arguments have null pointers."
-msgstr ""
-
-#: ugoira.rs:102
-msgid "Invalid max fps."
-msgstr ""
-
-#: ugoira.rs:103
-msgid "Invalid frames."
-msgstr ""
-
-#: ugoira.rs:104
-msgid "Invalid crf."
-msgstr ""
-
-#: ugoira.rs:105
-msgid "Can not remove output file."
+#: settings_list.rs:19
+msgid "Progress bar's template. See <here> for more informations."
 msgstr ""
 
 #: ugoira.rs:107
-msgid "No video stream available in the file."
+msgid "Arguments have null pointers."
 msgstr ""
 
 #: ugoira.rs:108
-msgid "No available decoder."
+msgid "Invalid max fps."
 msgstr ""
 
 #: ugoira.rs:109
-msgid "No available encoder."
+msgid "Invalid frames."
 msgstr ""
 
 #: ugoira.rs:110
-msgid "Failed to open output file."
+msgid "Invalid crf."
 msgstr ""
 
 #: ugoira.rs:111
+msgid "Can not remove output file."
+msgstr ""
+
+#: ugoira.rs:113
+msgid "No video stream available in the file."
+msgstr ""
+
+#: ugoira.rs:114
+msgid "No available decoder."
+msgstr ""
+
+#: ugoira.rs:115
+msgid "No available encoder."
+msgstr ""
+
+#: ugoira.rs:116
+msgid "Failed to open output file."
+msgstr ""
+
+#: ugoira.rs:117
 msgid "Unable to scale image."
 msgstr ""
 
-#: ugoira.rs:112
+#: ugoira.rs:118
 msgid "Unknown error."
 msgstr ""
 
-#: ugoira.rs:177
+#: ugoira.rs:183
 msgid "No error."
 msgstr ""
 
-#: ugoira.rs:266
+#: ugoira.rs:272
 msgid "Delay should be greater than 0."
 msgstr ""
 
-#: ugoira.rs:289
+#: ugoira.rs:295
 msgid "File is needed."
 msgstr ""
 
-#: ugoira.rs:290
+#: ugoira.rs:296
 msgid "Delay is needed."
 msgstr ""
 
-#: ugoira.rs:350 ugoira.rs:351
+#: ugoira.rs:356 ugoira.rs:357
 msgid "Failed to convert path."
 msgstr ""
 

@@ -16,10 +16,16 @@ pub fn get_settings_list() -> Vec<SettingDes> {
         SettingDes::new("author-name-filters", gettext("Remove the part which after these parttens."), JsonValueType::Array, Some(check_author_name_filters)).unwrap(),
         #[cfg(feature = "exif")]
         SettingDes::new("update-exif", gettext("Add/Update exif information to image files even when overwrite are disabled."), JsonValueType::Boolean, None).unwrap(),
+        SettingDes::new("progress-bar-template", gettext("Progress bar's template. See <here> for more informations.").replace("<here>", "https://docs.rs/indicatif/latest/indicatif/#templates").as_str(), JsonValueType::Str, Some(check_nonempty_str)).unwrap(),
     ]
 }
 
 fn check_u64(obj: &JsonValue) -> bool {
     let r = obj.as_u64();
     r.is_some()
+}
+
+fn check_nonempty_str(obj: &JsonValue) -> bool {
+    let r = obj.as_str();
+    r.is_some() && r.unwrap().len() != 0
 }

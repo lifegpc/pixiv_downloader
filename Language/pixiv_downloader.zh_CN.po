@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: pixiv_downloader\n"
-"POT-Creation-Date: 2022-03-19 17:08+0800\n"
-"PO-Revision-Date: 2022-03-19 17:08+0800\n"
+"POT-Creation-Date: 2022-03-25 22:17+0800\n"
+"PO-Revision-Date: 2022-03-25 22:19+0800\n"
 "Last-Translator: lifegpc <g1710431395@gmail.com>\n"
 "Language-Team: \n"
 "Language: zh_CN\n"
@@ -18,12 +18,12 @@ msgstr ""
 msgid "Failed to parse regex:"
 msgstr "无法解析正则："
 
-#: author_name_filter.rs:46 retry_interval.rs:22 ugoira.rs:280
+#: author_name_filter.rs:46 retry_interval.rs:22 ugoira.rs:286
 msgid "Failed to get JSON object."
 msgstr "无法获取 JSON 对象。"
 
 #: author_name_filter.rs:48 author_name_filter.rs:130 retry_interval.rs:61
-#: retry_interval.rs:65 ugoira.rs:282 ugoira.rs:287
+#: retry_interval.rs:65 ugoira.rs:288 ugoira.rs:293
 msgid "Unsupported JSON type."
 msgstr "不支持的 JSON 类型。"
 
@@ -43,15 +43,15 @@ msgstr "未知的过滤器类型："
 msgid "Failed parse author name filters:"
 msgstr "无法解析作者名称过滤器："
 
-#: avdict.rs:44 ugoira.rs:50
+#: avdict.rs:44 ugoira.rs:56
 msgid "Failed to decode string with UTF-8:"
 msgstr "无法用 UTF-8 解码字符串："
 
-#: avdict.rs:60 ugoira.rs:106 ugoira.rs:146 ugoira.rs:181 ugoira.rs:270
+#: avdict.rs:60 ugoira.rs:112 ugoira.rs:152 ugoira.rs:187 ugoira.rs:276
 msgid "Out of memory."
 msgstr "内存溢出。"
 
-#: avdict.rs:77 ugoira.rs:158 ugoira.rs:204
+#: avdict.rs:77 ugoira.rs:164 ugoira.rs:210
 msgid "Failed to get error message:"
 msgstr "无法获取错误消息："
 
@@ -421,67 +421,71 @@ msgstr "Pixiv 的 refresh tokens。用于登录。"
 msgid "Remove the part which after these parttens."
 msgstr "移除匹配的部分。"
 
-#: ugoira.rs:101
+#: settings_list.rs:19
+msgid "Progress bar's template. See <here> for more informations."
+msgstr "进度条模板。更多信息见 <here> 。"
+
+#: ugoira.rs:107
 msgid "Arguments have null pointers."
 msgstr "参数包含空指针。"
 
-#: ugoira.rs:102
+#: ugoira.rs:108
 msgid "Invalid max fps."
 msgstr "无效的最大帧率。"
 
-#: ugoira.rs:103
+#: ugoira.rs:109
 msgid "Invalid frames."
 msgstr "无效的帧信息。"
 
-#: ugoira.rs:104
+#: ugoira.rs:110
 msgid "Invalid crf."
 msgstr "无效的 CRF。"
 
-#: ugoira.rs:105
+#: ugoira.rs:111
 msgid "Can not remove output file."
 msgstr "无法删除输出文件。"
 
-#: ugoira.rs:107
+#: ugoira.rs:113
 msgid "No video stream available in the file."
 msgstr "文件中不存在视频流。"
 
-#: ugoira.rs:108
+#: ugoira.rs:114
 msgid "No available decoder."
 msgstr "没有可用的解码器。"
 
-#: ugoira.rs:109
+#: ugoira.rs:115
 msgid "No available encoder."
 msgstr "没有可用的编码器。"
 
-#: ugoira.rs:110
+#: ugoira.rs:116
 msgid "Failed to open output file."
 msgstr "无法打开输出文件。"
 
-#: ugoira.rs:111
+#: ugoira.rs:117
 msgid "Unable to scale image."
 msgstr "无法处理图片。"
 
-#: ugoira.rs:112
+#: ugoira.rs:118
 msgid "Unknown error."
 msgstr "未知错误。"
 
-#: ugoira.rs:177
+#: ugoira.rs:183
 msgid "No error."
 msgstr "无错误。"
 
-#: ugoira.rs:266
+#: ugoira.rs:272
 msgid "Delay should be greater than 0."
 msgstr "延迟需要大于 0 。"
 
-#: ugoira.rs:289
+#: ugoira.rs:295
 msgid "File is needed."
 msgstr "需要文件。"
 
-#: ugoira.rs:290
+#: ugoira.rs:296
 msgid "Delay is needed."
 msgstr "需要延迟。"
 
-#: ugoira.rs:350 ugoira.rs:351
+#: ugoira.rs:356 ugoira.rs:357
 msgid "Failed to convert path."
 msgstr "无法转换路径。"
 

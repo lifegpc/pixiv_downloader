@@ -291,7 +291,7 @@ impl WebClient {
         };
         if bar.is_some() {
             bar.as_mut().unwrap().set_style(ProgressStyle::default_bar()
-                .template("[{elapsed_precise}] [{wide_bar:.green/yellow}] {bytes}/{total_bytes} ({bytes_per_sec}, {eta}) {msg:40}")
+                .template(opt.progress_bar_template().as_ref())
                 .progress_chars("#>-"));
         }
         let mut downloaded = 0usize;

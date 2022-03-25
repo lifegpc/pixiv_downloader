@@ -122,4 +122,12 @@ impl<'a> OptHelper<'a> {
     pub fn use_progress_bar(&self) -> bool {
         atty::is(atty::Stream::Stdout)
     }
+
+    /// Return progress bar's template
+    pub fn progress_bar_template(&self) -> String {
+        if self.settings.have("progress-bar-template") {
+            return self.settings.get_str("progress-bar-template").unwrap()
+        }
+        String::from("[{elapsed_precise}] [{wide_bar:.green/yellow}] {bytes}/{total_bytes} ({bytes_per_sec}, {eta}) {msg:40}")
+    }
 }
