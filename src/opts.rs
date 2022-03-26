@@ -1,5 +1,6 @@
 extern crate getopts;
 
+use crate::ext::use_or_not::UseOrNot;
 use crate::gettext;
 use crate::list::NonTailList;
 use crate::pixiv_link::PixivID;
@@ -8,6 +9,7 @@ use crate::utils::check_file_exists;
 use crate::utils::get_exe_path_else_current;
 use getopts::Options;
 use std::env;
+use std::str::FromStr;
 use std::time::Duration;
 
 /// Command Line command
@@ -62,6 +64,8 @@ pub struct CommandOpts {
     #[cfg(feature = "exif")]
     /// Add/Update exif information to image files even when overwrite are disabled
     pub update_exif: bool,
+    /// Whether to enable progress bar
+    pub use_progress_bar: Option<UseOrNot>,
 }
 
 impl CommandOpts {
@@ -80,6 +84,7 @@ impl CommandOpts {
             use_webpage: false,
             #[cfg(feature = "exif")]
             update_exif: false,
+            use_progress_bar: None,
         }
     }
 
@@ -168,6 +173,12 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         "",
         "update-exif",
         gettext("Add/Update exif information to image files even when overwrite are disabled."),
+    );
+    opts.optopt(
+        "",
+        "use-progress-bar",
+        gettext("Whether to enable progress bar."),
+        "yes/no/auto",
     );
     let result = match opts.parse(&argv[1..]) {
         Ok(m) => m,
@@ -279,6 +290,15 @@ pub fn parse_cmd() -> Option<CommandOpts> {
     #[cfg(feature = "exif")]
     {
         re.as_mut().unwrap().update_exif = result.opt_present("update-exif");
+    }
+    if result.opt_present("use-progress-bar") {
+        let s = result.opt_str("use-progress-bar").unwrap();
+        let r = UseOrNot::from_str(s.as_str());
+        if r.is_err() {
+            println!("{} {}", gettext("Failed to parse <opt>:").replace("<opt>", "use-progress-bar").as_str(), r.unwrap_err());
+            return None;
+        }
+        re.as_mut().unwrap().use_progress_bar = Some(r.unwrap());
     }
     re
 }

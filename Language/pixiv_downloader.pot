@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: pixiv_downloader\n"
-"POT-Creation-Date: 2022-03-25 22:17+0800\n"
+"POT-Creation-Date: 2022-03-26 15:53+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,12 +17,13 @@ msgstr ""
 msgid "Failed to parse regex:"
 msgstr ""
 
-#: author_name_filter.rs:46 retry_interval.rs:22 ugoira.rs:286
+#: author_name_filter.rs:46 ext/use_or_not.rs:73 retry_interval.rs:22
+#: ugoira.rs:286
 msgid "Failed to get JSON object."
 msgstr ""
 
-#: author_name_filter.rs:48 author_name_filter.rs:130 retry_interval.rs:61
-#: retry_interval.rs:65 ugoira.rs:288 ugoira.rs:293
+#: author_name_filter.rs:48 author_name_filter.rs:130 ext/use_or_not.rs:79
+#: retry_interval.rs:61 retry_interval.rs:65 ugoira.rs:288 ugoira.rs:293
 msgid "Unsupported JSON type."
 msgstr ""
 
@@ -138,76 +139,76 @@ msgstr ""
 msgid "Warning: Web api client not logined, some future may not work."
 msgstr ""
 
-#: download.rs:70
+#: download.rs:73
 msgid "Failed to get page count."
 msgstr ""
 
-#: download.rs:79
+#: download.rs:82
 msgid "Failed to get pages' data."
 msgstr ""
 
-#: download.rs:92
+#: download.rs:95
 msgid "Failed to save metadata to JSON file."
 msgstr ""
 
-#: download.rs:107
+#: download.rs:110
 msgid "Failed to get ugoira's data."
 msgstr ""
 
-#: download.rs:113
+#: download.rs:116
 msgid "Can not find source link for ugoira."
 msgstr ""
 
-#: download.rs:119 download.rs:197 download.rs:271
+#: download.rs:122 download.rs:200 download.rs:274
 msgid "Failed to get file name from url:"
 msgstr ""
 
-#: download.rs:135 download.rs:141
+#: download.rs:138 download.rs:144
 msgid "Failed to download ugoira:"
 msgstr ""
 
-#: download.rs:146
+#: download.rs:149
 msgid "Downloaded ugoira:"
 msgstr ""
 
-#: download.rs:156
+#: download.rs:159
 msgid "Warning: Failed to generate video's metadata:"
 msgstr ""
 
-#: download.rs:166
+#: download.rs:169
 msgid "Failed to convert from ugoira to mp4 video file:"
 msgstr ""
 
-#: download.rs:169
+#: download.rs:172
 msgid "Converted <src> -> <dest>"
 msgstr ""
 
-#: download.rs:172
+#: download.rs:175
 msgid "Failed to parse frames:"
 msgstr ""
 
-#: download.rs:179
+#: download.rs:182
 msgid "Warning: Unknown illust type:"
 msgstr ""
 
-#: download.rs:182
+#: download.rs:185
 msgid "Warning: Failed to get illust's type."
 msgstr ""
 
-#: download.rs:191 download.rs:265
+#: download.rs:194 download.rs:268
 msgid "Failed to get original picture's link."
 msgstr ""
 
-#: download.rs:212 download.rs:251 download.rs:291 download.rs:321
+#: download.rs:215 download.rs:254 download.rs:294 download.rs:324
 msgid "Failed to add exif data to image:"
 msgstr ""
 
-#: download.rs:231 download.rs:237 download.rs:301 download.rs:307
+#: download.rs:234 download.rs:240 download.rs:304 download.rs:310
 #: pixiv_web.rs:153
 msgid "Failed to download image:"
 msgstr ""
 
-#: download.rs:242 download.rs:312
+#: download.rs:245 download.rs:315
 msgid "Downloaded image:"
 msgstr ""
 
@@ -215,96 +216,108 @@ msgstr ""
 msgid "Failed to parse duration from string."
 msgstr ""
 
-#: opts.rs:93
+#: ext/use_or_not.rs:65
+msgid "Failed to parse value."
+msgstr ""
+
+#: opts.rs:98
 msgid "Warning: The specified config file not found."
 msgstr ""
 
-#: opts.rs:117
+#: opts.rs:122
 msgid "Usage:"
 msgstr ""
 
-#: opts.rs:119
+#: opts.rs:124
 msgid "Download an artwork"
 msgstr ""
 
-#: opts.rs:121
+#: opts.rs:126
 msgid "Fix the config file"
 msgstr ""
 
-#: opts.rs:123
+#: opts.rs:128
 msgid "Print all available settings"
 msgstr ""
 
-#: opts.rs:131
+#: opts.rs:136
 msgid "Print help message."
 msgstr ""
 
-#: opts.rs:135
+#: opts.rs:140
 msgid "The location of config file."
 msgstr ""
 
-#: opts.rs:141 settings_list.rs:11
+#: opts.rs:146 settings_list.rs:13
 msgid "The location of cookies file. Used for web API."
 msgstr ""
 
-#: opts.rs:147 settings_list.rs:12
+#: opts.rs:152 settings_list.rs:14
 msgid "The language of translated tags."
 msgstr ""
 
-#: opts.rs:150
+#: opts.rs:155
 msgid "Verbose logging."
 msgstr ""
 
-#: opts.rs:151
+#: opts.rs:156
 msgid "Overwrite existing file."
 msgstr ""
 
-#: opts.rs:152
+#: opts.rs:157
 msgid "Skip overwrite existing file."
 msgstr ""
 
-#: opts.rs:156 settings_list.rs:13
+#: opts.rs:161 settings_list.rs:15
 msgid "Max retry count if request failed."
 msgstr ""
 
-#: opts.rs:162 settings_list.rs:14
+#: opts.rs:167 settings_list.rs:16
 msgid "The interval (in seconds) between two retries."
 msgstr ""
 
-#: opts.rs:165 settings_list.rs:15
+#: opts.rs:170 settings_list.rs:17
 msgid "Use data from webpage first."
 msgstr ""
 
-#: opts.rs:170 settings_list.rs:18
+#: opts.rs:175 settings_list.rs:20
 msgid "Add/Update exif information to image files even when overwrite are disabled."
 msgstr ""
 
-#: opts.rs:191
+#: opts.rs:180 settings_list.rs:22
+msgid "Whether to enable progress bar."
+msgstr ""
+
+#: opts.rs:202
 msgid "Unknown command."
 msgstr ""
 
-#: opts.rs:201
+#: opts.rs:212
 msgid "Failed to parse ID:"
 msgstr ""
 
-#: opts.rs:207
+#: opts.rs:218
 msgid "No URL or ID specified."
 msgstr ""
 
-#: opts.rs:215
+#: opts.rs:226
 msgid "No detailed command specified."
 msgstr ""
 
-#: opts.rs:228
+#: opts.rs:239
 msgid "Unknown config subcommand."
 msgstr ""
 
-#: opts.rs:264
+#: opts.rs:275
 msgid "Retry count must be an non-negative integer:"
 msgstr ""
 
-#: opts.rs:273
+#: opts.rs:284
 msgid "Failed to parse retry interval:"
+msgstr ""
+
+#: opts.rs:298
+msgid "Failed to parse <opt>:"
 msgstr ""
 
 #: parser/description.rs:129 parser/metadata.rs:76
@@ -407,15 +420,15 @@ msgstr ""
 msgid "Failed to flush file:"
 msgstr ""
 
-#: settings_list.rs:10
+#: settings_list.rs:12
 msgid "Pixiv's refresh tokens. Used to login."
 msgstr ""
 
-#: settings_list.rs:16
+#: settings_list.rs:18
 msgid "Remove the part which after these parttens."
 msgstr ""
 
-#: settings_list.rs:19
+#: settings_list.rs:21
 msgid "Progress bar's template. See <here> for more informations."
 msgstr ""
 
@@ -535,14 +548,14 @@ msgstr ""
 msgid "Error when downloading file:"
 msgstr ""
 
-#: main.rs:84
+#: main.rs:85
 msgid "Failed to save config file:"
 msgstr ""
 
-#: main.rs:95
+#: main.rs:96
 msgid "All available settings:"
 msgstr ""
 
-#: main.rs:127
+#: main.rs:128
 msgid "Can not read config file:"
 msgstr ""

@@ -33,3 +33,8 @@ impl ToJson for &JsonValue {
         Some((*self).clone())
     }
 }
+
+pub trait FromJson where Self: Sized {
+    type Err;
+    fn from_json<T: ToJson>(v: T) -> Result<Self, Self::Err>;
+}

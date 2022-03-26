@@ -43,6 +43,7 @@ mod ext;
 mod i18n;
 mod list;
 mod opthelper;
+mod opt;
 mod opts;
 mod parser;
 mod pixiv_link;

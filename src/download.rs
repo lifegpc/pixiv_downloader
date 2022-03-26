@@ -60,6 +60,9 @@ impl Main {
         if re.is_none() {
             re = pw.get_artwork_ajax(id);
         }
+        if re.is_none() {
+            return 1;
+        }
         let re = re.unwrap();
         if ajax_ver {
             pages = (&re["pageCount"]).as_u64();

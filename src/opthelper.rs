@@ -1,4 +1,8 @@
 use crate::author_name_filter::AuthorNameFilter;
+use crate::ext::json::FromJson;
+use crate::ext::use_or_not::ToBool;
+use crate::ext::use_or_not::UseOrNot;
+use crate::opt::use_progress_bar::UseProgressBar;
 use crate::opts::CommandOpts;
 use crate::list::NonTailList;
 use crate::retry_interval::parse_retry_interval_from_json;
@@ -6,7 +10,7 @@ use crate::settings::SettingStore;
 use std::time::Duration;
 
 /// An sturct to access all available settings/command line switches
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct OptHelper<'a> {
     /// Command Line Options
     opt: &'a CommandOpts,
@@ -14,6 +18,7 @@ pub struct OptHelper<'a> {
     settings: &'a SettingStore,
     default_retry_interval: NonTailList<Duration>,
     _author_name_filters: Option<Vec<AuthorNameFilter>>,
+    _use_progress_bar: Option<UseProgressBar>,
 }
 
 impl<'a> OptHelper<'a> {
@@ -54,11 +59,19 @@ impl<'a> OptHelper<'a> {
         } else {
             None
         };
+        let _use_progress_bar = if opt.use_progress_bar.is_some() {
+            Some(UseProgressBar::from(opt.use_progress_bar.unwrap()))
+        } else if settings.have("use-progress-bar") {
+            Some(UseProgressBar::from(UseOrNot::from_json(settings.get("use-progress-bar").unwrap()).unwrap()))
+        } else {
+            None
+        };
         Self {
             opt,
             settings,
             default_retry_interval: l,
             _author_name_filters: _author_name_filters,
+            _use_progress_bar: _use_progress_bar,
         }
     }
 
@@ -120,6 +133,9 @@ impl<'a> OptHelper<'a> {
 
     /// Return whether to use progress bar.
     pub fn use_progress_bar(&self) -> bool {
+        if self._use_progress_bar.is_some() {
+            return self._use_progress_bar.as_ref().unwrap().to_bool();
+        }
         atty::is(atty::Stream::Stdout)
     }
 

@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: pixiv_downloader\n"
-"POT-Creation-Date: 2022-03-25 22:17+0800\n"
-"PO-Revision-Date: 2022-03-25 22:19+0800\n"
+"POT-Creation-Date: 2022-03-26 15:53+0800\n"
+"PO-Revision-Date: 2022-03-26 15:54+0800\n"
 "Last-Translator: lifegpc <g1710431395@gmail.com>\n"
 "Language-Team: \n"
 "Language: zh_CN\n"
@@ -18,12 +18,13 @@ msgstr ""
 msgid "Failed to parse regex:"
 msgstr "无法解析正则："
 
-#: author_name_filter.rs:46 retry_interval.rs:22 ugoira.rs:286
+#: author_name_filter.rs:46 ext/use_or_not.rs:73 retry_interval.rs:22
+#: ugoira.rs:286
 msgid "Failed to get JSON object."
 msgstr "无法获取 JSON 对象。"
 
-#: author_name_filter.rs:48 author_name_filter.rs:130 retry_interval.rs:61
-#: retry_interval.rs:65 ugoira.rs:288 ugoira.rs:293
+#: author_name_filter.rs:48 author_name_filter.rs:130 ext/use_or_not.rs:79
+#: retry_interval.rs:61 retry_interval.rs:65 ugoira.rs:288 ugoira.rs:293
 msgid "Unsupported JSON type."
 msgstr "不支持的 JSON 类型。"
 
@@ -139,76 +140,76 @@ msgstr "无法初始化 Pixiv 网页 API 客户端。"
 msgid "Warning: Web api client not logined, some future may not work."
 msgstr "警告：Web API 客户端未登录，一些功能可能无法工作。"
 
-#: download.rs:70
+#: download.rs:73
 msgid "Failed to get page count."
 msgstr "无法获取页数。"
 
-#: download.rs:79
+#: download.rs:82
 msgid "Failed to get pages' data."
 msgstr "无法获取每页数据。"
 
-#: download.rs:92
+#: download.rs:95
 msgid "Failed to save metadata to JSON file."
 msgstr "无法将元数据保存到 JSON 文件。"
 
-#: download.rs:107
+#: download.rs:110
 msgid "Failed to get ugoira's data."
 msgstr "无法获取动图数据。"
 
-#: download.rs:113
+#: download.rs:116
 msgid "Can not find source link for ugoira."
 msgstr "无法获取动图的链接。"
 
-#: download.rs:119 download.rs:197 download.rs:271
+#: download.rs:122 download.rs:200 download.rs:274
 msgid "Failed to get file name from url:"
 msgstr "无法从 URL 获取文件名："
 
-#: download.rs:135 download.rs:141
+#: download.rs:138 download.rs:144
 msgid "Failed to download ugoira:"
 msgstr "无法下载动图："
 
-#: download.rs:146
+#: download.rs:149
 msgid "Downloaded ugoira:"
 msgstr "已下载动图："
 
-#: download.rs:156
+#: download.rs:159
 msgid "Warning: Failed to generate video's metadata:"
 msgstr "警告：无法生成视频元数据："
 
-#: download.rs:166
+#: download.rs:169
 msgid "Failed to convert from ugoira to mp4 video file:"
 msgstr "无法将动图转换为 mp4 视频文件："
 
-#: download.rs:169
+#: download.rs:172
 msgid "Converted <src> -> <dest>"
 msgstr "已转换 <src> -> <dest>"
 
-#: download.rs:172
+#: download.rs:175
 msgid "Failed to parse frames:"
 msgstr "无法解析帧数据："
 
-#: download.rs:179
+#: download.rs:182
 msgid "Warning: Unknown illust type:"
 msgstr "警告：未知的插图类型："
 
-#: download.rs:182
+#: download.rs:185
 msgid "Warning: Failed to get illust's type."
 msgstr "警告：无法获取插图类型。"
 
-#: download.rs:191 download.rs:265
+#: download.rs:194 download.rs:268
 msgid "Failed to get original picture's link."
 msgstr "无法获取原图链接。"
 
-#: download.rs:212 download.rs:251 download.rs:291 download.rs:321
+#: download.rs:215 download.rs:254 download.rs:294 download.rs:324
 msgid "Failed to add exif data to image:"
 msgstr "无法往图片增加 EXIF 数据："
 
-#: download.rs:231 download.rs:237 download.rs:301 download.rs:307
+#: download.rs:234 download.rs:240 download.rs:304 download.rs:310
 #: pixiv_web.rs:153
 msgid "Failed to download image:"
 msgstr "无法下载图片："
 
-#: download.rs:242 download.rs:312
+#: download.rs:245 download.rs:315
 msgid "Downloaded image:"
 msgstr "已下载图片："
 
@@ -216,98 +217,110 @@ msgstr "已下载图片："
 msgid "Failed to parse duration from string."
 msgstr "无法解析从字符串解析时长。"
 
-#: opts.rs:93
+#: ext/use_or_not.rs:65
+msgid "Failed to parse value."
+msgstr "无法解析值。"
+
+#: opts.rs:98
 msgid "Warning: The specified config file not found."
 msgstr "警告：没有找到指定的设置文件。"
 
-#: opts.rs:117
+#: opts.rs:122
 msgid "Usage:"
 msgstr "使用方法："
 
-#: opts.rs:119
+#: opts.rs:124
 msgid "Download an artwork"
 msgstr "下载一个作品"
 
-#: opts.rs:121
+#: opts.rs:126
 msgid "Fix the config file"
 msgstr "修复设置文件"
 
-#: opts.rs:123
+#: opts.rs:128
 msgid "Print all available settings"
 msgstr "打印所有可用的设置"
 
-#: opts.rs:131
+#: opts.rs:136
 msgid "Print help message."
 msgstr "打印帮助信息。"
 
-#: opts.rs:135
+#: opts.rs:140
 msgid "The location of config file."
 msgstr "设置文件的位置。"
 
-#: opts.rs:141 settings_list.rs:11
+#: opts.rs:146 settings_list.rs:13
 msgid "The location of cookies file. Used for web API."
 msgstr "cookies 文件的位置。用于网页 API。"
 
-#: opts.rs:147 settings_list.rs:12
+#: opts.rs:152 settings_list.rs:14
 msgid "The language of translated tags."
 msgstr "翻译后的标签语言。"
 
-#: opts.rs:150
+#: opts.rs:155
 msgid "Verbose logging."
 msgstr "启用详细内容输出。"
 
-#: opts.rs:151
+#: opts.rs:156
 msgid "Overwrite existing file."
 msgstr "覆盖已有文件。"
 
-#: opts.rs:152
+#: opts.rs:157
 msgid "Skip overwrite existing file."
 msgstr "跳过覆盖已有文件。"
 
-#: opts.rs:156 settings_list.rs:13
+#: opts.rs:161 settings_list.rs:15
 msgid "Max retry count if request failed."
 msgstr "请求失败时最大重试次数。"
 
-#: opts.rs:162 settings_list.rs:14
+#: opts.rs:167 settings_list.rs:16
 msgid "The interval (in seconds) between two retries."
 msgstr "两次尝试的间隔时间（单位：秒）。"
 
-#: opts.rs:165 settings_list.rs:15
+#: opts.rs:170 settings_list.rs:17
 msgid "Use data from webpage first."
 msgstr "优先使用来自网页的数据。"
 
-#: opts.rs:170 settings_list.rs:18
+#: opts.rs:175 settings_list.rs:20
 msgid ""
 "Add/Update exif information to image files even when overwrite are disabled."
 msgstr "添加或更新图片的 EXIF 信息，即使不覆盖图片文件。"
 
-#: opts.rs:191
+#: opts.rs:180 settings_list.rs:22
+msgid "Whether to enable progress bar."
+msgstr "是否启用进度条。"
+
+#: opts.rs:202
 msgid "Unknown command."
 msgstr "未知指令。"
 
-#: opts.rs:201
+#: opts.rs:212
 msgid "Failed to parse ID:"
 msgstr "无法解析 ID："
 
-#: opts.rs:207
+#: opts.rs:218
 msgid "No URL or ID specified."
 msgstr "没有指定网址或 ID。"
 
-#: opts.rs:215
+#: opts.rs:226
 msgid "No detailed command specified."
 msgstr "没有指定更详细的指令。"
 
-#: opts.rs:228
+#: opts.rs:239
 msgid "Unknown config subcommand."
 msgstr "未知的 config 子指令。"
 
-#: opts.rs:264
+#: opts.rs:275
 msgid "Retry count must be an non-negative integer:"
 msgstr "重试次数不能是负数："
 
-#: opts.rs:273
+#: opts.rs:284
 msgid "Failed to parse retry interval:"
 msgstr "无法解析间隔时间："
+
+#: opts.rs:298
+msgid "Failed to parse <opt>:"
+msgstr "无法解析 <opt> ："
 
 #: parser/description.rs:129 parser/metadata.rs:76
 msgid "Failed to parse HTML:"
@@ -413,15 +426,15 @@ msgstr "无法将设置转换为 JSON 对象。"
 msgid "Failed to flush file:"
 msgstr "无法刷新文件缓冲区："
 
-#: settings_list.rs:10
+#: settings_list.rs:12
 msgid "Pixiv's refresh tokens. Used to login."
 msgstr "Pixiv 的 refresh tokens。用于登录。"
 
-#: settings_list.rs:16
+#: settings_list.rs:18
 msgid "Remove the part which after these parttens."
 msgstr "移除匹配的部分。"
 
-#: settings_list.rs:19
+#: settings_list.rs:21
 msgid "Progress bar's template. See <here> for more informations."
 msgstr "进度条模板。更多信息见 <here> 。"
 
@@ -541,14 +554,14 @@ msgstr "正在下载 \"<loc>\"。"
 msgid "Error when downloading file:"
 msgstr "下载文件时发生错误："
 
-#: main.rs:84
+#: main.rs:85
 msgid "Failed to save config file:"
 msgstr "无法保存设置文件："
 
-#: main.rs:95
+#: main.rs:96
 msgid "All available settings:"
 msgstr "所有可用的设置："
 
-#: main.rs:127
+#: main.rs:128
 msgid "Can not read config file:"
 msgstr "无法读取设置文件："
