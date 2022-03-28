@@ -8,7 +8,7 @@ use std::convert::TryInto;
 use xml::unescape;
 
 /// Pixiv's basic data
-pub struct PixivData<'a> {
+pub struct PixivData {
     /// ID
     pub id: PixivID,
     /// The title
@@ -16,11 +16,11 @@ pub struct PixivData<'a> {
     /// The author
     pub author: Option<String>,
     pub description: Option<String>,
-    helper: OptHelper<'a>,
+    helper: OptHelper,
 }
 
-impl<'a> PixivData<'a> {
-    pub fn new<T: ToPixivID>(id: T, helper: OptHelper<'a>) -> Option<Self> {
+impl PixivData {
+    pub fn new<T: ToPixivID>(id: T, helper: OptHelper) -> Option<Self> {
         let i = id.to_pixiv_id();
         if i.is_none() {
             return None;

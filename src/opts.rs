@@ -36,7 +36,7 @@ impl PartialEq<ConfigCommand> for &ConfigCommand {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 /// Command Line Options
 pub struct CommandOpts {
     /// Command
@@ -66,6 +66,8 @@ pub struct CommandOpts {
     pub update_exif: bool,
     /// Whether to enable progress bar
     pub use_progress_bar: Option<UseOrNot>,
+    /// Whether to download multiple images at the same time
+    pub download_multiple_images: bool,
 }
 
 impl CommandOpts {
@@ -85,6 +87,7 @@ impl CommandOpts {
             #[cfg(feature = "exif")]
             update_exif: false,
             use_progress_bar: None,
+            download_multiple_images: false,
         }
     }
 
@@ -179,6 +182,11 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         "use-progress-bar",
         gettext("Whether to enable progress bar."),
         "yes/no/auto",
+    );
+    opts.optflag(
+        "",
+        "download-multiple-images",
+        gettext("Download multiple images at the same time."),
     );
     let result = match opts.parse(&argv[1..]) {
         Ok(m) => m,
@@ -300,5 +308,6 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         }
         re.as_mut().unwrap().use_progress_bar = Some(r.unwrap());
     }
+    re.as_mut().unwrap().download_multiple_images = result.opt_present("download-multiple-images");
     re
 }

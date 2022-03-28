@@ -11,17 +11,17 @@ use std::time::Duration;
 
 /// An sturct to access all available settings/command line switches
 #[derive(Clone, Debug)]
-pub struct OptHelper<'a> {
+pub struct OptHelper {
     /// Command Line Options
-    opt: &'a CommandOpts,
+    opt: CommandOpts,
     /// Settings
-    settings: &'a SettingStore,
+    settings: SettingStore,
     default_retry_interval: NonTailList<Duration>,
     _author_name_filters: Option<Vec<AuthorNameFilter>>,
     _use_progress_bar: Option<UseProgressBar>,
 }
 
-impl<'a> OptHelper<'a> {
+impl OptHelper {
     pub fn author_name_filters(&self) -> Option<&Vec<AuthorNameFilter>> {
         if self.settings.have("author-name-filters") {
             return self._author_name_filters.as_ref();
@@ -51,7 +51,7 @@ impl<'a> OptHelper<'a> {
         }
     }
 
-    pub fn new(opt: &'a CommandOpts, settings: &'a SettingStore) -> Self {
+    pub fn new(opt: CommandOpts, settings: SettingStore) -> Self {
         let mut l = NonTailList::default();
         l += Duration::new(3, 0);
         let _author_name_filters = if settings.have("author-name-filters") {
@@ -145,5 +145,16 @@ impl<'a> OptHelper<'a> {
             return self.settings.get_str("progress-bar-template").unwrap()
         }
         String::from("[{elapsed_precise}] [{wide_bar:.green/yellow}] {bytes}/{total_bytes} ({bytes_per_sec}, {eta}) {msg:40}")
+    }
+
+    /// Return whether to download multiple images at the same time.
+    pub fn download_multiple_images(&self) -> bool {
+        if self.opt.download_multiple_images {
+            return true;
+        }
+        if self.settings.have_bool("download-multiple-images") {
+            return self.settings.get_bool("download-multiple-images").unwrap();
+        }
+        false
     }
 }

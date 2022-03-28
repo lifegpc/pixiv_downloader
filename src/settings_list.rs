@@ -20,6 +20,7 @@ pub fn get_settings_list() -> Vec<SettingDes> {
         SettingDes::new("update-exif", gettext("Add/Update exif information to image files even when overwrite are disabled."), JsonValueType::Boolean, None).unwrap(),
         SettingDes::new("progress-bar-template", gettext("Progress bar's template. See <here> for more informations.").replace("<here>", "https://docs.rs/indicatif/latest/indicatif/#templates").as_str(), JsonValueType::Str, Some(check_nonempty_str)).unwrap(),
         SettingDes::new("use-progress-bar", gettext("Whether to enable progress bar."), JsonValueType::Multiple, Some(check_user_or_not)).unwrap(),
+        SettingDes::new("download-multiple-images", gettext("Download multiple images at the same time."), JsonValueType::Boolean, None).unwrap(),
     ]
 }
 

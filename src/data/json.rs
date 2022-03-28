@@ -12,6 +12,7 @@ use std::fs::File;
 use std::fs::remove_file;
 use std::io::Write;
 use std::path::Path;
+use std::sync::Arc;
 
 /// Store metadata informations in JSON file
 pub struct JSONDataFile {
@@ -71,13 +72,19 @@ impl JSONDataFile {
     }
 }
 
-impl<'a> From<PixivData<'a>> for JSONDataFile {
+impl From<PixivData> for JSONDataFile {
     fn from(p: PixivData) -> Self {
         JSONDataFile::from(&p)
     }
 }
 
-impl<'a> From<&'a PixivData<'a>> for JSONDataFile {
+impl From<Arc<PixivData>> for JSONDataFile {
+    fn from(p: Arc<PixivData>) -> Self {
+        JSONDataFile::from(p.as_ref())
+    }
+}
+
+impl From<&PixivData> for JSONDataFile {
     fn from(p: &PixivData) -> Self {
         let mut f = Self {
             id: p.id.clone(),

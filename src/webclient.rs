@@ -6,6 +6,7 @@ use crate::gettext;
 use crate::list::NonTailList;
 use crate::opthelper::OptHelper;
 use futures_util::StreamExt;
+use indicatif::MultiProgress;
 use indicatif::ProgressBar;
 use indicatif::ProgressStyle;
 use json::JsonValue;
@@ -18,6 +19,7 @@ use std::fs::File;
 use std::fs::remove_file;
 use std::io::Write;
 use std::path::Path;
+use std::sync::Arc;
 use std::time::Duration;
 
 pub trait ToHeaders {
@@ -231,9 +233,29 @@ impl WebClient {
         None
     }
 
+    pub async fn aget<U: IntoUrl + Clone, H: ToHeaders + Clone>(&mut self, url: U, headers: H) -> Option<Response> {
+        let mut count = 0u64;
+        while count <= self.retry {
+            let r = self._aget2(url.clone(), headers.clone()).await;
+            if r.is_some() {
+                return r;
+            }
+            count += 1;
+            if count <= self.retry {
+                let t = self.retry_interval.as_ref().unwrap()[(count - 1).try_into().unwrap()];
+                if !t.is_zero() {
+                    println!("{}", gettext("Retry after <num> seconds.").replace("<num>", format!("{}", t.as_secs_f64()).as_str()).as_str());
+                    tokio::time::sleep(t).await;
+                }
+            }
+            println!("{}", gettext("Retry <count> times now.").replace("<count>", format!("{}", count).as_str()).as_str());
+        }
+        None
+    }
+
     /// Send GET requests
     pub fn _get<U: IntoUrl, H: ToHeaders>(&mut self, url: U, headers: H) -> Option<Response> {
-        let r = self.aget(url, headers);
+        let r = self._aget(url, headers);
         let r = r.send();
         let r = spin_on(r);
         match r {
@@ -251,7 +273,25 @@ impl WebClient {
         Some(r)
     }
 
-    pub fn aget<U: IntoUrl, H: ToHeaders>(&mut self, url: U, headers: H) -> RequestBuilder {
+    pub async fn _aget2<U: IntoUrl, H: ToHeaders>(&mut self, url: U, headers: H) -> Option<Response> {
+        let r = self._aget(url, headers);
+        let r = r.send().await;
+        match r {
+            Ok(_) => {}
+            Err(e) => {
+                println!("{} {}", gettext("Error when request:"), e);
+                return None;
+            }
+        }
+        let r = r.unwrap();
+        self.handle_set_cookie(&r);
+        if self.verbose {
+            println!("{}", r.status());
+        }
+        Some(r)
+    }
+
+    pub fn _aget<U: IntoUrl, H: ToHeaders>(&mut self, url: U, headers: H) -> RequestBuilder {
         let s = url.as_str();
         if self.verbose {
             println!("GET {}", s);
@@ -274,6 +314,84 @@ impl WebClient {
         r
     }
 
+    pub async fn adownload_stream<S: AsRef<OsStr> + ?Sized>(file_name: &S, r: Response, opt: &OptHelper, progress_bars: Option<Arc<MultiProgress>>) -> Result<(), ()> {
+        let content_length = r.content_length();
+        let use_progress_bar = match &content_length {
+            Some(_) => { opt.use_progress_bar() }
+            None => { false }
+        };
+        let mut bar = if use_progress_bar {
+            Some(ProgressBar::new(content_length.unwrap()))
+        } else {
+            None
+        };
+        let p = Path::new(file_name);
+        if bar.is_some() {
+            bar.as_mut().unwrap().set_style(ProgressStyle::default_bar()
+                .template(opt.progress_bar_template().as_ref()).unwrap()
+                .progress_chars("#>-"));
+            let tmp = p.file_name().unwrap_or(p.as_os_str());
+            bar.as_mut().unwrap().set_message(gettext("Downloading \"<loc>\".").replace("<loc>", tmp.to_str().unwrap_or("<NULL>")));
+            if progress_bars.is_some() {
+                bar = Some(progress_bars.unwrap().add(bar.unwrap()));
+            }
+        }
+        if p.exists() {
+            let re = remove_file(p);
+            if re.is_err() {
+                if bar.is_none() {
+                    println!("{} {}", gettext("Failed to remove file:"), re.unwrap_err());
+                } else {
+                    bar.as_ref().unwrap().set_message(format!("{} {}", gettext("Failed to remove file:"), re.unwrap_err()));
+                    bar.as_ref().unwrap().abandon();
+                }
+                return Err(());
+            }
+        }
+        let f = File::create(p);
+        if f.is_err() {
+            if bar.is_none() {
+                println!("{} {}", gettext("Failed to create file:"), f.unwrap_err());
+            } else {
+                bar.as_ref().unwrap().set_message(format!("{} {}", gettext("Failed to create file:"), f.unwrap_err()));
+                bar.as_ref().unwrap().abandon();
+            }
+            return Err(());
+        }
+        let mut f = f.unwrap();
+        let mut stream = r.bytes_stream();
+        while let Some(data) = stream.next().await {
+            if data.is_err() {
+                if bar.is_none() {
+                    println!("{} {}", gettext("Error when downloading file:"), data.unwrap_err());
+                } else {
+                    bar.as_ref().unwrap().set_message(format!("{} {}", gettext("Error when downloading file:"), data.unwrap_err()));
+                    bar.as_ref().unwrap().abandon();
+                }
+                return Err(());
+            }
+            let data = data.unwrap();
+            if bar.is_some() {
+                bar.as_ref().unwrap().inc(data.len() as u64);
+                bar.as_ref().unwrap().tick();
+            }
+            let r = f.write(&data);
+            if r.is_err() {
+                if bar.is_none() {
+                    println!("{} {}", gettext("Failed to write file:"), r.unwrap_err());
+                } else {
+                    bar.as_ref().unwrap().set_message(format!("{} {}", gettext("Failed to write file:"), r.unwrap_err()));
+                    bar.as_ref().unwrap().abandon();
+                }
+                return Err(());
+            }
+        }
+        if bar.is_some() {
+            bar.as_mut().unwrap().finish_with_message(format!("{} {}", gettext("Downloaded image:"), p.to_str().unwrap_or("(null)")));
+        }
+        Ok(())
+    }
+
     /// Download a stream
     /// * `file_name` - File name
     /// * `r` - Response
@@ -291,7 +409,7 @@ impl WebClient {
         };
         if bar.is_some() {
             bar.as_mut().unwrap().set_style(ProgressStyle::default_bar()
-                .template(opt.progress_bar_template().as_ref())
+                .template(opt.progress_bar_template().as_ref()).unwrap()
                 .progress_chars("#>-"));
         }
         let mut downloaded = 0usize;

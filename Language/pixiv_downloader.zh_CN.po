@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: pixiv_downloader\n"
-"POT-Creation-Date: 2022-03-26 15:53+0800\n"
-"PO-Revision-Date: 2022-03-26 15:54+0800\n"
+"POT-Creation-Date: 2022-03-28 21:09+0800\n"
+"PO-Revision-Date: 2022-03-28 21:10+0800\n"
 "Last-Translator: lifegpc <g1710431395@gmail.com>\n"
 "Language-Team: \n"
 "Language: zh_CN\n"
@@ -116,15 +116,18 @@ msgstr "无效的Cookie："
 msgid "Can not parse expired time:"
 msgstr "无法解析过期时间："
 
-#: cookies.rs:366 data/json.rs:50 settings.rs:418 webclient.rs:302
+#: cookies.rs:366 data/json.rs:51 settings.rs:418 webclient.rs:343
+#: webclient.rs:345 webclient.rs:420
 msgid "Failed to remove file:"
 msgstr "无法删除文件："
 
-#: cookies.rs:372 data/json.rs:61 settings.rs:425 webclient.rs:312
+#: cookies.rs:372 data/json.rs:62 settings.rs:425 webclient.rs:354
+#: webclient.rs:356 webclient.rs:430
 msgid "Failed to create file:"
 msgstr "无法创建文件："
 
-#: cookies.rs:379 data/json.rs:67 settings.rs:431 webclient.rs:329
+#: cookies.rs:379 data/json.rs:68 settings.rs:431 webclient.rs:381
+#: webclient.rs:383 webclient.rs:447
 msgid "Failed to write file:"
 msgstr "无法写入文件："
 
@@ -132,84 +135,85 @@ msgstr "无法写入文件："
 msgid "Failed to unescape string:"
 msgstr "无法反转义字符串："
 
-#: download.rs:25 pixiv_web.rs:58
+#: download.rs:30 pixiv_web.rs:58
 msgid "Failed to initialize pixiv web api client."
 msgstr "无法初始化 Pixiv 网页 API 客户端。"
 
-#: download.rs:34
+#: download.rs:39
 msgid "Warning: Web api client not logined, some future may not work."
 msgstr "警告：Web API 客户端未登录，一些功能可能无法工作。"
 
-#: download.rs:73
-msgid "Failed to get page count."
-msgstr "无法获取页数。"
-
-#: download.rs:82
-msgid "Failed to get pages' data."
-msgstr "无法获取每页数据。"
-
-#: download.rs:95
-msgid "Failed to save metadata to JSON file."
-msgstr "无法将元数据保存到 JSON 文件。"
-
-#: download.rs:110
-msgid "Failed to get ugoira's data."
-msgstr "无法获取动图数据。"
-
-#: download.rs:116
-msgid "Can not find source link for ugoira."
-msgstr "无法获取动图的链接。"
-
-#: download.rs:122 download.rs:200 download.rs:274
-msgid "Failed to get file name from url:"
-msgstr "无法从 URL 获取文件名："
-
-#: download.rs:138 download.rs:144
-msgid "Failed to download ugoira:"
-msgstr "无法下载动图："
-
-#: download.rs:149
-msgid "Downloaded ugoira:"
-msgstr "已下载动图："
-
-#: download.rs:159
-msgid "Warning: Failed to generate video's metadata:"
-msgstr "警告：无法生成视频元数据："
-
-#: download.rs:169
-msgid "Failed to convert from ugoira to mp4 video file:"
-msgstr "无法将动图转换为 mp4 视频文件："
-
-#: download.rs:172
-msgid "Converted <src> -> <dest>"
-msgstr "已转换 <src> -> <dest>"
-
-#: download.rs:175
-msgid "Failed to parse frames:"
-msgstr "无法解析帧数据："
-
-#: download.rs:182
-msgid "Warning: Unknown illust type:"
-msgstr "警告：未知的插图类型："
-
-#: download.rs:185
-msgid "Warning: Failed to get illust's type."
-msgstr "警告：无法获取插图类型。"
-
-#: download.rs:194 download.rs:268
+#: download.rs:58 download.rs:286 download.rs:360
 msgid "Failed to get original picture's link."
 msgstr "无法获取原图链接。"
 
-#: download.rs:215 download.rs:254 download.rs:294 download.rs:324
+#: download.rs:64 download.rs:197 download.rs:292 download.rs:366
+msgid "Failed to get file name from url:"
+msgstr "无法从 URL 获取文件名："
+
+#: download.rs:79 download.rs:115 download.rs:307 download.rs:346
+#: download.rs:386 download.rs:416
 msgid "Failed to add exif data to image:"
 msgstr "无法往图片增加 EXIF 数据："
 
-#: download.rs:234 download.rs:240 download.rs:304 download.rs:310
-#: pixiv_web.rs:153
+#: download.rs:100 download.rs:107 download.rs:326 download.rs:332
+#: download.rs:396 download.rs:402 pixiv_web.rs:153 pixiv_web.rs:169
 msgid "Failed to download image:"
 msgstr "无法下载图片："
 
-#: download.rs:245 download.rs:315
+#: download.rs:147
+msgid "Failed to get page count."
+msgstr "无法获取页数。"
+
+#: download.rs:156
+msgid "Failed to get pages' data."
+msgstr "无法获取每页数据。"
+
+#: download.rs:170
+msgid "Failed to save metadata to JSON file."
+msgstr "无法将元数据保存到 JSON 文件。"
+
+#: download.rs:185
+msgid "Failed to get ugoira's data."
+msgstr "无法获取动图数据。"
+
+#: download.rs:191
+msgid "Can not find source link for ugoira."
+msgstr "无法获取动图的链接。"
+
+#: download.rs:213 download.rs:219
+msgid "Failed to download ugoira:"
+msgstr "无法下载动图："
+
+#: download.rs:224
+msgid "Downloaded ugoira:"
+msgstr "已下载动图："
+
+#: download.rs:234
+msgid "Warning: Failed to generate video's metadata:"
+msgstr "警告：无法生成视频元数据："
+
+#: download.rs:244
+msgid "Failed to convert from ugoira to mp4 video file:"
+msgstr "无法将动图转换为 mp4 视频文件："
+
+#: download.rs:247
+msgid "Converted <src> -> <dest>"
+msgstr "已转换 <src> -> <dest>"
+
+#: download.rs:250
+msgid "Failed to parse frames:"
+msgstr "无法解析帧数据："
+
+#: download.rs:257
+msgid "Warning: Unknown illust type:"
+msgstr "警告：未知的插图类型："
+
+#: download.rs:260
+msgid "Warning: Failed to get illust's type."
+msgstr "警告：无法获取插图类型。"
+
+#: download.rs:337 download.rs:407 webclient.rs:390
 msgid "Downloaded image:"
 msgstr "已下载图片："
 
@@ -221,104 +225,108 @@ msgstr "无法解析从字符串解析时长。"
 msgid "Failed to parse value."
 msgstr "无法解析值。"
 
-#: opts.rs:98
+#: opts.rs:101
 msgid "Warning: The specified config file not found."
 msgstr "警告：没有找到指定的设置文件。"
 
-#: opts.rs:122
+#: opts.rs:125
 msgid "Usage:"
 msgstr "使用方法："
 
-#: opts.rs:124
+#: opts.rs:127
 msgid "Download an artwork"
 msgstr "下载一个作品"
 
-#: opts.rs:126
+#: opts.rs:129
 msgid "Fix the config file"
 msgstr "修复设置文件"
 
-#: opts.rs:128
+#: opts.rs:131
 msgid "Print all available settings"
 msgstr "打印所有可用的设置"
 
-#: opts.rs:136
+#: opts.rs:139
 msgid "Print help message."
 msgstr "打印帮助信息。"
 
-#: opts.rs:140
+#: opts.rs:143
 msgid "The location of config file."
 msgstr "设置文件的位置。"
 
-#: opts.rs:146 settings_list.rs:13
+#: opts.rs:149 settings_list.rs:13
 msgid "The location of cookies file. Used for web API."
 msgstr "cookies 文件的位置。用于网页 API。"
 
-#: opts.rs:152 settings_list.rs:14
+#: opts.rs:155 settings_list.rs:14
 msgid "The language of translated tags."
 msgstr "翻译后的标签语言。"
 
-#: opts.rs:155
+#: opts.rs:158
 msgid "Verbose logging."
 msgstr "启用详细内容输出。"
 
-#: opts.rs:156
+#: opts.rs:159
 msgid "Overwrite existing file."
 msgstr "覆盖已有文件。"
 
-#: opts.rs:157
+#: opts.rs:160
 msgid "Skip overwrite existing file."
 msgstr "跳过覆盖已有文件。"
 
-#: opts.rs:161 settings_list.rs:15
+#: opts.rs:164 settings_list.rs:15
 msgid "Max retry count if request failed."
 msgstr "请求失败时最大重试次数。"
 
-#: opts.rs:167 settings_list.rs:16
+#: opts.rs:170 settings_list.rs:16
 msgid "The interval (in seconds) between two retries."
 msgstr "两次尝试的间隔时间（单位：秒）。"
 
-#: opts.rs:170 settings_list.rs:17
+#: opts.rs:173 settings_list.rs:17
 msgid "Use data from webpage first."
 msgstr "优先使用来自网页的数据。"
 
-#: opts.rs:175 settings_list.rs:20
+#: opts.rs:178 settings_list.rs:20
 msgid ""
 "Add/Update exif information to image files even when overwrite are disabled."
 msgstr "添加或更新图片的 EXIF 信息，即使不覆盖图片文件。"
 
-#: opts.rs:180 settings_list.rs:22
+#: opts.rs:183 settings_list.rs:22
 msgid "Whether to enable progress bar."
 msgstr "是否启用进度条。"
 
-#: opts.rs:202
+#: opts.rs:189 settings_list.rs:23
+msgid "Download multiple images at the same time."
+msgstr "同时下载多张图片。"
+
+#: opts.rs:210
 msgid "Unknown command."
 msgstr "未知指令。"
 
-#: opts.rs:212
+#: opts.rs:220
 msgid "Failed to parse ID:"
 msgstr "无法解析 ID："
 
-#: opts.rs:218
+#: opts.rs:226
 msgid "No URL or ID specified."
 msgstr "没有指定网址或 ID。"
 
-#: opts.rs:226
+#: opts.rs:234
 msgid "No detailed command specified."
 msgstr "没有指定更详细的指令。"
 
-#: opts.rs:239
+#: opts.rs:247
 msgid "Unknown config subcommand."
 msgstr "未知的 config 子指令。"
 
-#: opts.rs:275
+#: opts.rs:283
 msgid "Retry count must be an non-negative integer:"
 msgstr "重试次数不能是负数："
 
-#: opts.rs:284
+#: opts.rs:292
 msgid "Failed to parse retry interval:"
 msgstr "无法解析间隔时间："
 
-#: opts.rs:298
+#: opts.rs:306
 msgid "Failed to parse <opt>:"
 msgstr "无法解析 <opt> ："
 
@@ -358,27 +366,27 @@ msgstr "网络错误："
 msgid "Failed to detect error."
 msgstr "检测 error 字段失败。"
 
-#: pixiv_web.rs:168 pixiv_web.rs:198
+#: pixiv_web.rs:184 pixiv_web.rs:214
 msgid "Artwork's data:"
 msgstr "作品数据："
 
-#: pixiv_web.rs:183 pixiv_web.rs:188
+#: pixiv_web.rs:199 pixiv_web.rs:204
 msgid "Failed to get artwork page:"
 msgstr "无法获取作品页："
 
-#: pixiv_web.rs:194
+#: pixiv_web.rs:210
 msgid "Failed to parse artwork page."
 msgstr "无法解析作品页。"
 
-#: pixiv_web.rs:212
+#: pixiv_web.rs:228
 msgid "Artwork's page data:"
 msgstr "作品页面数据："
 
-#: pixiv_web.rs:226
+#: pixiv_web.rs:242
 msgid "Ugoira's data:"
 msgstr "动图数据："
 
-#: pixiv_web.rs:250
+#: pixiv_web.rs:266
 msgid "Warning: Failed to save cookies file:"
 msgstr "警告：无法保存 cookies 文件："
 
@@ -506,7 +514,7 @@ msgstr "无法转换路径。"
 msgid "Do you want to delete file \"<file>\"?"
 msgstr "你想要删除文件 <file> 吗？"
 
-#: utils.rs:51 webclient.rs:154
+#: utils.rs:51 webclient.rs:156
 msgid "Can not parse URL:"
 msgstr "无法解析 URL："
 
@@ -514,43 +522,43 @@ msgstr "无法解析 URL："
 msgid "Failed to get file name from path:"
 msgstr "无法从路径获取文件名："
 
-#: webclient.rs:114
+#: webclient.rs:116
 msgid "Failed to parse Set-Cookie header."
 msgstr "无法解析 Set-Cookie 头部。"
 
-#: webclient.rs:119
+#: webclient.rs:121
 msgid "Failed to convert to string:"
 msgstr "无法转换为字符串："
 
-#: webclient.rs:161
+#: webclient.rs:163
 msgid "Parameters should be object or array:"
 msgstr "参数应该是对象或数组："
 
-#: webclient.rs:181
+#: webclient.rs:183
 msgid "Parameters should be array:"
 msgstr "参数应该是数组："
 
-#: webclient.rs:185
+#: webclient.rs:187
 msgid "Parameters need at least a value:"
 msgstr "参数需要至少含有一个值："
 
-#: webclient.rs:224
+#: webclient.rs:226 webclient.rs:247
 msgid "Retry after <num> seconds."
 msgstr "<num> 秒后重试。"
 
-#: webclient.rs:228
+#: webclient.rs:230 webclient.rs:251
 msgid "Retry <count> times now."
 msgstr "正在进行第 <count> 次重试。"
 
-#: webclient.rs:242
+#: webclient.rs:264 webclient.rs:282
 msgid "Error when request:"
 msgstr "请求时发生错误："
 
-#: webclient.rs:308
+#: webclient.rs:334 webclient.rs:426
 msgid "Downloading \"<loc>\"."
 msgstr "正在下载 \"<loc>\"。"
 
-#: webclient.rs:319
+#: webclient.rs:366 webclient.rs:368 webclient.rs:437
 msgid "Error when downloading file:"
 msgstr "下载文件时发生错误："
 

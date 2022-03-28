@@ -9,19 +9,19 @@ use reqwest::Response;
 use spin_on::spin_on;
 
 /// A client which use Pixiv's web API
-pub struct PixivWebClient<'a> {
+pub struct PixivWebClient {
     client: WebClient,
-    pub helper: OptHelper<'a>,
+    pub helper: OptHelper,
     /// true if in is initialized
     inited: bool,
     data: Option<JsonValue>,
 }
 
-impl<'a> PixivWebClient<'a> {
-    pub fn new(m: &'a Main) -> Self {
+impl PixivWebClient {
+    pub fn new(m: &Main) -> Self {
         Self {
             client: WebClient::new(),
-            helper: OptHelper::new(m.cmd.as_ref().unwrap(), m.settings.as_ref().unwrap()),
+            helper: OptHelper::new(m.cmd.as_ref().unwrap().clone(), m.settings.as_ref().unwrap().clone()),
             inited: false,
             data: None,
         }
@@ -156,6 +156,22 @@ impl<'a> PixivWebClient<'a> {
         Some(r)
     }
 
+    pub async fn adownload_image<U: IntoUrl + Clone>(&mut self, url: U) -> Option<Response> {
+        self.auto_init();
+        let r = self.client.aget(url, json::object!{"referer": "https://www.pixiv.net/"}).await;
+        if r.is_none() {
+            return None;
+        }
+        let r = r.unwrap();
+        let status = r.status();
+        let code = status.as_u16();
+        if code >= 400 {
+            println!("{} {}", gettext("Failed to download image:"), status);
+            return None;
+        }
+        Some(r)
+    }
+
     pub fn get_artwork_ajax(&mut self, id: u64) -> Option<JsonValue> {
         self.auto_init();
         let r = self.client.get(format!("https://www.pixiv.net/ajax/illust/{}", id), None);
@@ -241,7 +257,7 @@ impl<'a> PixivWebClient<'a> {
     }
 }
 
-impl <'a> Drop for PixivWebClient<'a> {
+impl Drop for PixivWebClient {
     fn drop(&mut self) {
         if self.inited {
             let c = self.helper.cookies();
