@@ -307,6 +307,10 @@ impl CookieJar {
         }
     }
 
+    pub fn clear(&mut self) {
+        self.cookies.clear();
+    }
+
     pub fn read(&mut self, file_name: &str) -> bool {
         self.cookies.clear();
         let p = Path::new(file_name);

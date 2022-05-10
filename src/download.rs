@@ -21,19 +21,18 @@ use json::JsonValue;
 use spin_on::spin_on;
 use std::path::PathBuf;
 use std::sync::Arc;
-use futures_util::lock::Mutex;
 
 impl Main {
     pub fn download(&mut self) -> i32 {
-        let pw = Arc::new(Mutex::new(PixivWebClient::new(&self)));
-        if !pw.try_lock().unwrap().init() {
+        let pw = Arc::new(PixivWebClient::new(&self));
+        if !pw.init() {
             println!("{}", gettext("Failed to initialize pixiv web api client."));
             return 1;
         }
-        if !pw.try_lock().unwrap().check_login() {
+        if !pw.check_login() {
             return 1;
         }
-        if !pw.try_lock().unwrap().logined() {
+        if !pw.logined() {
             println!(
                 "{}",
                 gettext("Warning: Web api client not logined, some future may not work.")
@@ -52,7 +51,7 @@ impl Main {
         0
     }
 
-    pub async fn download_artwork_page(pw: Arc<Mutex<PixivWebClient>>, page: JsonValue, np: u16, progress_bars: Arc<MultiProgress>, datas: Arc<PixivData>, base: Arc<PathBuf>, helper: Arc<OptHelper>) -> i32 {
+    pub async fn download_artwork_page(pw: Arc<PixivWebClient>, page: JsonValue, np: u16, progress_bars: Arc<MultiProgress>, datas: Arc<PixivData>, base: Arc<PathBuf>, helper: Arc<OptHelper>) -> i32 {
         let link = &page["urls"]["original"];
         if !link.is_string() {
             println!("{}", gettext("Failed to get original picture's link."));
@@ -94,7 +93,6 @@ impl Main {
         }
         let r;
         {
-            let mut pw = pw.lock().await;
             r = pw.adownload_image(link).await;
             if r.is_none() {
                 println!("{} {}", gettext("Failed to download image:"), link);
@@ -120,19 +118,19 @@ impl Main {
         0
     }
 
-    pub fn download_artwork(&self, pw: Arc<Mutex<PixivWebClient>>, id: u64) -> i32 {
+    pub fn download_artwork(&self, pw: Arc<PixivWebClient>, id: u64) -> i32 {
         let mut re = None;
         let pages;
         let mut ajax_ver = true;
-        let helper = Arc::new(pw.try_lock().unwrap().helper.clone());
+        let helper = Arc::new(pw.helper.clone());
         if helper.use_webpage() {
-            re = pw.try_lock().unwrap().get_artwork(id);
+            re = pw.get_artwork(id);
             if re.is_some() {
                 ajax_ver = false;
             }
         }
         if re.is_none() {
-            re = pw.try_lock().unwrap().get_artwork_ajax(id);
+            re = pw.get_artwork_ajax(id);
         }
         if re.is_none() {
             return 1;
@@ -150,7 +148,7 @@ impl Main {
         let pages = pages.unwrap();
         let mut pages_data: Option<JsonValue> = None;
         if pages > 1 {
-            pages_data = pw.try_lock().unwrap().get_illust_pages(id);
+            pages_data = pw.get_illust_pages(id);
         }
         if pages > 1 && pages_data.is_none() {
             println!("{}", gettext("Failed to get pages' data."));
@@ -180,7 +178,7 @@ impl Main {
             match illust_type {
                 0 => { }
                 2 => {
-                    let ugoira_data = pw.try_lock().unwrap().get_ugoira(id);
+                    let ugoira_data = pw.get_ugoira(id);
                     if ugoira_data.is_none() {
                         println!("{}", gettext("Failed to get ugoira's data."));
                         return 1;
@@ -208,7 +206,7 @@ impl Main {
                         true
                     };
                     if dw {
-                        let r = pw.try_lock().unwrap().download_image(src);
+                        let r = pw.download_image(src);
                         if r.is_none() {
                             println!("{} {}", gettext("Failed to download ugoira:"), src);
                             return 1;
@@ -321,7 +319,7 @@ impl Main {
                         }
                     }
                 }
-                let r = pw.try_lock().unwrap().download_image(link);
+                let r = pw.download_image(link);
                 if r.is_none() {
                     println!("{} {}", gettext("Failed to download image:"), link);
                     return 1;
@@ -391,7 +389,7 @@ impl Main {
                     return 0;
                 }
             }
-            let r = pw.try_lock().unwrap().download_image(link);
+            let r = pw.download_image(link);
             if r.is_none() {
                 println!("{} {}", gettext("Failed to download image:"), link);
                 return 1;

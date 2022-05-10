@@ -7,14 +7,21 @@ use json::JsonValue;
 use reqwest::IntoUrl;
 use reqwest::Response;
 use spin_on::spin_on;
+use std::sync::Arc;
+use std::sync::RwLock;
+use std::sync::RwLockReadGuard;
+use std::sync::RwLockWriteGuard;
+use std::sync::atomic::AtomicBool;
+use std::sync::atomic::Ordering;
+use std::time::Duration;
 
 /// A client which use Pixiv's web API
 pub struct PixivWebClient {
     client: WebClient,
     pub helper: OptHelper,
     /// true if in is initialized
-    inited: bool,
-    data: Option<JsonValue>,
+    inited: Arc<AtomicBool>,
+    data: RwLock<Option<JsonValue>>,
 }
 
 impl PixivWebClient {
@@ -22,12 +29,46 @@ impl PixivWebClient {
         Self {
             client: WebClient::new(),
             helper: OptHelper::new(m.cmd.as_ref().unwrap().clone(), m.settings.as_ref().unwrap().clone()),
-            inited: false,
-            data: None,
+            inited: Arc::new(AtomicBool::new(false)),
+            data: RwLock::new(None),
         }
     }
 
-    pub fn init(&mut self) -> bool {
+    async fn aget_data_as_mut<'a>(&'a self) -> RwLockWriteGuard<'a, Option<JsonValue>> {
+        loop {
+            match self.data.try_write() {
+                Ok(f) => { return f; }
+                Err(_) => {
+                    tokio::time::sleep(Duration::new(0, 1_000_000)).await;
+                }
+            }
+        }
+    }
+
+    fn get_data_as_mut<'a>(&'a self) -> RwLockWriteGuard<'a, Option<JsonValue>> {
+        spin_on(self.aget_data_as_mut())
+    }
+
+    async fn aget_data<'a>(&'a self) -> RwLockReadGuard<'a, Option<JsonValue>> {
+        loop {
+            match self.data.try_read() {
+                Ok(f) => { return f; }
+                Err(_) => {
+                    tokio::time::sleep(Duration::new(0, 1_000_000)).await;
+                }
+            }
+        }
+    }
+
+    fn get_data<'a>(&'a self) -> RwLockReadGuard<'a, Option<JsonValue>> {
+        spin_on(self.aget_data())
+    }
+
+    pub fn is_inited(&self) -> bool {
+        self.inited.load(Ordering::Relaxed)
+    }
+
+    pub fn init(&self) -> bool {
         let c = self.helper.cookies();
         if c.is_some() {
             if !self.client.read_cookies(c.as_ref().unwrap()) {
@@ -41,18 +82,18 @@ impl PixivWebClient {
         } else {
             self.client.set_header("Accept-Language", "ja");
         }
-        self.client.verbose = self.helper.verbose();
+        self.client.set_verbose(self.helper.verbose());
         let retry = self.helper.retry();
         if retry.is_some() {
-            self.client.retry = retry.unwrap();
+            self.client.set_retry(retry.unwrap());
         }
-        self.client.retry_interval = Some(self.helper.retry_interval());
-        self.inited = true;
+        self.client.get_retry_interval_as_mut().replace(self.helper.retry_interval());
+        self.inited.store(true, Ordering::Relaxed);
         true
     }
 
-    pub fn auto_init(&mut self) {
-        if !self.inited {
+    pub fn auto_init(&self) {
+        if !self.is_inited() {
             let r = self.init();
             if !r {
                 panic!("{}", gettext("Failed to initialize pixiv web api client."));
@@ -60,7 +101,7 @@ impl PixivWebClient {
         }
     }
 
-    pub fn check_login(&mut self) -> bool {
+    pub fn check_login(&self) -> bool {
         self.auto_init();
         let r = self.client.get("https://www.pixiv.net/", None);
         if r.is_none() {
@@ -87,11 +128,11 @@ impl PixivWebClient {
         if self.helper.verbose() {
             println!("{}\n{}", gettext("Main page's data:"), p.value.as_ref().unwrap().pretty(2).as_str());
         }
-        self.data = Some(p.value.unwrap());
+        self.get_data_as_mut().replace(p.value.unwrap());
         true
     }
 
-    pub fn deal_json(&mut self, r: Response) -> Option<JsonValue> {
+    pub fn deal_json(&self, r: Response) -> Option<JsonValue> {
         let status = r.status();
         let code = status.as_u16();
         let is_status_err = code >= 400;
@@ -140,7 +181,7 @@ impl PixivWebClient {
         Some(body.clone())
     }
 
-    pub fn download_image<U: IntoUrl + Clone>(&mut self, url: U) -> Option<Response> {
+    pub fn download_image<U: IntoUrl + Clone>(&self, url: U) -> Option<Response> {
         self.auto_init();
         let r = self.client.get(url, json::object!{"referer": "https://www.pixiv.net/"});
         if r.is_none() {
@@ -156,7 +197,7 @@ impl PixivWebClient {
         Some(r)
     }
 
-    pub async fn adownload_image<U: IntoUrl + Clone>(&mut self, url: U) -> Option<Response> {
+    pub async fn adownload_image<U: IntoUrl + Clone>(&self, url: U) -> Option<Response> {
         self.auto_init();
         let r = self.client.aget(url, json::object!{"referer": "https://www.pixiv.net/"}).await;
         if r.is_none() {
@@ -172,7 +213,7 @@ impl PixivWebClient {
         Some(r)
     }
 
-    pub fn get_artwork_ajax(&mut self, id: u64) -> Option<JsonValue> {
+    pub fn get_artwork_ajax(&self, id: u64) -> Option<JsonValue> {
         self.auto_init();
         let r = self.client.get(format!("https://www.pixiv.net/ajax/illust/{}", id), None);
         if r.is_none() {
@@ -186,7 +227,7 @@ impl PixivWebClient {
         v
     }
 
-    pub fn get_artwork(&mut self, id: u64) -> Option<JsonValue> {
+    pub fn get_artwork(&self, id: u64) -> Option<JsonValue> {
         self.auto_init();
         let r = self.client.get(format!("https://www.pixiv.net/artworks/{}", id), None);
         if r.is_none() {
@@ -216,7 +257,7 @@ impl PixivWebClient {
         Some(p.value.unwrap())
     }
 
-    pub fn get_illust_pages(&mut self, id: u64) -> Option<JsonValue> {
+    pub fn get_illust_pages(&self, id: u64) -> Option<JsonValue> {
         self.auto_init();
         let r = self.client.get(format!("https://www.pixiv.net/ajax/illust/{}/pages", id), None);
         if r.is_none() {
@@ -230,7 +271,7 @@ impl PixivWebClient {
         v
     }
 
-    pub fn get_ugoira(&mut self, id: u64) -> Option<JsonValue> {
+    pub fn get_ugoira(&self, id: u64) -> Option<JsonValue> {
         self.auto_init();
         let r = self.client.get(format!("https://www.pixiv.net/ajax/illust/{}/ugoira_meta", id), None);
         if r.is_none() {
@@ -245,10 +286,11 @@ impl PixivWebClient {
     }
 
     pub fn logined(&self) -> bool {
-        if self.data.is_none() {
+        let data = self.get_data();
+        if data.is_none() {
             return false;
         }
-        let value = self.data.as_ref().unwrap();
+        let value = data.as_ref().unwrap();
         let d = &value["userData"];
         if d.is_object() {
             return true;
@@ -259,7 +301,7 @@ impl PixivWebClient {
 
 impl Drop for PixivWebClient {
     fn drop(&mut self) {
-        if self.inited {
+        if self.is_inited() {
             let c = self.helper.cookies();
             if c.is_some() {
                 if !self.client.save_cookies(c.as_ref().unwrap()) {

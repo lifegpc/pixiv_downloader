@@ -20,6 +20,12 @@ use std::fs::remove_file;
 use std::io::Write;
 use std::path::Path;
 use std::sync::Arc;
+use std::sync::RwLock;
+use std::sync::RwLockReadGuard;
+use std::sync::RwLockWriteGuard;
+use std::sync::atomic::AtomicBool;
+use std::sync::atomic::AtomicU64;
+use std::sync::atomic::Ordering;
 use std::time::Duration;
 
 pub trait ToHeaders {
@@ -59,11 +65,11 @@ impl ToHeaders for JsonValue {
 /// Generate `cookie` header for a url
 /// * `c` - Cookies
 /// * `url` - URL
-pub fn gen_cookie_header<U: IntoUrl>(c: &mut CookieJar, url: U) -> String {
-    c.check_expired();
+pub fn gen_cookie_header<U: IntoUrl>(c: &WebClient, url: U) -> String {
+    c.get_cookies_as_mut().check_expired();
     let mut s = String::from("");
     let u = url.as_str();
-    for a in c.iter() {
+    for a in c.get_cookies().iter() {
         if a.matched(u) {
             if s.len() > 0 {
                 s += " ";
@@ -78,28 +84,127 @@ pub fn gen_cookie_header<U: IntoUrl>(c: &mut CookieJar, url: U) -> String {
 pub struct WebClient {
     client: Client,
     /// HTTP Headers
-    pub headers: HashMap<String, String>,
-    cookies: CookieJar,
-    pub verbose: bool,
+    headers: RwLock<HashMap<String, String>>,
+    cookies: RwLock<CookieJar>,
+    verbose: Arc<AtomicBool>,
     /// Retry times, 0 means disable
-    pub retry: u64,
+    retry: Arc<AtomicU64>,
     /// Retry interval
-    pub retry_interval: Option<NonTailList<Duration>>,
+    retry_interval: RwLock<Option<NonTailList<Duration>>>,
 }
 
 impl WebClient {
     pub fn new() -> Self {
         Self {
             client: Client::new(),
-            headers: HashMap::new(),
-            cookies: CookieJar::new(),
-            verbose: false,
-            retry: 3,
-            retry_interval: None,
+            headers: RwLock::new(HashMap::new()),
+            cookies: RwLock::new(CookieJar::new()),
+            verbose: Arc::new(AtomicBool::new(false)),
+            retry: Arc::new(AtomicU64::new(3)),
+            retry_interval: RwLock::new(None),
         }
     }
 
-    pub fn handle_set_cookie(&mut self, r: &Response) {
+    pub async fn aget_cookies_as_mut<'a>(&'a self) -> RwLockWriteGuard<'a, CookieJar> {
+        loop {
+            match self.cookies.try_write() {
+                Ok(f) => { return f; }
+                Err(_) => {
+                    tokio::time::sleep(Duration::new(0, 1_000_000)).await;
+                }
+            }
+        }
+    }
+
+    pub fn get_cookies_as_mut<'a>(&'a self) -> RwLockWriteGuard<'a, CookieJar> {
+        spin_on(self.aget_cookies_as_mut())
+    }
+
+    pub async fn aget_cookies<'a>(&'a self) -> RwLockReadGuard<'a, CookieJar> {
+        loop {
+            match self.cookies.try_read() {
+                Ok(f) => { return f; }
+                Err(_) => {
+                    tokio::time::sleep(Duration::new(0, 1_000_000)).await;
+                }
+            }
+        }
+    }
+
+    pub fn get_cookies<'a>(&'a self) -> RwLockReadGuard<'a, CookieJar> {
+        spin_on(self.aget_cookies())
+    }
+
+    pub async fn aget_headers_as_mut<'a>(&'a self) -> RwLockWriteGuard<'a, HashMap<String, String>> {
+        loop {
+            match self.headers.try_write() {
+                Ok(f) => { return f; }
+                Err(_) => {
+                    tokio::time::sleep(Duration::new(0, 1_000_000)).await;
+                }
+            }
+        }
+    }
+
+    pub fn get_headers_as_mut<'a>(&'a self) -> RwLockWriteGuard<'a, HashMap<String, String>> {
+        spin_on(self.aget_headers_as_mut())
+    }
+
+    pub async fn aget_headers<'a>(&'a self) -> RwLockReadGuard<'a, HashMap<String, String>> {
+        loop {
+            match self.headers.try_read() {
+                Ok(f) => { return f; }
+                Err(_) => {
+                    tokio::time::sleep(Duration::new(0, 1_000_000)).await;
+                }
+            }
+        }
+    }
+
+    pub fn get_headers<'a>(&'a self) -> RwLockReadGuard<'a, HashMap<String, String>> {
+        spin_on(self.aget_headers())
+    }
+
+    /// return retry times, 0 means disable
+    pub fn get_retry(&self) -> u64 {
+        self.retry.load(Ordering::Relaxed)
+    }
+
+    pub async fn aget_retry_interval_as_mut<'a>(&'a self) -> RwLockWriteGuard<'a, Option<NonTailList<Duration>>> {
+        loop {
+            match self.retry_interval.try_write() {
+                Ok(f) => { return f; }
+                Err(_) => {
+                    tokio::time::sleep(Duration::new(0, 1_000_000)).await;
+                }
+            }
+        }
+    }
+
+    pub fn get_retry_interval_as_mut<'a>(&'a self) -> RwLockWriteGuard<'a, Option<NonTailList<Duration>>> {
+        spin_on(self.aget_retry_interval_as_mut())
+    }
+
+    pub async fn aget_retry_interval<'a>(&'a self) -> RwLockReadGuard<'a, Option<NonTailList<Duration>>> {
+        loop {
+            match self.retry_interval.try_read() {
+                Ok(f) => { return f; }
+                Err(_) => {
+                    tokio::time::sleep(Duration::new(0, 1_000_000)).await;
+                }
+            }
+        }
+    }
+
+    pub fn get_retry_interval<'a>(&'a self) -> RwLockReadGuard<'a, Option<NonTailList<Duration>>> {
+        spin_on(self.aget_retry_interval())
+    }
+
+    pub fn get_verbose(&self) -> bool {
+        self.verbose.load(Ordering::Relaxed)
+    }
+
+    pub fn handle_set_cookie(&self, r: &Response) {
         let u = r.url();
         let h = r.headers();
         let v = h.get_all("Set-Cookie");
@@ -110,7 +215,7 @@ impl WebClient {
                     let c = Cookie::from_set_cookie(u.as_str(), val);
                     match c {
                         Some(c) => {
-                            self.cookies.add(c);
+                            self.get_cookies_as_mut().add(c);
                         }
                         None => {
                             println!("{}", gettext("Failed to parse Set-Cookie header."));
@@ -124,20 +229,30 @@ impl WebClient {
         }
     }
 
-    pub fn read_cookies(&mut self, file_name: &str) -> bool {
-        let r = self.cookies.read(file_name);
+    pub fn read_cookies(&self, file_name: &str) -> bool {
+        let mut c = self.get_cookies_as_mut();
+        let r = c.read(file_name);
         if !r {
-            self.cookies = CookieJar::new();
+            c.clear();
         }
         r
     }
 
-    pub fn save_cookies(&mut self, file_name: &str) -> bool {
-        self.cookies.save(file_name)
+    pub fn save_cookies(&self, file_name: &str) -> bool {
+        self.get_cookies_as_mut().save(file_name)
     }
 
-    pub fn set_header(&mut self, key: &str, value: &str) -> Option<String> {
-        self.headers.insert(String::from(key), String::from(value))
+    pub fn set_header(&self, key: &str, value: &str) -> Option<String> {
+        self.get_headers_as_mut().insert(String::from(key), String::from(value))
+    }
+
+    /// Set retry times, 0 means disable
+    pub fn set_retry(&self, retry: u64) {
+        self.retry.store(retry, Ordering::Relaxed)
+    }
+
+    pub fn set_verbose(&self, verbose: bool) {
+        self.verbose.store(verbose, Ordering::Relaxed)
     }
     /// Send GET requests with parameters
     /// * `param` - GET parameters. Should be a JSON object/array. If value in map is not a string, will dump it
@@ -150,7 +265,7 @@ impl WebClient {
     /// client.get_with_param("https://test.com/a", json::array![["daa", "param1"]]);
     /// ```
     /// It will GET `https://test.com/a?data=param1`, `https://test.com/a?daa=%7B%22ad%22%3A%22test%22%7D`, `https://test.com/a?daa=param1`
-    pub fn get_with_param<U: IntoUrl + Clone>(&mut self, url: U, param: JsonValue) -> Option<Response> {
+    pub fn get_with_param<U: IntoUrl + Clone>(&self, url: U, param: JsonValue) -> Option<Response> {
         let u = url.into_url();
         if u.is_err() {
             println!("{} \"{}\"", gettext("Can not parse URL:"), u.unwrap_err());
@@ -211,17 +326,19 @@ impl WebClient {
         self.get(u.as_str(), None)
     }
 
-    pub fn get<U: IntoUrl + Clone, H: ToHeaders + Clone>(&mut self, url: U, headers: H) -> Option<Response> {
+    pub fn get<U: IntoUrl + Clone, H: ToHeaders + Clone>(&self, url: U, headers: H) -> Option<Response> {
         let mut count = 0u64;
-        while count <= self.retry {
+        let retry = self.get_retry();
+        while count <= retry {
             let r = self._get(url.clone(), headers.clone());
             if r.is_some() {
                 return r;
             }
             count += 1;
-            if count <= self.retry {
-                if self.retry_interval.is_some() {
-                    let t = self.retry_interval.as_ref().unwrap()[(count - 1).try_into().unwrap()];
+            if count <= retry {
+                let ri = self.get_retry_interval();
+                if ri.is_some() {
+                    let t = ri.as_ref().unwrap()[(count - 1).try_into().unwrap()];
                     if !t.is_zero() {
                         println!("{}", gettext("Retry after <num> seconds.").replace("<num>", format!("{}", t.as_secs_f64()).as_str()).as_str());
                         spin_on(tokio::time::sleep(t));
@@ -233,16 +350,17 @@ impl WebClient {
         None
     }
 
-    pub async fn aget<U: IntoUrl + Clone, H: ToHeaders + Clone>(&mut self, url: U, headers: H) -> Option<Response> {
+    pub async fn aget<U: IntoUrl + Clone, H: ToHeaders + Clone>(&self, url: U, headers: H) -> Option<Response> {
         let mut count = 0u64;
-        while count <= self.retry {
+        let retry = self.get_retry();
+        while count <= retry {
             let r = self._aget2(url.clone(), headers.clone()).await;
             if r.is_some() {
                 return r;
             }
             count += 1;
-            if count <= self.retry {
-                let t = self.retry_interval.as_ref().unwrap()[(count - 1).try_into().unwrap()];
+            if count <= retry {
+                let t = self.get_retry_interval().as_ref().unwrap()[(count - 1).try_into().unwrap()];
                 if !t.is_zero() {
                     println!("{}", gettext("Retry after <num> seconds.").replace("<num>", format!("{}", t.as_secs_f64()).as_str()).as_str());
                     tokio::time::sleep(t).await;
@@ -254,7 +372,7 @@ impl WebClient {
     }
 
     /// Send GET requests
-    pub fn _get<U: IntoUrl, H: ToHeaders>(&mut self, url: U, headers: H) -> Option<Response> {
+    pub fn _get<U: IntoUrl, H: ToHeaders>(&self, url: U, headers: H) -> Option<Response> {
         let r = self._aget(url, headers);
         let r = r.send();
         let r = spin_on(r);
@@ -267,13 +385,13 @@ impl WebClient {
         }
         let r = r.unwrap();
         self.handle_set_cookie(&r);
-        if self.verbose {
+        if self.get_verbose() {
             println!("{}", r.status());
         }
         Some(r)
     }
 
-    pub async fn _aget2<U: IntoUrl, H: ToHeaders>(&mut self, url: U, headers: H) -> Option<Response> {
+    pub async fn _aget2<U: IntoUrl, H: ToHeaders>(&self, url: U, headers: H) -> Option<Response> {
         let r = self._aget(url, headers);
         let r = r.send().await;
         match r {
@@ -285,19 +403,19 @@ impl WebClient {
         }
         let r = r.unwrap();
         self.handle_set_cookie(&r);
-        if self.verbose {
+        if self.get_verbose() {
             println!("{}", r.status());
         }
         Some(r)
     }
 
-    pub fn _aget<U: IntoUrl, H: ToHeaders>(&mut self, url: U, headers: H) -> RequestBuilder {
+    pub fn _aget<U: IntoUrl, H: ToHeaders>(&self, url: U, headers: H) -> RequestBuilder {
         let s = url.as_str();
-        if self.verbose {
+        if self.get_verbose() {
             println!("GET {}", s);
         }
         let mut r = self.client.get(s);
-        for (k, v) in self.headers.iter() {
+        for (k, v) in self.get_headers().iter() {
             r = r.header(k, v);
         }
         let headers = headers.to_headers();
@@ -307,7 +425,7 @@ impl WebClient {
                 r = r.header(k, v);
             }
         }
-        let c = gen_cookie_header(&mut self.cookies, s);
+        let c = gen_cookie_header(&self, s);
         if c.len() > 0 {
             r = r.header("Cookie", c.as_str());
         }
