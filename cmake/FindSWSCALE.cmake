@@ -1,3 +1,4 @@
+cmake_minimum_required(VERSION 3.11)
 find_package(PkgConfig)
 if (PkgConfig_FOUND)
     pkg_check_modules(PC_SWSCALE QUIET IMPORTED_TARGET GLOBAL libswscale)
@@ -13,6 +14,12 @@ if (PC_SWSCALE_FOUND)
     else()
         set(SWSCALE_INCLUDE_DIRS ${PC_SWSCALE_INCLUDE_DIRS})
     endif()
+    if (NOT SWSCALE_INCLUDE_DIRS)
+        find_path(SWSCALE_INCLUDE_DIRS NAMES libswscale/swscale.h)
+        if (SWSCALE_INCLUDE_DIRS)
+            target_include_directories(PkgConfig::PC_SWSCALE INTERFACE ${SWSCALE_INCLUDE_DIRS})
+        endif()
+    endif()
     if (NOT TARGET SWSCALE::SWSCALE)
         add_library(SWSCALE::SWSCALE ALIAS PkgConfig::PC_SWSCALE)
     endif()
@@ -25,5 +32,6 @@ find_package_handle_standard_args(SWSCALE
     FOUND_VAR SWSCALE_FOUND
     REQUIRED_VARS
         SWSCALE_LIBRARYS
+        SWSCALE_INCLUDE_DIRS
     VERSION_VAR SWSCALE_VERSION
 )
