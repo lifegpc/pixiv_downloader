@@ -1,7 +1,12 @@
 use crate::_exif;
+use crate::_exif::ExifDataRef;
+use crate::ext::rawhandle::FromRawHandle;
 use crate::ext::rawhandle::ToRawHandle;
 use c_fixed_string::CFixedStr;
 use int_enum::IntEnum;
+use std::borrow::Borrow;
+use std::borrow::ToOwned;
+use std::clone::Clone;
 use std::convert::TryFrom;
 use std::ffi::CStr;
 use std::ffi::CString;
@@ -10,6 +15,7 @@ use std::ffi::OsStr;
 use std::fs::copy;
 #[cfg(test)]
 use std::fs::create_dir;
+use std::ops::Deref;
 use std::ops::Drop;
 use std::os::raw::c_long;
 use std::path::Path;
@@ -500,6 +506,10 @@ impl ExifData {
         Ok(Self { data: d })
     }
 
+    pub unsafe fn from_raw_pointer(data: *mut _exif::ExifData) -> Self {
+        Self { data }
+    }
+
     /// Add a data from the supplied key and value pair.
     /// No duplicate checks are performed, i.e., it is possible to add multiple metadata with the same key.
     pub fn add(&mut self, key: &ExifKey, value: &ExifValue) -> Result<(), ()> {
@@ -529,32 +539,18 @@ impl ExifData {
             Ok(())
         }
     }
+}
 
-    /// Get the number of metadata entries.
-    pub fn count(&self) -> Option<usize> {
-        if self.data.is_null() {
-            return None;
-        }
-        let r = unsafe { _exif::exif_data_get_count(self.data) };
-        if r == -1 {
-            return None;
-        }
-        Some(r as usize)
+impl Borrow<ExifDataRef> for ExifData {
+    fn borrow(&self) -> &ExifDataRef {
+        self.deref()
     }
+}
 
-    /// Return true if there is no Exif metadata.
-    pub fn empty(&self) -> Option<bool> {
-        if self.data.is_null() {
-            return None;
-        }
-        let r = unsafe { _exif::exif_data_is_empty(self.data) };
-        if r == -1 {
-            None
-        } else if r == 0 {
-            Some(false)
-        } else {
-            Some(true)
-        }
+impl Deref for ExifData {
+    type Target = ExifDataRef;
+    fn deref(&self) -> &Self::Target {
+        unsafe { ExifDataRef::from_const_handle(_exif::exif_data_get_ref(self.to_raw_handle())) }
     }
 }
 
@@ -569,6 +565,61 @@ impl Drop for ExifData {
 impl ToRawHandle<_exif::ExifData> for ExifData {
     unsafe fn to_raw_handle(&self) -> *mut _exif::ExifData {
         self.data
+    }
+}
+
+#[allow(dead_code)]
+impl ExifDataRef {
+    /// Get the number of metadata entries.
+    pub fn count(&self) -> Option<usize> {
+        let data = unsafe { self.to_raw_handle() };
+        if data.is_null() {
+            return None;
+        }
+        let r = unsafe { _exif::exif_data_ref_get_count(data) };
+        if r == -1 {
+            return None;
+        }
+        Some(r as usize)
+    }
+    /// Return true if there is no Exif metadata.
+    pub fn empty(&self) -> Option<bool> {
+        let data = unsafe { self.to_raw_handle() };
+        if data.is_null() {
+            return None;
+        }
+        let r = unsafe { _exif::exif_data_ref_is_empty(data) };
+        if r == -1 {
+            None
+        } else if r == 0 {
+            Some(false)
+        } else {
+            Some(true)
+        }
+    }
+}
+
+impl ToOwned for ExifDataRef {
+    type Owned = ExifData;
+    fn to_owned(&self) -> Self::Owned {
+        let o = unsafe { self.to_raw_handle() };
+        if o.is_null() {
+            return ExifData::new().unwrap();
+        }
+        let r = unsafe { _exif::exif_data_ref_clone(o) };
+        if r.is_null() {
+            panic!("Failed to convert ExifDataRef to ExifData.");
+        }
+        unsafe { ExifData::from_raw_pointer(r) }
+    }
+}
+
+impl ToRawHandle<ExifDataRef> for ExifDataRef {
+    unsafe fn to_raw_handle(&self) -> *mut ExifDataRef {
+        self.to_const_handle() as *mut ExifDataRef
+    }
+    unsafe fn to_const_handle(&self) -> *const ExifDataRef {
+        self
     }
 }
 
@@ -598,6 +649,17 @@ impl ExifImage {
             return Err(());
         }
         Ok(Self { img: f })
+    }
+
+    pub fn exif_data(&self) -> Option<&ExifDataRef> {
+        if self.img.is_null() {
+            return None;
+        }
+        let d = unsafe { _exif::exif_image_get_exif_data(self.img) };
+        if d.is_null() {
+            return None;
+        }
+        unsafe { Some(ExifDataRef::from_const_handle(d)) }
     }
 
     pub fn set_exif_data(&mut self, data: &ExifData) -> Result<(), ()> {
@@ -715,6 +777,7 @@ fn test_exif_image() {
     {
         let mut img = ExifImage::new(target).unwrap();
         img.set_exif_data(&d).unwrap();
+        assert_eq!(img.exif_data().unwrap().count(), Some(1));
         img.write_metadata().unwrap();
     }
 }

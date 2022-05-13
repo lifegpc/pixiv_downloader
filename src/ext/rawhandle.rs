@@ -8,3 +8,17 @@ pub trait ToRawHandle<T> {
         self.to_raw_handle() as *const T
     }
 }
+
+pub trait FromRawHandle<T> {
+    unsafe fn from_raw_handle<'a>(ptr: *mut T) -> &'a mut Self;
+    unsafe fn from_const_handle<'a>(ptr: *const T) -> &'a Self;
+}
+
+impl<T> FromRawHandle<Self> for T {
+    unsafe fn from_raw_handle<'a>(ptr: *mut T) -> &'a mut Self {
+        &mut *(ptr)
+    }
+    unsafe fn from_const_handle<'a>(ptr: *const Self) -> &'a Self {
+        &*(ptr)
+    }
+}

@@ -40,6 +40,7 @@ src/ugoira.c
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/../utils")
 include_directories("${CMAKE_CURRENT_BINARY_DIR}")
+include_directories("${AVUTIL_INCLUDE_DIRS}")
 
 add_library(ugoira STATIC "${UGOIRA_FILES}")
 target_link_libraries(ugoira AVUTIL::AVUTIL AVFORMAT::AVFORMAT AVCODEC::AVCODEC SWSCALE::SWSCALE LIBZIP::LIBZIP ${UTILS_TARGET})

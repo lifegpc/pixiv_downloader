@@ -13,6 +13,7 @@ include(GetLinkLibraries)
 find_package(AVUTIL REQUIRED)
 
 add_library(avdict STATIC avdict.h src/avdict.c)
+include_directories("${AVUTIL_INCLUDE_DIRS}")
 target_link_libraries(avdict AVUTIL::AVUTIL)
 target_compile_definitions(avdict PRIVATE -DBUILD_AVDICT)
 

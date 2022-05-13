@@ -24,6 +24,12 @@ end:
     return nullptr;
 }
 
+const ExifDataRef* exif_image_get_exif_data(ExifImage* image) {
+    if (!image || !image->image) return nullptr;
+    image->exif_data_ref.data = &image->image->exifData();
+    return &image->exif_data_ref;
+}
+
 int exif_image_set_exif_data(ExifImage* image, ExifData* data) {
     if (!image || !data) return 1;
     image->image->setExifData(data->data);
@@ -230,14 +236,36 @@ int exif_data_clear(ExifData* d) {
     return 1;
 }
 
-int exif_data_is_empty(ExifData* d) {
-    if (!d) return -1;
-    return d->data.empty() ? 1 : 0;
+const ExifDataRef* exif_data_get_ref(ExifData* d) {
+    if (!d) return nullptr;
+    d->ref.data = &d->data;
+    return &d->ref;
 }
 
-long exif_data_get_count(ExifData* d) {
-    if (!d) return -1;
-    return d->data.count();
+ExifData* exif_data_ref_clone(ExifDataRef* d) {
+    if (!d || !d->data) return nullptr;
+    auto n = new ExifData;
+    if (!n) return nullptr;
+    try {
+        for (auto i = d->data->begin(); i != d->data->end(); ++i) {
+            n->data.add(*i);
+        }
+    } catch (std::exception& e) {
+        printf("%s\n", e.what());
+        delete n;
+        return nullptr;
+    }
+    return n;
+}
+
+int exif_data_ref_is_empty(ExifDataRef* d) {
+    if (!d || !d->data) return -1;
+    return d->data->empty() ? 1 : 0;
+}
+
+long exif_data_ref_get_count(ExifDataRef* d) {
+    if (!d || !d->data) return -1;
+    return d->data->count();
 }
 
 void exif_free_value(ExifValue* value) {

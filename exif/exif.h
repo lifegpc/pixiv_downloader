@@ -15,6 +15,8 @@ typedef struct ExifValue ExifValue;
 typedef struct ExifData ExifData;
 /// <div rustbindgen opaque></div>
 typedef struct ExifDatum ExifDatum;
+/// <div rustbindgen opaque></div>
+typedef struct ExifDataRef ExifDataRef;
 #if defined _WIN32 && defined WIN32_DLL
 #if BUILD_DLL
 #define EXIF_API __declspec(dllexport)
@@ -26,6 +28,7 @@ typedef struct ExifDatum ExifDatum;
 #endif
 
 EXIF_API ExifImage* create_exif_image(const char* path);
+EXIF_API const ExifDataRef* exif_image_get_exif_data(ExifImage* image);
 EXIF_API int exif_image_set_exif_data(ExifImage* image, ExifData* data);
 EXIF_API int exif_image_write_metadata(ExifImage* image);
 EXIF_API void free_exif_image(ExifImage* img);
@@ -54,8 +57,10 @@ EXIF_API int64_t exif_value_to_int64(ExifValue* value, long i);
 EXIF_API ExifData* exif_data_new();
 EXIF_API int exif_data_add(ExifData* d, ExifKey* key, ExifValue* value);
 EXIF_API int exif_data_clear(ExifData* d);
-EXIF_API int exif_data_is_empty(ExifData* d);
-EXIF_API long exif_data_get_count(ExifData* d);
+EXIF_API const ExifDataRef* exif_data_get_ref(ExifData* d);
+EXIF_API ExifData* exif_data_ref_clone(ExifDataRef* d);
+EXIF_API int exif_data_ref_is_empty(ExifDataRef* d);
+EXIF_API long exif_data_ref_get_count(ExifDataRef* d);
 EXIF_API void exif_free_value(ExifValue* value);
 EXIF_API void exif_free_data(ExifData* d);
 EXIF_API void exif_free_datum(ExifDatum* d);
