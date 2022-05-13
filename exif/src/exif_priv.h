@@ -2,7 +2,7 @@
 #define _EXIF_EXIF_PRIV_H
 #include "exiv2/exiv2.hpp"
 typedef struct ExifDataRef {
-    const Exiv2::ExifData* data = nullptr;
+    Exiv2::ExifData* data = nullptr;
 } ExifDataRef;
 typedef struct ExifImage {
     Exiv2::Image::UniquePtr image;

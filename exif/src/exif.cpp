@@ -24,7 +24,7 @@ end:
     return nullptr;
 }
 
-const ExifDataRef* exif_image_get_exif_data(ExifImage* image) {
+ExifDataRef* exif_image_get_exif_data(ExifImage* image) {
     if (!image || !image->image) return nullptr;
     image->exif_data_ref.data = &image->image->exifData();
     return &image->exif_data_ref;
@@ -224,19 +224,19 @@ ExifData* exif_data_new() {
     return new ExifData;
 }
 
-int exif_data_add(ExifData* d, ExifKey* key, ExifValue* value) {
-    if (!d || !key || !value || !key->key) return 0;
-    d->data.add(*key->key, value->value.get());
+int exif_data_ref_add(ExifDataRef* d, ExifKey* key, ExifValue* value) {
+    if (!d || !d->data || !key || !value || !key->key) return 0;
+    d->data->add(*key->key, value->value.get());
     return 1;
 }
 
-int exif_data_clear(ExifData* d) {
-    if (!d) return 0;
-    d->data.clear();
+int exif_data_ref_clear(ExifDataRef* d) {
+    if (!d || !d->data) return 0;
+    d->data->clear();
     return 1;
 }
 
-const ExifDataRef* exif_data_get_ref(ExifData* d) {
+ExifDataRef* exif_data_get_ref(ExifData* d) {
     if (!d) return nullptr;
     d->ref.data = &d->data;
     return &d->ref;

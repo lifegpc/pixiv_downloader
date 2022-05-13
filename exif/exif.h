@@ -28,7 +28,7 @@ typedef struct ExifDataRef ExifDataRef;
 #endif
 
 EXIF_API ExifImage* create_exif_image(const char* path);
-EXIF_API const ExifDataRef* exif_image_get_exif_data(ExifImage* image);
+EXIF_API ExifDataRef* exif_image_get_exif_data(ExifImage* image);
 EXIF_API int exif_image_set_exif_data(ExifImage* image, ExifData* data);
 EXIF_API int exif_image_write_metadata(ExifImage* image);
 EXIF_API void free_exif_image(ExifImage* img);
@@ -55,9 +55,9 @@ EXIF_API char* exif_value_to_string(ExifValue* value, size_t* len);
 EXIF_API char* exif_value_to_string2(ExifValue* value, size_t* len, long i);
 EXIF_API int64_t exif_value_to_int64(ExifValue* value, long i);
 EXIF_API ExifData* exif_data_new();
-EXIF_API int exif_data_add(ExifData* d, ExifKey* key, ExifValue* value);
-EXIF_API int exif_data_clear(ExifData* d);
-EXIF_API const ExifDataRef* exif_data_get_ref(ExifData* d);
+EXIF_API int exif_data_ref_add(ExifDataRef* d, ExifKey* key, ExifValue* value);
+EXIF_API int exif_data_ref_clear(ExifDataRef* d);
+EXIF_API ExifDataRef* exif_data_get_ref(ExifData* d);
 EXIF_API ExifData* exif_data_ref_clone(ExifDataRef* d);
 EXIF_API int exif_data_ref_is_empty(ExifDataRef* d);
 EXIF_API long exif_data_ref_get_count(ExifDataRef* d);

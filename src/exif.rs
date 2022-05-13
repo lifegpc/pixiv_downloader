@@ -5,6 +5,7 @@ use crate::ext::rawhandle::ToRawHandle;
 use c_fixed_string::CFixedStr;
 use int_enum::IntEnum;
 use std::borrow::Borrow;
+use std::borrow::BorrowMut;
 use std::borrow::ToOwned;
 use std::clone::Clone;
 use std::convert::TryFrom;
@@ -16,6 +17,7 @@ use std::fs::copy;
 #[cfg(test)]
 use std::fs::create_dir;
 use std::ops::Deref;
+use std::ops::DerefMut;
 use std::ops::Drop;
 use std::os::raw::c_long;
 use std::path::Path;
@@ -509,36 +511,6 @@ impl ExifData {
     pub unsafe fn from_raw_pointer(data: *mut _exif::ExifData) -> Self {
         Self { data }
     }
-
-    /// Add a data from the supplied key and value pair.
-    /// No duplicate checks are performed, i.e., it is possible to add multiple metadata with the same key.
-    pub fn add(&mut self, key: &ExifKey, value: &ExifValue) -> Result<(), ()> {
-        let k = unsafe { key.to_raw_handle() };
-        let v = unsafe { value.to_raw_handle() };
-        if k.is_null() || v.is_null() {
-            return Err(());
-        }
-        let r = unsafe { _exif::exif_data_add(self.data, k, v) };
-        if r == 0 {
-            Err(())
-        } else {
-            Ok(())
-        }
-    }
-
-    /// Delete all Exifdatum instances resulting in an empty container.
-    /// Note that this also removes thumbnails.
-    pub fn clear(&mut self) -> Result<(), ()> {
-        if self.data.is_null() {
-            return Err(());
-        }
-        let r = unsafe { _exif::exif_data_clear(self.data) };
-        if r == 0 {
-            Err(())
-        } else {
-            Ok(())
-        }
-    }
 }
 
 impl Borrow<ExifDataRef> for ExifData {
@@ -547,10 +519,22 @@ impl Borrow<ExifDataRef> for ExifData {
     }
 }
 
+impl BorrowMut<ExifDataRef> for ExifData {
+    fn borrow_mut(&mut self) -> &mut ExifDataRef {
+        self.deref_mut()
+    }
+}
+
 impl Deref for ExifData {
     type Target = ExifDataRef;
     fn deref(&self) -> &Self::Target {
-        unsafe { ExifDataRef::from_const_handle(_exif::exif_data_get_ref(self.to_raw_handle())) }
+        unsafe { ExifDataRef::from_const_handle(_exif::exif_data_get_ref(self.to_raw_handle()) as *const ExifDataRef) }
+    }
+}
+
+impl DerefMut for ExifData {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe { ExifDataRef::from_raw_handle(_exif::exif_data_get_ref(self.to_raw_handle())) }
     }
 }
 
@@ -570,6 +554,38 @@ impl ToRawHandle<_exif::ExifData> for ExifData {
 
 #[allow(dead_code)]
 impl ExifDataRef {
+    /// Add a data from the supplied key and value pair.
+    /// No duplicate checks are performed, i.e., it is possible to add multiple metadata with the same key.
+    pub fn add(&mut self, key: &ExifKey, value: &ExifValue) -> Result<(), ()> {
+        let data = unsafe { self.to_raw_handle() };
+        let k = unsafe { key.to_raw_handle() };
+        let v = unsafe { value.to_raw_handle() };
+        if k.is_null() || v.is_null() || data.is_null() {
+            return Err(());
+        }
+        let r = unsafe { _exif::exif_data_ref_add(data, k, v) };
+        if r == 0 {
+            Err(())
+        } else {
+            Ok(())
+        }
+    }
+
+    /// Delete all Exifdatum instances resulting in an empty container.
+    /// Note that this also removes thumbnails.
+    pub fn clear(&mut self) -> Result<(), ()> {
+        let data = unsafe { self.to_raw_handle() };
+        if data.is_null() {
+            return Err(());
+        }
+        let r = unsafe { _exif::exif_data_ref_clear(data) };
+        if r == 0 {
+            Err(())
+        } else {
+            Ok(())
+        }
+    }
+
     /// Get the number of metadata entries.
     pub fn count(&self) -> Option<usize> {
         let data = unsafe { self.to_raw_handle() };
@@ -665,7 +681,20 @@ impl ExifImage {
         if d.is_null() {
             return None;
         }
-        unsafe { Some(ExifDataRef::from_const_handle(d)) }
+        unsafe { Some(ExifDataRef::from_const_handle(d as *const ExifDataRef)) }
+    }
+
+    /// Returns an ExifData instance containing currently buffered Exif data.
+    /// The Exif data in the returned instance will be written to the image when [Self::write_metadata()] is called.
+    pub fn exif_data_as_mut(&mut self) -> Option<&mut ExifDataRef> {
+        if self.img.is_null() {
+            return None;
+        }
+        let d = unsafe { _exif::exif_image_get_exif_data(self.img) };
+        if d.is_null() {
+            return None;
+        }
+        unsafe { Some(ExifDataRef::from_raw_handle(d)) }
     }
 
     /// Assign new Exif data.
@@ -793,6 +822,11 @@ fn test_exif_image() {
         let mut img = ExifImage::new(target).unwrap();
         img.set_exif_data(&d).unwrap();
         assert_eq!(img.exif_data().unwrap().count(), Some(1));
+        let k = ExifKey::try_from("Exif.Image.Artist").unwrap();
+        let mut v = ExifValue::try_from(ExifTypeID::AsciiString).unwrap();
+        v.read("L.H.B".as_bytes(), None).unwrap();
+        img.exif_data_as_mut().unwrap().add(&k, &v).unwrap();
+        assert_eq!(img.exif_data().unwrap().count(), Some(2));
         img.write_metadata().unwrap();
     }
 }
