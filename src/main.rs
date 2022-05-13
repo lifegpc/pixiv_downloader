@@ -31,12 +31,14 @@ mod _exif;
 mod _ugoira;
 mod author_name_filter;
 #[cfg(feature = "avdict")]
+/// A rust wrapper for [FFMPEG](https://ffmpeg.org/)'s [AVDictionary](https://ffmpeg.org/doxygen/trunk/group__lavu__dict.html)
 mod avdict;
 mod cookies;
 mod data;
 mod download;
 mod dur;
 #[cfg(feature = "exif")]
+/// Used to read/modify image's exif data
 mod exif;
 /// Used to extend some thirdparty library
 mod ext;

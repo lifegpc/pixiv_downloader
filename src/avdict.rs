@@ -17,11 +17,16 @@ use std::os::raw::c_char;
 use std::os::raw::c_int;
 use std::str::Utf8Error;
 
+/// Error when operate AVDictionary
 #[derive(Debug, derive_more::From, PartialEq)]
 pub enum AVDictError {
+    /// The normal error message
     String(String),
+    /// Failed to use UTF-8 to decode string
     Utf8Error(Utf8Error),
+    /// The error code from ffmpeg
     CodeError(AVDictCodeError),
+    /// The error occured when convert data to the string in C.
     ToCstr(ToCStrError)
 }
 
@@ -48,12 +53,15 @@ impl Display for AVDictError {
     }
 }
 
+/// The error returned from the ffmpeg
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct AVDictCodeError {
+    /// Error code
     err: c_int,
 }
 
 impl AVDictCodeError {
+    /// Convert error code to error message
     pub fn to_str(&self) -> Result<String, AVDictError> {
         let s = unsafe { _avdict::avdict_get_errmsg(self.err) };
         if s.is_null() {
@@ -89,6 +97,7 @@ impl From<c_int> for AVDictCodeError {
 }
 
 flagset::flags! {
+    /// The flags of Dictionary
     pub enum AVDictFlags: c_int {
         /// Only get an entry with exact-case key match.
         MatchCase = _avdict::AV_DICT_MATCH_CASE as c_int,
@@ -108,18 +117,22 @@ flagset::flags! {
     }
 }
 
+/// An instance of the AVDictionary
 pub struct AVDict {
     pub m: *mut _avdict::AVDict,
 }
 
 #[allow(dead_code)]
 impl AVDict {
+    /// Create a new instance of the AVDictionary
     pub fn new() -> Self {
         Self {
             m: 0 as *mut _avdict::AVDict,
         }
     }
 
+    /// Clone a new instance from current [AVDict].
+    /// * `flags` - The flags to use when setting entries
     pub fn copy<T: ToFlagSet<AVDictFlags>>(&self, flags: T) -> Result<Self, AVDictError> {
         if self.m.is_null() {
             return Ok(Self::new());
@@ -135,6 +148,9 @@ impl AVDict {
         })
     }
 
+    /// Set all entries in the map to the dictionary
+    /// * `maps` - The map which contains entries
+    /// * `flags` - The flags to use when setting entries.
     pub fn from_map<K: ToCStr, V: ToCStr, F: ToFlagSet<AVDictFlags>>(&mut self, maps: &HashMap<K, V>, flags: F) -> Result<(), AVDictError> {
         let flags = flags.to_flag_set();
         for (k, v) in maps {
@@ -143,6 +159,9 @@ impl AVDict {
         Ok(())
     }
 
+    /// Get a dictionary value with matching key.
+    /// * `key` - The matching key
+    /// * `flags` - The flags to control how entry is retrieved.
     pub fn get<K: ToCStr, F: ToFlagSet<AVDictFlags>>(&self, key: K, flags: F) -> Result<Option<CString>, AVDictError> {
         if self.m.is_null() {
             return Ok(None);

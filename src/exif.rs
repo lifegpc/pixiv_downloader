@@ -582,6 +582,7 @@ impl ExifDataRef {
         }
         Some(r as usize)
     }
+
     /// Return true if there is no Exif metadata.
     pub fn empty(&self) -> Option<bool> {
         let data = unsafe { self.to_raw_handle() };
@@ -623,12 +624,15 @@ impl ToRawHandle<ExifDataRef> for ExifDataRef {
     }
 }
 
+/// An image
 pub struct ExifImage {
     img: *mut _exif::ExifImage,
 }
 
 #[allow(dead_code)]
 impl ExifImage {
+    /// Create a new image instance
+    /// * `file_name` - File name
     pub fn new<S: AsRef<OsStr> + ?Sized>(file_name: &S) -> Result<Self, ()> {
         let p = Path::new(file_name);
         if !p.exists() {
@@ -651,6 +655,8 @@ impl ExifImage {
         Ok(Self { img: f })
     }
 
+    /// Returns a read only [ExifData] ([ExifDataRef]) instance containing currently buffered Exif data.
+    /// The Exif data in the returned instance will be written to the image when [Self::write_metadata()] is called.
     pub fn exif_data(&self) -> Option<&ExifDataRef> {
         if self.img.is_null() {
             return None;
@@ -662,6 +668,9 @@ impl ExifImage {
         unsafe { Some(ExifDataRef::from_const_handle(d)) }
     }
 
+    /// Assign new Exif data.
+    /// The new Exif data is not written to the image until the [Self::write_metadata()] method is called.
+    /// * `data` - An [ExifData] instance holding Exif data to be copied
     pub fn set_exif_data(&mut self, data: &ExifData) -> Result<(), ()> {
         if self.img.is_null() {
             return Err(());
@@ -678,6 +687,11 @@ impl ExifImage {
         }
     }
 
+    /// Write metadata back to the image.
+    /// 
+    /// All existing metadata sections in the image are either created, replaced, or erased.
+    /// If values for a given metadata type have been assigned, a section for that metadata type will either be created or replaced.
+    /// If no values have been assigned to a given metadata type, any exists section for that metadata type will be removed from the image.
     pub fn write_metadata(&mut self) -> Result<(), ()> {
         if self.img.is_null() {
             return Err(());
@@ -695,6 +709,7 @@ impl Drop for ExifImage {
     fn drop(&mut self) {
         if !self.img.is_null() {
             unsafe { _exif::free_exif_image(self.img) };
+            self.img = 0 as *mut _exif::ExifImage;
         }
     }
 }
