@@ -6,7 +6,7 @@ use crate::ext::cstr::ToCStrError;
 use crate::ext::json::ToJson;
 use crate::ext::rawhandle::ToRawHandle;
 use crate::gettext;
-use crate::stdext::TryErr;
+use crate::ext::try_err::TryErr;
 use std::convert::AsRef;
 use std::default::Default;
 use std::ffi::CStr;

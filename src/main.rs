@@ -51,7 +51,6 @@ mod pixiv_web;
 mod retry_interval;
 mod settings;
 mod settings_list;
-mod stdext;
 #[cfg(feature = "ugoira")]
 mod ugoira;
 mod utils;
