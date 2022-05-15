@@ -10,12 +10,6 @@ impl ToJson for &str {
     }
 }
 
-impl ToJson for &String {
-    fn to_json(&self) -> Option<JsonValue> {
-        Some(JsonValue::String((*self).to_string()))
-    }
-}
-
 impl ToJson for String {
     fn to_json(&self) -> Option<JsonValue> {
         Some(JsonValue::String(self.to_string()))
@@ -28,9 +22,9 @@ impl ToJson for JsonValue {
     }
 }
 
-impl ToJson for &JsonValue {
+impl<T: ToJson> ToJson for &T {
     fn to_json(&self) -> Option<JsonValue> {
-        Some((*self).clone())
+        (*self).to_json()
     }
 }
 

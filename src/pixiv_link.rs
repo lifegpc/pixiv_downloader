@@ -58,9 +58,9 @@ impl ToJson for PixivID {
     }
 }
 
-impl ToPixivID for &PixivID {
+impl ToPixivID for PixivID {
     fn to_pixiv_id(&self) -> Option<PixivID> {
-        Some((*self).clone())
+        Some(self.clone())
     }
 }
 
@@ -79,6 +79,12 @@ impl ToPixivID for String {
 impl ToPixivID for u64 {
     fn to_pixiv_id(&self) -> Option<PixivID> {
         Some(PixivID::Artwork(*self))
+    }
+}
+
+impl<T: ToPixivID> ToPixivID for &T {
+    fn to_pixiv_id(&self) -> Option<PixivID> {
+        (*self).to_pixiv_id()
     }
 }
 
