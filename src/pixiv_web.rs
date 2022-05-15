@@ -1,3 +1,4 @@
+use crate::ext::rw_lock::GetRwLock;
 use crate::gettext;
 use crate::opthelper::OptHelper;
 use crate::parser::metadata::MetaDataParser;
@@ -21,7 +22,10 @@ pub struct PixivWebClient {
     pub helper: OptHelper,
     /// true if in is initialized
     inited: Arc<AtomicBool>,
+    /// pixiv global data
     data: RwLock<Option<JsonValue>>,
+    /// Get basic params
+    params: RwLock<Option<JsonValue>>,
 }
 
 impl PixivWebClient {
@@ -31,6 +35,7 @@ impl PixivWebClient {
             helper: OptHelper::new(m.cmd.as_ref().unwrap().clone(), m.settings.as_ref().unwrap().clone()),
             inited: Arc::new(AtomicBool::new(false)),
             data: RwLock::new(None),
+            params: RwLock::new(None),
         }
     }
 
@@ -79,8 +84,10 @@ impl PixivWebClient {
         let l = self.helper.language();
         if l.is_some() {
             self.client.set_header("Accept-Language", l.as_ref().unwrap());
+            self.params.get_mut().replace(json::object! { "lang": l.as_ref().unwrap().replace("-", "_").as_str() });
         } else {
             self.client.set_header("Accept-Language", "ja");
+            self.params.get_mut().replace(json::object! { "lang": "ja" });
         }
         self.client.set_verbose(self.helper.verbose());
         let retry = self.helper.retry();
@@ -103,7 +110,7 @@ impl PixivWebClient {
 
     pub fn check_login(&self) -> bool {
         self.auto_init();
-        let r = self.client.get("https://www.pixiv.net/", None);
+        let r = self.client.get_with_param("https://www.pixiv.net/", self.params.get_ref(), None);
         if r.is_none() {
             return false;
         }
@@ -215,7 +222,7 @@ impl PixivWebClient {
 
     pub fn get_artwork_ajax(&self, id: u64) -> Option<JsonValue> {
         self.auto_init();
-        let r = self.client.get(format!("https://www.pixiv.net/ajax/illust/{}", id), None);
+        let r = self.client.get_with_param(format!("https://www.pixiv.net/ajax/illust/{}", id), self.params.get_ref(), None);
         if r.is_none() {
             return None;
         }
@@ -229,7 +236,7 @@ impl PixivWebClient {
 
     pub fn get_artwork(&self, id: u64) -> Option<JsonValue> {
         self.auto_init();
-        let r = self.client.get(format!("https://www.pixiv.net/artworks/{}", id), None);
+        let r = self.client.get_with_param(format!("https://www.pixiv.net/artworks/{}", id), self.params.get_ref(), None);
         if r.is_none() {
             return None;
         }
@@ -259,7 +266,7 @@ impl PixivWebClient {
 
     pub fn get_illust_pages(&self, id: u64) -> Option<JsonValue> {
         self.auto_init();
-        let r = self.client.get(format!("https://www.pixiv.net/ajax/illust/{}/pages", id), None);
+        let r = self.client.get_with_param(format!("https://www.pixiv.net/ajax/illust/{}/pages", id), self.params.get_ref(), None);
         if r.is_none() {
             return None;
         }
@@ -273,7 +280,7 @@ impl PixivWebClient {
 
     pub fn get_ugoira(&self, id: u64) -> Option<JsonValue> {
         self.auto_init();
-        let r = self.client.get(format!("https://www.pixiv.net/ajax/illust/{}/ugoira_meta", id), None);
+        let r = self.client.get_with_param(format!("https://www.pixiv.net/ajax/illust/{}/ugoira_meta", id), self.params.get_ref(), None);
         if r.is_none() {
             return None;
         }

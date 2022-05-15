@@ -1,4 +1,7 @@
 use json::JsonValue;
+use std::ops::Deref;
+use std::sync::RwLockReadGuard;
+use std::sync::RwLockWriteGuard;
 
 pub trait ToJson {
     fn to_json(&self) -> Option<JsonValue>;
@@ -25,6 +28,27 @@ impl ToJson for JsonValue {
 impl<T: ToJson> ToJson for &T {
     fn to_json(&self) -> Option<JsonValue> {
         (*self).to_json()
+    }
+}
+
+impl<T: ToJson> ToJson for Option<T> {
+    fn to_json(&self) -> Option<JsonValue> {
+        match self {
+            Some(d) => { d.to_json() }
+            None => { None }
+        }
+    }
+}
+
+impl<T: ToJson> ToJson for RwLockReadGuard<'_, T> {
+    fn to_json(&self) -> Option<JsonValue> {
+        self.deref().to_json()
+    }
+}
+
+impl<T: ToJson> ToJson for RwLockWriteGuard<'_, T> {
+    fn to_json(&self) -> Option<JsonValue> {
+        self.deref().to_json()
     }
 }
 

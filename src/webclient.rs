@@ -2,6 +2,7 @@ extern crate spin_on;
 
 use crate::cookies::Cookie;
 use crate::cookies::CookieJar;
+use crate::ext::json::ToJson;
 use crate::gettext;
 use crate::list::NonTailList;
 use crate::opthelper::OptHelper;
@@ -28,7 +29,9 @@ use std::sync::atomic::AtomicU64;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 
+/// Convert data to HTTP headers map
 pub trait ToHeaders {
+    /// return HTTP headers map
     fn to_headers(&self) -> Option<HashMap<String, String>>;
 }
 
@@ -82,10 +85,13 @@ pub fn gen_cookie_header<U: IntoUrl>(c: &WebClient, url: U) -> String {
 
 /// A Web Client
 pub struct WebClient {
+    /// Basic Web Client
     client: Client,
     /// HTTP Headers
     headers: RwLock<HashMap<String, String>>,
+    /// Cookies
     cookies: RwLock<CookieJar>,
+    /// Verbose logging
     verbose: Arc<AtomicBool>,
     /// Retry times, 0 means disable
     retry: Arc<AtomicU64>,
@@ -94,6 +100,7 @@ pub struct WebClient {
 }
 
 impl WebClient {
+    /// Create a new instance of client
     pub fn new() -> Self {
         Self {
             client: Client::new(),
@@ -204,6 +211,8 @@ impl WebClient {
         self.verbose.load(Ordering::Relaxed)
     }
 
+    /// Used to handle Set-Cookie header in an [Response]
+    /// * `r` - reference to an [Response]
     pub fn handle_set_cookie(&self, r: &Response) {
         let u = r.url();
         let h = r.headers();
@@ -229,6 +238,12 @@ impl WebClient {
         }
     }
 
+    /// Read cookies from file.
+    /// * `file_name`: File name
+    /// 
+    /// returns true if readed successfully.
+    /// # Note
+    /// If read failed, will clean all entries in the current [CookieJar]
     pub fn read_cookies(&self, file_name: &str) -> bool {
         let mut c = self.get_cookies_as_mut();
         let r = c.read(file_name);
@@ -238,10 +253,19 @@ impl WebClient {
         r
     }
 
+    /// Save cookies to file
+    /// * `file_name`: File name
+    /// 
+    /// returns true if saved successfully.
     pub fn save_cookies(&self, file_name: &str) -> bool {
         self.get_cookies_as_mut().save(file_name)
     }
 
+    /// Set new HTTP header
+    /// * `key` - The key of the new HTTP header
+    /// * `value` - The value of the new HTTP value
+    /// 
+    /// Returns the old HTTP header value if presented.
     pub fn set_header(&self, key: &str, value: &str) -> Option<String> {
         self.get_headers_as_mut().insert(String::from(key), String::from(value))
     }
@@ -254,36 +278,42 @@ impl WebClient {
     pub fn set_verbose(&self, verbose: bool) {
         self.verbose.store(verbose, Ordering::Relaxed)
     }
+
     /// Send GET requests with parameters
     /// * `param` - GET parameters. Should be a JSON object/array. If value in map is not a string, will dump it
     /// # Examples
     /// ```
     /// let client = WebClient::new();
-    /// client.verbose = true;
-    /// client.get_with_param("https://test.com/a", json::object!{"data": "param1"});
-    /// client.get_with_param("https://test.com/a", json::object!{"daa": {"ad": "test"}});
-    /// client.get_with_param("https://test.com/a", json::array![["daa", "param1"]]);
+    /// client.set_verbose(true);
+    /// client.get_with_param("https://test.com/a", json::object!{"data": "param1"}, None);
+    /// client.get_with_param("https://test.com/a", json::object!{"daa": {"ad": "test"}}, None);
+    /// client.get_with_param("https://test.com/a", json::array![["daa", "param1"]], None);
     /// ```
     /// It will GET `https://test.com/a?data=param1`, `https://test.com/a?daa=%7B%22ad%22%3A%22test%22%7D`, `https://test.com/a?daa=param1`
-    pub fn get_with_param<U: IntoUrl + Clone>(&self, url: U, param: JsonValue) -> Option<Response> {
+    pub fn get_with_param<U: IntoUrl + Clone, J: ToJson, H: ToHeaders + Clone>(&self, url: U, param: J, headers: H) -> Option<Response> {
         let u = url.into_url();
         if u.is_err() {
             println!("{} \"{}\"", gettext("Can not parse URL:"), u.unwrap_err());
             return None;
         }
         let mut u = u.unwrap();
-        if !param.is_object() && !param.is_array() {
+        let obj = param.to_json();
+        if obj.is_none() {
+            return self.get(u, headers);
+        }
+        let obj = obj.unwrap();
+        if !obj.is_object() && !obj.is_array() {
             println!(
                 "{} \"{}\"",
                 gettext("Parameters should be object or array:"),
-                param
+                obj
             );
             return None;
         }
         {
             let mut query = u.query_pairs_mut();
-            if param.is_object() {
-                for (k, v) in param.entries() {
+            if obj.is_object() {
+                for (k, v) in obj.entries() {
                     let s: String;
                     if v.is_string() {
                         s = String::from(v.as_str().unwrap());
@@ -293,7 +323,7 @@ impl WebClient {
                     query.append_pair(k, s.as_str());
                 }
             } else {
-                for v in param.members() {
+                for v in obj.members() {
                     if !v.is_object() {
                         println!("{} \"{}\"", gettext("Parameters should be array:"), v);
                         return None;
@@ -323,9 +353,10 @@ impl WebClient {
                 }
             }
         }
-        self.get(u.as_str(), None)
+        self.get(u.as_str(), headers)
     }
 
+    /// Send Get Requests
     pub fn get<U: IntoUrl + Clone, H: ToHeaders + Clone>(&self, url: U, headers: H) -> Option<Response> {
         let mut count = 0u64;
         let retry = self.get_retry();
@@ -350,6 +381,7 @@ impl WebClient {
         None
     }
 
+    /// Send Get Requests
     pub async fn aget<U: IntoUrl + Clone, H: ToHeaders + Clone>(&self, url: U, headers: H) -> Option<Response> {
         let mut count = 0u64;
         let retry = self.get_retry();
@@ -371,7 +403,7 @@ impl WebClient {
         None
     }
 
-    /// Send GET requests
+    /// Send GET requests without retry
     pub fn _get<U: IntoUrl, H: ToHeaders>(&self, url: U, headers: H) -> Option<Response> {
         let r = self._aget(url, headers);
         let r = r.send();
@@ -391,6 +423,7 @@ impl WebClient {
         Some(r)
     }
 
+    /// Send GET requests without retry
     pub async fn _aget2<U: IntoUrl, H: ToHeaders>(&self, url: U, headers: H) -> Option<Response> {
         let r = self._aget(url, headers);
         let r = r.send().await;
@@ -409,6 +442,7 @@ impl WebClient {
         Some(r)
     }
 
+    /// Generate a requests
     pub fn _aget<U: IntoUrl, H: ToHeaders>(&self, url: U, headers: H) -> RequestBuilder {
         let s = url.as_str();
         if self.get_verbose() {
@@ -432,6 +466,13 @@ impl WebClient {
         r
     }
 
+    /// Download a stream
+    /// * `file_name` - File name
+    /// * `r` - Response
+    /// * `opt` - Options
+    /// * `progess_bars` - Multiple progress bars
+    /// 
+    /// Note: If file already exists, will remove existing file first.
     pub async fn adownload_stream<S: AsRef<OsStr> + ?Sized>(file_name: &S, r: Response, opt: &OptHelper, progress_bars: Option<Arc<MultiProgress>>) -> Result<(), ()> {
         let content_length = r.content_length();
         let use_progress_bar = match &content_length {
@@ -513,6 +554,8 @@ impl WebClient {
     /// Download a stream
     /// * `file_name` - File name
     /// * `r` - Response
+    /// * `opt` - Options
+    /// 
     /// Note: If file already exists, will remove existing file first.
     pub fn download_stream<S: AsRef<OsStr> + ?Sized>(file_name: &S, r: Response, opt: &OptHelper) -> Result<(), ()> {
         let content_length = r.content_length();
