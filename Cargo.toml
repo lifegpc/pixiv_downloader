@@ -17,7 +17,7 @@ getopts = "0.2"
 gettext = "0.4"
 html_parser = "0.6.3"
 indicatif = "0.17.0-rc.10"
-int-enum = { version = "0.4", optional = true }
+int-enum = "0.4"
 json = "0.12"
 lazy_static = "1.4"
 regex = "1"
@@ -35,7 +35,7 @@ cmake = { version = "0.1", optional = true }
 [features]
 all = ["exif", "ugoira"]
 avdict = ["bindgen", "cmake", "flagset"]
-exif = ["bindgen", "c_fixed_string", "cmake", "link-cplusplus", "int-enum", "utf16string"]
+exif = ["bindgen", "c_fixed_string", "cmake", "link-cplusplus", "utf16string"]
 ugoira = ["avdict", "bindgen", "cmake", "link-cplusplus"]
 
 [target.'cfg(windows)'.dependencies]

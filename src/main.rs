@@ -9,7 +9,6 @@ extern crate flagset;
 extern crate futures_util;
 extern crate json;
 extern crate indicatif;
-#[cfg(feature = "int-enum")]
 extern crate int_enum;
 #[macro_use]
 extern crate lazy_static;
