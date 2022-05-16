@@ -36,6 +36,7 @@ mod avdict;
 mod cookies;
 mod data;
 mod download;
+mod downloader;
 mod dur;
 #[cfg(feature = "exif")]
 /// Used to read/modify image's exif data
