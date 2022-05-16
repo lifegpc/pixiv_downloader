@@ -10,6 +10,8 @@ use int_enum::IntEnum;
 use std::convert::AsRef;
 use std::fs::File;
 #[cfg(test)]
+use std::fs::create_dir;
+#[cfg(test)]
 use std::fs::metadata;
 use std::fs::remove_file;
 use std::io::Seek;
