@@ -212,6 +212,11 @@ fn check_file_size<P: AsRef<Path> + ?Sized>(path: &P, size: u64) -> Result<(), P
 
 #[test]
 fn test_pd_file() -> Result<(), PdFileError> {
+    let p = Path::new("./test");
+    if !p.exists() {
+        let re = create_dir("./test");
+        assert!(re.is_ok() || p.exists());
+    }
     {
         let f = PdFile::new();
         f.open_with_create_file("test/a.pd")?;
