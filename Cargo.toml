@@ -5,11 +5,6 @@ edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[lib]
-name = "proc_macros"
-path = "src/proc_macros.rs"
-proc-macro = true
-
 [dependencies]
 atty = "0.2"
 c_fixed_string = { version = "0.2", optional = true }
@@ -25,12 +20,11 @@ indicatif = "0.17.0-rc.10"
 int-enum = "0.4"
 json = "0.12"
 lazy_static = "1.4"
-quote = "1"
+proc_macros = { path = "proc_macros" }
 regex = "1"
 reqwest = { version = "0.11", features = ["brotli", "deflate", "gzip", "rustls-tls", "socks", "stream"] }
 RustyXML = "0.3"
 spin_on = "0.1.1"
-syn = "1"
 tokio = { version = "1.18", features = ["rt", "macros", "rt-multi-thread", "time"] }
 urlparse = "0.7"
 utf16string = { version= "0.2", optional = true }

@@ -1142,11 +1142,10 @@ dependencies = [
  "json",
  "lazy_static",
  "link-cplusplus",
- "quote",
+ "proc_macros",
  "regex",
  "reqwest",
  "spin_on",
- "syn",
  "tokio",
  "urlparse",
  "utf16string",
@@ -1175,6 +1174,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c7342d5883fbccae1cc37a2353b09c87c9b0f3afd73f5fb9bba687a1f733b029"
 dependencies = [
  "unicode-xid",
+]
+
+[[package]]
+name = "proc_macros"
+version = "0.0.1"
+dependencies = [
+ "quote",
+ "syn",
 ]
 
 [[package]]

@@ -1,3 +1,4 @@
 /target
+/proc_macros/target
 .vscode/
 test/
