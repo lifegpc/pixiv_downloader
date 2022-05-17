@@ -1,3 +1,4 @@
+use crate::downloader::pd_file::file::PdFile;
 use crate::ext::rw_lock::GetRwLock;
 use crate::gettext;
 use crate::opthelper::OptHelper;
@@ -204,7 +205,7 @@ impl PixivWebClient {
         Some(r)
     }
 
-    pub async fn adownload_image<U: IntoUrl + Clone>(&self, url: U) -> Option<Response> {
+    pub async fn adownload_image<U: IntoUrl + Clone>(&self, url: U, pdf: &Option<PdFile>) -> Option<Response> {
         self.auto_init();
         let r = self.client.aget(url, json::object!{"referer": "https://www.pixiv.net/"}).await;
         if r.is_none() {

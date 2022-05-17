@@ -6,6 +6,8 @@ use crate::data::exif::add_exifdata_to_image;
 use crate::data::json::JSONDataFile;
 #[cfg(feature = "ugoira")]
 use crate::data::video::get_video_metadata;
+use crate::downloader::pd_file::enums::PdFileResult;
+use crate::downloader::pd_file::file::PdFile;
 use crate::gettext;
 use crate::opthelper::OptHelper;
 use crate::pixiv_link::PixivID;
@@ -65,35 +67,85 @@ impl Main {
         }
         let file_name = file_name.unwrap();
         let file_name = base.join(file_name);
-        if file_name.exists() {
-            match helper.overwrite() {
-                Some(overwrite) => {
-                    if !overwrite {
-                        #[cfg(feature = "exif")]
-                        {
-                            if helper.update_exif() {
-                                if add_exifdata_to_image(&file_name, &datas, np).is_err() {
-                                    println!(
-                                        "{} {}",
-                                        gettext("Failed to add exif data to image:"),
-                                        file_name.to_str().unwrap_or("(null)")
-                                    );
+        let pdf = match PdFile::open(&file_name) {
+            Ok(f) => {
+                match f {
+                    PdFileResult::TargetExisted => {
+                        match helper.overwrite() {
+                            Some(overwrite) => {
+                                if !overwrite {
+                                    #[cfg(feature = "exif")]
+                                    {
+                                        if helper.update_exif() {
+                                            if add_exifdata_to_image(&file_name, &datas, np).is_err() {
+                                                println!(
+                                                    "{} {}",
+                                                    gettext("Failed to add exif data to image:"),
+                                                    file_name.to_str().unwrap_or("(null)")
+                                                );
+                                            }
+                                        }
+                                    }
+                                    return 0;
+                                }
+                            }
+                            None => {
+                                if !ask_need_overwrite(file_name.to_str().unwrap()) {
+                                    return 0;
                                 }
                             }
                         }
-                        return 0;
+                        match PdFile::open(&file_name) {
+                            Ok(v) => {
+                                match v {
+                                    PdFileResult::Ok(e) => { Some(e) }
+                                    _ => { None }
+                                }
+                            }
+                            Err(e) => {
+                                println!("{}", e);
+                                None
+                            }
+                        }
                     }
-                }
-                None => {
-                    if !ask_need_overwrite(file_name.to_str().unwrap()) {
-                        return 0;
-                    }
+                    PdFileResult::Ok(e) => { Some(e) }
+                    PdFileResult::ExistedOk(e) => { Some(e) }
                 }
             }
-        }
+            Err(e) => {
+                println!("{}", e);
+                if file_name.exists() {
+                    match helper.overwrite() {
+                        Some(overwrite) => {
+                            if !overwrite {
+                                #[cfg(feature = "exif")]
+                                {
+                                    if helper.update_exif() {
+                                        if add_exifdata_to_image(&file_name, &datas, np).is_err() {
+                                            println!(
+                                                "{} {}",
+                                                gettext("Failed to add exif data to image:"),
+                                                file_name.to_str().unwrap_or("(null)")
+                                            );
+                                        }
+                                    }
+                                }
+                                return 0;
+                            }
+                        }
+                        None => {
+                            if !ask_need_overwrite(file_name.to_str().unwrap()) {
+                                return 0;
+                            }
+                        }
+                    }
+                }
+                None
+            }
+        };
         let r;
         {
-            r = pw.adownload_image(link).await;
+            r = pw.adownload_image(link, &pdf).await;
             if r.is_none() {
                 println!("{} {}", gettext("Failed to download image:"), link);
                 return 1;

@@ -1,7 +1,10 @@
 use crate::downloader::pd_file::error::PdFileError;
+use crate::downloader::pd_file::enums::PdFileResult;
 use crate::downloader::pd_file::enums::PdFileStatus;
 use crate::downloader::pd_file::enums::PdFileType;
 use crate::downloader::pd_file::version::PdFileVersion;
+use crate::ext::io::StructRead;
+use crate::ext::replace::ReplaceWith2;
 use crate::ext::rw_lock::GetRwLock;
 use crate::ext::try_err::TryErr;
 use crate::ext::try_err::TryErr2;
@@ -14,6 +17,7 @@ use std::fs::create_dir;
 #[cfg(test)]
 use std::fs::metadata;
 use std::fs::remove_file;
+use std::io::Read;
 use std::io::Seek;
 use std::io::SeekFrom;
 use std::io::Write;
@@ -31,6 +35,7 @@ lazy_static! {
     static ref MAGIC_WORDS: Vec<u8> = vec![0x50, 0x44, 0xff, 0xff];
 }
 
+#[derive(Debug)]
 /// The pd file
 pub struct PdFile {
     /// The version of the current file.
@@ -53,6 +58,8 @@ pub struct PdFile {
     downloaded_file_size: AtomicU64,
     /// The size of the each part. Ignored in single thread mode.
     part_size: AtomicU32,
+    /// Only stored in memory.
+    mem_only: AtomicBool,
 }
 
 impl PdFile {
@@ -69,6 +76,7 @@ impl PdFile {
             file_size: AtomicU64::new(0),
             downloaded_file_size: AtomicU64::new(0),
             part_size: AtomicU32::new(0),
+            mem_only: AtomicBool::new(true),
         }
     }
 
@@ -93,15 +101,104 @@ impl PdFile {
     }
 
     #[inline]
+    /// Returns the size of the downloaded data
+    pub fn get_downloaded_file_size(&self) -> u64 {
+        self.downloaded_file_size.load(Ordering::Relaxed)
+    }
+
+    #[inline]
     /// Returns true if the download is completed.
     pub fn is_completed(&self) -> bool {
         self.status.get_ref().is_completed()
     }
 
     #[inline]
+    /// Returns true if the download is in progress.
+    pub fn is_downloading(&self) -> bool {
+        self.status.get_ref().is_downloading()
+    }
+
+    #[inline]
+    /// Returns true if stored in memory only.
+    fn is_mem_only(&self) -> bool {
+        self.mem_only.load(Ordering::Relaxed)
+    }
+
+    #[inline]
+    /// Returns true if is multiple thread mode.
+    pub fn is_multi_threads(&self) -> bool {
+        self.ftype.get_ref().is_multi()
+    }
+
+    #[inline]
     /// Returns true if needed to save to file.
     fn is_need_saved(&self) -> bool {
         self.need_saved.load(Ordering::Relaxed)
+    }
+
+    /// Open a new [PdFile] if download is needed.
+    /// * `path` - The path of the file which want to download.
+    pub fn open<P: AsRef<Path> + ?Sized>(path: &P) -> Result<PdFileResult, PdFileError> {
+        let p = path.as_ref();
+        let mut pb = PathBuf::from(p);
+        let mut file_name = pb.file_name().try_err(gettext("Path need have a file name."))?.to_owned();
+        file_name.push(".pd");
+        pb.set_file_name(&file_name);
+        if p.exists() {
+            if pb.exists() {
+                let f = Self::read_from_file(p)?;
+                if f.is_completed() {
+                    return Ok(PdFileResult::TargetExisted);
+                }
+                Ok(PdFileResult::ExistedOk(f))
+            } else {
+                Ok(PdFileResult::TargetExisted)
+            }
+        } else {
+            let f = PdFile::new();
+            f.open_with_create_file(&pb)?;
+            f.set_file_name(p.file_name().try_err(gettext("Path need have a file name."))?.to_str().unwrap_or("(null)"))?;
+            Ok(PdFileResult::Ok(f))
+        }
+    }
+
+    /// Create a new [PdFile] instance from the pd file.
+    /// * `path` - The path to the pd file.
+    /// 
+    /// Returns errors or a new instance.
+    pub fn read_from_file<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Self, PdFileError> {
+        let p = path.as_ref();
+        let mut f = File::open(p)?;
+        f.seek(SeekFrom::Start(0))?;
+        let mut buf = [0u8, 0, 0, 0];
+        f.read_exact(&mut buf)?;
+        if MAGIC_WORDS.as_ref() == buf {
+            return Err(PdFileError::InvalidPdFile);
+        }
+        let version = PdFileVersion::read_from(&mut f)?;
+        if !version.is_supported() {
+            return Err(PdFileError::Unsupported);
+        }
+        let file_name_len = f.read_le_u32()?;
+        let status: PdFileStatus = PdFileStatus::from_int(f.read_le_u8()?)?;
+        let ftype: PdFileType = PdFileType::from_int(f.read_le_u8()?)?;
+        let file_size = f.read_le_u64()?;
+        let downloaded_file_size = f.read_le_u64()?;
+        let part_size = f.read_le_u32()?;
+        let file_name = String::from_utf8(f.read_bytes(file_name_len as usize)?)?;
+        Ok(Self {
+            version,
+            need_saved: AtomicBool::new(false),
+            file: RwLock::new(Some(f)),
+            file_path: RwLock::new(Some(p.to_path_buf())),
+            file_name: RwLock::new(Some(file_name)),
+            status: RwLock::new(status),
+            ftype: RwLock::new(ftype),
+            file_size: AtomicU64::new(file_size),
+            downloaded_file_size: AtomicU64::new(downloaded_file_size),
+            part_size: AtomicU32::new(part_size),
+            mem_only: AtomicBool::new(false),
+        })
     }
 
     /// Create a new file and prepare to write data to it.
@@ -115,6 +212,7 @@ impl PdFile {
         let f = File::create(p)?;
         self.file.get_mut().replace(f);
         self.file_path.get_mut().replace(PathBuf::from(p));
+        self.mem_only.store(false, Ordering::Relaxed);
         self.need_saved.store(true, Ordering::Relaxed);
         Ok(())
     }
@@ -142,6 +240,12 @@ impl PdFile {
         }
     }
 
+    #[inline]
+    /// Set status to alreay downloaded.
+    fn set_completed(&self) {
+        self.status.replace_with2(PdFileStatus::Downloaded);
+    }
+
     /// Set the file name
     /// * `file_name` - The file name. Should not be empty.
     pub fn set_file_name<S: AsRef<str> + ?Sized>(&self, file_name: &S) -> Result<(), PdFileError> {
@@ -150,9 +254,11 @@ impl PdFile {
             Err(gettext("File name should not be empty."))?
         } else {
             self.file_name.get_mut().replace(String::from(fname));
-            self.need_saved.store(true, Ordering::Relaxed);
-            // Rewrite all datas.
-            self.write()?;
+            if !self.is_mem_only() {
+                self.need_saved.store(true, Ordering::Relaxed);
+                // Rewrite all datas.
+                self.write()?;
+            }
             Ok(())
         }
     }
@@ -186,6 +292,9 @@ impl PdFile {
 
 impl Drop for PdFile {
     fn drop(&mut self) {
+        if self.is_mem_only() {
+            return;
+        }
         if self.is_completed() {
             self.force_close();
             self.remove_pd_file_with_err_msg();

@@ -1,3 +1,4 @@
+use crate::downloader::pd_file::file::PdFile;
 use int_enum::IntEnum;
 
 /// The status of the downloaded file.
@@ -18,6 +19,12 @@ impl PdFileStatus {
     pub fn is_completed(&self) -> bool {
         *self == PdFileStatus::Downloaded
     }
+
+    #[inline]
+    /// Returns true if the download is in progress.
+    pub fn is_downloading(&self) -> bool {
+        *self == PdFileStatus::Downloading
+    }
 }
 
 /// The type of the downloader.
@@ -28,6 +35,20 @@ pub enum PdFileType {
     SingleThread = 0,
     /// Download in multiple thread mode.
     MultiThread = 1,
+}
+
+#[derive(Debug)]
+/// The result when try opening pd file.
+pub enum PdFileResult {
+    /// The pd file is not existed, and the new pd file is created.
+    /// In this case, need download whole file.
+    Ok(PdFile),
+    /// The pd file is not existed but the target file is existed.
+    /// In most case, this means the download already completed.
+    TargetExisted,
+    /// The pd file is existed.
+    /// In this case, can continue to download.
+    ExistedOk(PdFile),
 }
 
 impl PdFileType {

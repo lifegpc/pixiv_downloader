@@ -4,6 +4,7 @@ use std::cmp::PartialEq;
 use std::cmp::PartialOrd;
 use std::convert::AsRef;
 use std::convert::TryFrom;
+use std::io::Read;
 use std::io::Write;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -37,12 +38,27 @@ impl PdFileVersion {
         }
     }
 
+    /// Check the version is supported or not.
+    pub fn is_supported(&self) -> bool {
+        *self <= [1, 0]
+    }
+
     /// Get version bytes
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut data = Vec::new();
         data.push(self.major);
         data.push(self.minor);
         data
+    }
+
+    /// Create a new instance of the [PdFileVersion] from reader
+    /// * `reader` - The reader which implement the [Read] trait
+    /// 
+    /// Returns io Error or [PdFileVersion] instance.
+    pub fn read_from<R: Read>(reader: &mut R) -> std::io::Result<Self> {
+        let mut buf = [0u8; 2];
+        reader.read_exact(&mut buf)?;
+        Ok(Self::from_bytes(&buf, 0).unwrap())
     }
 
     /// Write version bytes to writer.
