@@ -19,6 +19,8 @@ pub enum Command {
     Config,
     /// Download an artwork
     Download,
+    /// Already handled when parsing options, just need return 0.
+    None,
 }
 
 /// Subcommand for config
@@ -197,7 +199,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
     };
     if result.opt_present("h") || result.free.len() == 0 {
         print_usage(&argv[0], &opts);
-        return None;
+        return Some(CommandOpts::new(Command::None));
     }
     let cmd = &result.free[0];
     let mut re = if cmd == "download" {
@@ -250,6 +252,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
                 return None;
             }
         }
+        Command::None => {}
     }
     if result.opt_present("config") {
         re.as_mut().unwrap()._config = Some(result.opt_str("config").unwrap());

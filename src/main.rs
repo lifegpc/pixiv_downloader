@@ -140,6 +140,9 @@ impl Main {
             Command::Download => {
                 return self.download();
             }
+            Command::None => {
+                return 0;
+            }
         }
         0
     }
