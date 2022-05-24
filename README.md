@@ -3,6 +3,8 @@ A pixiv downloader written in Rust.
 ## Features
 * Write exif metatata to picture.
 * Merge ugoira(GIF) pictures to video files.
+### TODO
+- [ ] Add support for multiple threads download.
 ## Rust features flags
 ### all
 Enable all unconflicted features, this will enable [`exif`](#exif) and [`ugoira`](#ugoira).
