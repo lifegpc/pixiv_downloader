@@ -191,7 +191,8 @@ pub fn parse_cmd() -> Option<CommandOpts> {
     let result = match opts.parse(&argv[1..]) {
         Ok(m) => m,
         Err(err) => {
-            panic!("{}", err.to_string())
+            println!("{}", err.to_string());
+            return None;
         }
     };
     if result.opt_present("h") || result.free.len() == 0 {

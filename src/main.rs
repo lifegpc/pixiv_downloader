@@ -112,7 +112,7 @@ impl Main {
     pub fn run(&mut self) -> i32 {
         self.cmd = opts::parse_cmd();
         if self.cmd.is_none() {
-            return 0;
+            return 1;
         }
         let cmd = self.cmd.as_ref().unwrap();
         self.settings = Some(SettingStore::default());
