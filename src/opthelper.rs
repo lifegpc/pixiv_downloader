@@ -149,8 +149,9 @@ impl OptHelper {
 
     /// Return whether to download multiple images at the same time.
     pub fn download_multiple_images(&self) -> bool {
-        if self.opt.download_multiple_images {
-            return true;
+        match self.opt.download_multiple_images {
+            Some(r) => { return r; }
+            None => {}
         }
         if self.settings.have_bool("download-multiple-images") {
             return self.settings.get_bool("download-multiple-images").unwrap();

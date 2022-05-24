@@ -7,6 +7,7 @@ use crate::pixiv_link::PixivID;
 use crate::retry_interval::parse_retry_interval_from_str;
 use crate::utils::check_file_exists;
 use crate::utils::get_exe_path_else_current;
+use getopts::HasArg;
 use getopts::Options;
 use std::env;
 use std::str::FromStr;
@@ -69,7 +70,7 @@ pub struct CommandOpts {
     /// Whether to enable progress bar
     pub use_progress_bar: Option<UseOrNot>,
     /// Whether to download multiple images at the same time
-    pub download_multiple_images: bool,
+    pub download_multiple_images: Option<bool>,
 }
 
 impl CommandOpts {
@@ -89,7 +90,7 @@ impl CommandOpts {
             #[cfg(feature = "exif")]
             update_exif: false,
             use_progress_bar: None,
-            download_multiple_images: false,
+            download_multiple_images: None,
         }
     }
 
@@ -133,6 +134,47 @@ pub fn print_usage(prog: &str, opts: &Options) {
         gettext("Print all available settings"),
     );
     println!("{}", opts.usage(brief.as_str()));
+}
+
+/// Prase bool string
+pub fn parse_bool<T: AsRef<str>>(s: Option<T>) -> Result<Option<bool>, String> {
+    let tmp = match s {
+        Some(s) => { Some(s.as_ref().to_lowercase()) }
+        None => { None }
+    };
+    match tmp {
+        Some(t) => {
+            if t == "true" {
+                Ok(Some(true))
+            } else if t == "false" {
+                Ok(Some(false))
+            } else if t == "yes" {
+                Ok(Some(true))
+            } else if t == "no" {
+                Ok(Some(false))
+            } else {
+                Err(format!("{} {}", gettext("Invalid boolean value:"), t))
+            }
+        }
+        None => { Ok(None) }
+    }
+}
+
+/// Parse optional option
+/// * `opts` - The result of options. See [getopts::Matches].
+/// * `key` - The key of the option.
+/// * `default` - The value if option is present but the data is not obtained.
+/// * `callback` - The function to process the obtained data.
+pub fn parse_optional_opt<T, F, E>(opts: &getopts::Matches, key: &str, default: T, callback: F) -> Result<Option<T>, E>
+    where F: Fn(Option<String>) -> Result<Option<T>, E> {
+    if !opts.opt_present(key) {
+        return Ok(None);
+    }
+    let s = opts.opt_str(key);
+    if s.is_none() {
+        return Ok(Some(default));
+    }
+    callback(s)
 }
 
 pub fn parse_cmd() -> Option<CommandOpts> {
@@ -185,10 +227,13 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         gettext("Whether to enable progress bar."),
         "yes/no/auto",
     );
-    opts.optflag(
+    opts.opt(
         "",
         "download-multiple-images",
         gettext("Download multiple images at the same time."),
+        "yes/no",
+        HasArg::Maybe,
+        getopts::Occur::Optional,
     );
     let result = match opts.parse(&argv[1..]) {
         Ok(m) => m,
@@ -312,6 +357,12 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         }
         re.as_mut().unwrap().use_progress_bar = Some(r.unwrap());
     }
-    re.as_mut().unwrap().download_multiple_images = result.opt_present("download-multiple-images");
+    match parse_optional_opt(&result, "download-multiple-images", true, parse_bool) {
+        Ok(b) => re.as_mut().unwrap().download_multiple_images = b,
+        Err(e) => {
+            println!("{} {}", gettext("Failed to parse <opt>:").replace("<opt>", "download-multiple-images").as_str(), e);
+            return None;
+        }
+    }
     re
 }
