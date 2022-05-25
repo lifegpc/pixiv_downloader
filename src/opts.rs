@@ -122,7 +122,7 @@ impl CommandOpts {
 pub fn print_usage(prog: &str, opts: &Options) {
     let brief = format!(
         "{}
-{} download [options] <id/url> [<id/url>]  {}
+{} download/d [options] <id/url> [<id/url>]  {}
 {} config fix [options] {}
 {} config help [options] {}",
         gettext("Usage:"),
@@ -247,7 +247,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         return Some(CommandOpts::new(Command::None));
     }
     let cmd = &result.free[0];
-    let mut re = if cmd == "download" {
+    let mut re = if cmd == "download" || cmd == "d" {
         Some(CommandOpts::new(Command::Download))
     } else if cmd == "config" {
         Some(CommandOpts::new(Command::Config))
