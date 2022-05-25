@@ -12,5 +12,17 @@
         "rust-analyzer.cargo.features": [
             "all"
         ]
+    },
+    "customizations": {
+        "codespaces": {
+            "repositories": {
+                "lifegpc/c-utils": {
+                    "permissions": {
+                        "contents": "write",
+                        "workflows": "write"
+                    }
+                }
+            }
+        }
     }
 }
