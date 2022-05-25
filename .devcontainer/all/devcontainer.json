@@ -1,0 +1,16 @@
+{
+    "name": "all features",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "extensions": [
+        "rust-lang.rust-analyzer",
+        "GitHub.copilot",
+        "ms-vscode.hexeditor"
+    ],
+    "settings": {
+        "rust-analyzer.cargo.features": [
+            "all"
+        ]
+    }
+}
