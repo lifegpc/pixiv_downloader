@@ -20,6 +20,7 @@ indicatif = "0.17.0-rc.11"
 int-enum = "0.4"
 json = "0.12"
 lazy_static = "1.4"
+modular-bitfield = "0.11"
 proc_macros = { path = "proc_macros" }
 regex = "1"
 reqwest = { version = "0.11", features = ["brotli", "deflate", "gzip", "rustls-tls", "socks", "stream"] }

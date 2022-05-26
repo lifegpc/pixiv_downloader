@@ -1,5 +1,7 @@
 use crate::downloader::pd_file::file::PdFile;
 use int_enum::IntEnum;
+use modular_bitfield::BitfieldSpecifier;
+use std::fmt::Display;
 
 /// The status of the downloaded file.
 #[repr(u8)]
@@ -59,8 +61,52 @@ impl PdFileType {
     }
 }
 
+#[repr(u8)]
+#[derive(BitfieldSpecifier, Clone, Copy, Debug, Eq, PartialEq, IntEnum)]
+#[bits = 2]
+/// The status of the each part in pd file.
+pub enum PdFilePartStatus {
+    /// The download of this part is waited.
+    Waited = 0,
+    /// The download of this part is started.
+    Downloading = 1,
+    /// The download of this part is completed.
+    Downloaded = 2,
+}
+
+impl PdFilePartStatus {
+    #[inline]
+    /// Returns true if the download is waited
+    pub fn is_waited(&self) -> bool {
+        *self == Self::Waited
+    }
+
+    #[inline]
+    /// Returns true if the download is started
+    pub fn is_downloading(&self) -> bool {
+        *self == Self::Downloading
+    }
+
+    #[inline]
+    /// Returns true if the download is completed.
+    pub fn is_downloaded(&self) -> bool {
+        *self == Self::Downloaded
+    }
+}
+
+impl Display for PdFilePartStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Waited => { f.write_str("PdFilePartStatus::Waited") }
+            Self::Downloading => { f.write_str("PdFilePartStatus::Downloading") }
+            Self::Downloaded => { f.write_str("PdFilePartStatus::Downloaded") }
+        }
+    }
+}
+
 #[test]
 fn test_enums() {
     assert_eq!(PdFileStatus::Downloading.int_value().to_le_bytes(), [1]);
     assert_eq!(PdFileType::MultiThread.int_value().to_le_bytes(), [1]);
+    assert_eq!(PdFilePartStatus::Downloaded.int_value().to_le_bytes(), [2]);
 }

@@ -2,6 +2,7 @@ use crate::downloader::pd_file::error::PdFileError;
 use crate::downloader::pd_file::enums::PdFileResult;
 use crate::downloader::pd_file::enums::PdFileStatus;
 use crate::downloader::pd_file::enums::PdFileType;
+use crate::downloader::pd_file::part_status::PdFilePartStatus;
 use crate::downloader::pd_file::version::PdFileVersion;
 use crate::ext::io::StructRead;
 use crate::ext::replace::ReplaceWith2;
@@ -24,6 +25,7 @@ use std::io::Write;
 use std::ops::Drop;
 use std::path::Path;
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::sync::RwLock;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicU32;
@@ -60,6 +62,8 @@ pub struct PdFile {
     part_size: AtomicU32,
     /// Only stored in memory.
     mem_only: AtomicBool,
+    /// The status of the each part.
+    part_datas: RwLock<Vec<Arc<PdFilePartStatus>>>,
 }
 
 impl PdFile {
@@ -77,6 +81,7 @@ impl PdFile {
             downloaded_file_size: AtomicU64::new(0),
             part_size: AtomicU32::new(0),
             mem_only: AtomicBool::new(true),
+            part_datas: RwLock::new(Vec::new()),
         }
     }
 
@@ -104,6 +109,17 @@ impl PdFile {
     /// Returns the size of the downloaded data
     pub fn get_downloaded_file_size(&self) -> u64 {
         self.downloaded_file_size.load(Ordering::Relaxed)
+    }
+
+    /// Return status data of a part
+    /// * `index` - The part index
+    pub fn get_part_data(&self, index: usize) -> Option<Arc<PdFilePartStatus>> {
+        let datas = self.part_datas.get_ref();
+        if index < datas.len() {
+            Some(Arc::clone(&datas[index]))
+        } else {
+            None
+        }
     }
 
     #[inline]
@@ -198,6 +214,8 @@ impl PdFile {
             downloaded_file_size: AtomicU64::new(downloaded_file_size),
             part_size: AtomicU32::new(part_size),
             mem_only: AtomicBool::new(false),
+            // #TODO
+            part_datas: RwLock::new(Vec::new()),
         })
     }
 

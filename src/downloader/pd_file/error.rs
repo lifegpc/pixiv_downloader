@@ -1,3 +1,4 @@
+use super::part_status::OutOfBoundsError;
 use crate::gettext;
 use int_enum::IntEnum;
 use int_enum::IntEnumError;
@@ -5,6 +6,7 @@ use std::convert::From;
 use std::fmt::Display;
 use std::string::FromUtf8Error;
 
+/// Pd file's error
 #[derive(Debug, derive_more::From)]
 pub enum PdFileError {
     IoError(std::io::Error),
@@ -48,5 +50,11 @@ impl From<&str> for PdFileError {
 impl<T: IntEnum> From<IntEnumError<T>> for PdFileError {
     fn from(e: IntEnumError<T>) -> Self {
         Self::String(format!("{} {}", gettext("Invalid pd file: "), e))
+    }
+}
+
+impl<T: Display> From<OutOfBoundsError<T>> for PdFileError {
+    fn from(e: OutOfBoundsError<T>) -> Self {
+        Self::String(format!("{}", e))
     }
 }
