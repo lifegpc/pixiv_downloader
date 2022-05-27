@@ -202,6 +202,14 @@ impl PdFile {
         let downloaded_file_size = f.read_le_u64()?;
         let part_size = f.read_le_u32()?;
         let file_name = String::from_utf8(f.read_bytes(file_name_len as usize)?)?;
+        let mut part_datas = Vec::new();
+        if ftype.is_multi() && file_size != 0 && part_size != 0 {
+            let part_counts = (file_size + (part_size as u64) - 1) / (part_size as u64);
+            for _ in 0..part_counts {
+                let data = PdFilePartStatus::read_from(&mut f)?;
+                part_datas.push(Arc::new(data));
+            }
+        }
         Ok(Self {
             version,
             need_saved: AtomicBool::new(false),
@@ -214,8 +222,7 @@ impl PdFile {
             downloaded_file_size: AtomicU64::new(downloaded_file_size),
             part_size: AtomicU32::new(part_size),
             mem_only: AtomicBool::new(false),
-            // #TODO
-            part_datas: RwLock::new(Vec::new()),
+            part_datas: RwLock::new(part_datas),
         })
     }
 
@@ -294,7 +301,8 @@ impl PdFile {
         f.write_all(&self.status.get_ref().int_value().to_le_bytes())?;
         let ftype = self.ftype.get_ref();
         f.write_all(&ftype.int_value().to_le_bytes())?;
-        f.write_all(&self.file_size.load(Ordering::Relaxed).to_le_bytes())?;
+        let file_size = self.file_size.load(Ordering::Relaxed);
+        f.write_all(&file_size.to_le_bytes())?;
         f.write_all(&self.downloaded_file_size.load(Ordering::Relaxed).to_le_bytes())?;
         let part_size = if ftype.is_multi() {
             self.part_size.load(Ordering::Relaxed)
@@ -303,6 +311,15 @@ impl PdFile {
         };
         f.write_all(&part_size.to_le_bytes())?;
         f.write_all(file_name)?;
+        if ftype.is_multi() && file_size != 0 && part_size != 0 {
+            let part_counts = (file_size + (part_size as u64) - 1) / (part_size as u64);
+            let part_datas = self.part_datas.get_ref();
+            if (part_counts as usize) <= part_datas.len() {
+                for i in 0..part_counts {
+                    part_datas[i as usize].write_to(&mut f)?;
+                }
+            }
+        }
         self.need_saved.store(false, Ordering::Relaxed);
         Ok(())
     }
