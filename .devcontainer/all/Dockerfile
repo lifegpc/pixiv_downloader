@@ -40,4 +40,4 @@ RUN curl https://sh.rustup.rs -sSf | \
     sh -s -- --default-toolchain nightly -y
 ENV PATH=/root/.cargo/bin:$PATH
 # Enable GPG sign by default
-RUN git config commit.gpgsign true
+RUN git config --global commit.gpgsign true
