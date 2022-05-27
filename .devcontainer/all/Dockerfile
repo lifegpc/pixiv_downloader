@@ -39,3 +39,5 @@ RUN cd ~ && git clone --depth 1 'https://git.ffmpeg.org/ffmpeg.git' && cd ffmpeg
 RUN curl https://sh.rustup.rs -sSf | \
     sh -s -- --default-toolchain nightly -y
 ENV PATH=/root/.cargo/bin:$PATH
+# Enable GPG sign by default
+RUN git config commit.gpgsign true

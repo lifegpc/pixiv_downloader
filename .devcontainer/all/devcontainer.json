@@ -4,9 +4,7 @@
         "dockerfile": "Dockerfile"
     },
     "extensions": [
-        "rust-lang.rust-analyzer",
-        "GitHub.copilot",
-        "ms-vscode.hexeditor"
+        "rust-lang.rust-analyzer"
     ],
     "settings": {
         "rust-analyzer.cargo.features": [
@@ -24,5 +22,6 @@
                 }
             }
         }
-    }
+    },
+    "postCreateCommand": "cd /workspaces/pixiv_downloader && git submodule update --init"
 }
