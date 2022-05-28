@@ -7,7 +7,7 @@ use crate::data::json::JSONDataFile;
 #[cfg(feature = "ugoira")]
 use crate::data::video::get_video_metadata;
 use crate::downloader::pd_file::enums::PdFileResult;
-use crate::downloader::pd_file::file::PdFile;
+use crate::downloader::pd_file::PdFile;
 use crate::gettext;
 use crate::opthelper::OptHelper;
 use crate::pixiv_link::PixivID;

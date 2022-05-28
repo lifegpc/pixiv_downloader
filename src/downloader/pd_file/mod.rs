@@ -9,3 +9,6 @@ pub mod file;
 pub mod part_status;
 /// Version of the pd file
 pub mod version;
+pub use enums::PdFileResult;
+pub use error::PdFileError;
+pub use file::PdFile;

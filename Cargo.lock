@@ -1169,6 +1169,7 @@ dependencies = [
  "reqwest",
  "spin_on",
  "tokio",
+ "url",
  "urlparse",
  "utf16string",
  "winapi",

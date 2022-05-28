@@ -1,4 +1,4 @@
-use crate::downloader::pd_file::file::PdFile;
+use crate::downloader::pd_file::PdFile;
 use crate::ext::rw_lock::GetRwLock;
 use crate::gettext;
 use crate::opthelper::OptHelper;

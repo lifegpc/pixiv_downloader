@@ -19,6 +19,7 @@ extern crate proc_macros;
 extern crate tokio;
 extern crate regex;
 extern crate reqwest;
+extern crate url;
 extern crate urlparse;
 #[cfg(feature = "utf16string")]
 extern crate utf16string;
