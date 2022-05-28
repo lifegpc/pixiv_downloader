@@ -83,6 +83,7 @@ pub fn gen_cookie_header<U: IntoUrl>(c: &WebClient, url: U) -> String {
     s
 }
 
+#[derive(Debug)]
 /// A Web Client
 pub struct WebClient {
     /// Basic Web Client

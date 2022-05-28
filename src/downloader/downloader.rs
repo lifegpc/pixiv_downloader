@@ -1,6 +1,8 @@
 use super::pd_file::PdFile;
 use super::pd_file::PdFileResult;
+use super::enums::DownloaderResult;
 use super::error::DownloaderError;
+use crate::utils::ask_need_overwrite;
 use crate::webclient::WebClient;
 use crate::webclient::ToHeaders;
 use reqwest::IntoUrl;
@@ -11,6 +13,7 @@ use std::sync::Arc;
 use std::sync::RwLock;
 use url::Url;
 
+#[derive(Debug)]
 /// A file downloader
 pub struct Downloader {
     /// The webclient
@@ -31,7 +34,7 @@ impl Downloader {
     /// * `header` - HTTP headers
     /// * `path` - The path to store downloaded file.
     /// * `overwrite` - Whether to overwrite file
-    pub fn new<U: IntoUrl, H: ToHeaders, P: AsRef<Path> + ?Sized>(url: U, headers: H, path: Option<&P>, overwrite: Option<bool>) -> Result<Self, DownloaderError> {
+    pub fn new<U: IntoUrl, H: ToHeaders, P: AsRef<Path> + ?Sized>(url: U, headers: H, path: Option<&P>, overwrite: Option<bool>) -> Result<DownloaderResult, DownloaderError> {
         let h = match headers.to_headers() {
             Some(h) => { h }
             None => { HashMap::new() }
@@ -42,8 +45,22 @@ impl Downloader {
                 let p = p.as_ref();
                 match PdFile::open(p)? {
                     PdFileResult::TargetExisted => {
-                        // #TODO
-                        PdFile::new()
+                        match overwrite {
+                            Some(overwrite) => {
+                                if !overwrite {
+                                    return Ok(DownloaderResult::Canceled);
+                                } else {
+                                    PdFile::new()
+                                }
+                            }
+                            None => {
+                                if !ask_need_overwrite(p.to_str().unwrap()) {
+                                    return Ok(DownloaderResult::Canceled);
+                                } else {
+                                    PdFile::new()
+                                }
+                            }
+                        }
                     }
                     PdFileResult::Ok(p) => { p }
                     PdFileResult::ExistedOk(p) => {
@@ -64,12 +81,12 @@ impl Downloader {
             }
             None => { None }
         };
-        Ok(Self {
+        Ok(DownloaderResult::Ok(Self {
             client: Arc::new(WebClient::new()),
             status: Arc::new(pd_file),
             url: Arc::new(url.into_url()?),
             headers: Arc::new(h),
             file: RwLock::new(file),
-        })
+        }))
     }
 }
