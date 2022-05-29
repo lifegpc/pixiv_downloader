@@ -1,3 +1,4 @@
+pub mod atomic;
 pub mod cstr;
 #[cfg(feature = "flagset")]
 pub mod flagset;

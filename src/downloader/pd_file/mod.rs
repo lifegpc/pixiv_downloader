@@ -12,3 +12,4 @@ pub mod version;
 pub use enums::PdFileResult;
 pub use error::PdFileError;
 pub use file::PdFile;
+pub use part_status::PdFilePartStatus;
