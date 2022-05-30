@@ -5,7 +5,7 @@ use crate::cookies::CookieJar;
 use crate::ext::json::ToJson;
 use crate::gettext;
 use crate::list::NonTailList;
-use crate::opthelper::OptHelper;
+use crate::opthelper::get_helper;
 use futures_util::StreamExt;
 use indicatif::MultiProgress;
 use indicatif::ProgressBar;
@@ -15,6 +15,7 @@ use reqwest::{Client, IntoUrl, RequestBuilder, Response};
 use spin_on::spin_on;
 use std::collections::HashMap;
 use std::convert::TryInto;
+use std::default::Default;
 use std::ffi::OsStr;
 use std::fs::File;
 use std::fs::remove_file;
@@ -474,8 +475,9 @@ impl WebClient {
     /// * `progess_bars` - Multiple progress bars
     /// 
     /// Note: If file already exists, will remove existing file first.
-    pub async fn adownload_stream<S: AsRef<OsStr> + ?Sized>(file_name: &S, r: Response, opt: &OptHelper, progress_bars: Option<Arc<MultiProgress>>) -> Result<(), ()> {
+    pub async fn adownload_stream<S: AsRef<OsStr> + ?Sized>(file_name: &S, r: Response, progress_bars: Option<Arc<MultiProgress>>) -> Result<(), ()> {
         let content_length = r.content_length();
+        let opt = get_helper();
         let use_progress_bar = match &content_length {
             Some(_) => { opt.use_progress_bar() }
             None => { false }
@@ -558,8 +560,9 @@ impl WebClient {
     /// * `opt` - Options
     /// 
     /// Note: If file already exists, will remove existing file first.
-    pub fn download_stream<S: AsRef<OsStr> + ?Sized>(file_name: &S, r: Response, opt: &OptHelper) -> Result<(), ()> {
+    pub fn download_stream<S: AsRef<OsStr> + ?Sized>(file_name: &S, r: Response) -> Result<(), ()> {
         let content_length = r.content_length();
+        let opt = get_helper();
         let use_progress_bar = match &content_length {
             Some(_) => { opt.use_progress_bar() }
             None => { false }
@@ -611,5 +614,12 @@ impl WebClient {
             }
         }
         Ok(())
+    }
+}
+
+impl Default for WebClient {
+    fn default() -> Self {
+        let c = Self::new();
+        c
     }
 }

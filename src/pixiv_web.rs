@@ -1,10 +1,9 @@
 use crate::downloader::pd_file::PdFile;
 use crate::ext::rw_lock::GetRwLock;
 use crate::gettext;
-use crate::opthelper::OptHelper;
+use crate::opthelper::get_helper;
 use crate::parser::metadata::MetaDataParser;
 use crate::webclient::WebClient;
-use crate::Main;
 use json::JsonValue;
 use reqwest::IntoUrl;
 use reqwest::Response;
@@ -20,7 +19,6 @@ use std::time::Duration;
 /// A client which use Pixiv's web API
 pub struct PixivWebClient {
     client: WebClient,
-    pub helper: OptHelper,
     /// true if in is initialized
     inited: Arc<AtomicBool>,
     /// pixiv global data
@@ -30,10 +28,9 @@ pub struct PixivWebClient {
 }
 
 impl PixivWebClient {
-    pub fn new(m: &Main) -> Self {
+    pub fn new() -> Self {
         Self {
             client: WebClient::new(),
-            helper: OptHelper::new(m.cmd.as_ref().unwrap().clone(), m.settings.as_ref().unwrap().clone()),
             inited: Arc::new(AtomicBool::new(false)),
             data: RwLock::new(None),
             params: RwLock::new(None),
@@ -75,14 +72,15 @@ impl PixivWebClient {
     }
 
     pub fn init(&self) -> bool {
-        let c = self.helper.cookies();
+        let helper = get_helper();
+        let c = helper.cookies();
         if c.is_some() {
             if !self.client.read_cookies(c.as_ref().unwrap()) {
                 return false;
             }
         }
         self.client.set_header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36");
-        let l = self.helper.language();
+        let l = helper.language();
         if l.is_some() {
             self.client.set_header("Accept-Language", l.as_ref().unwrap());
             self.params.get_mut().replace(json::object! { "lang": l.as_ref().unwrap().replace("-", "_").as_str() });
@@ -90,12 +88,12 @@ impl PixivWebClient {
             self.client.set_header("Accept-Language", "ja");
             self.params.get_mut().replace(json::object! { "lang": "ja" });
         }
-        self.client.set_verbose(self.helper.verbose());
-        let retry = self.helper.retry();
+        self.client.set_verbose(helper.verbose());
+        let retry = helper.retry();
         if retry.is_some() {
             self.client.set_retry(retry.unwrap());
         }
-        self.client.get_retry_interval_as_mut().replace(self.helper.retry_interval());
+        self.client.get_retry_interval_as_mut().replace(helper.retry_interval());
         self.inited.store(true, Ordering::Relaxed);
         true
     }
@@ -133,7 +131,7 @@ impl PixivWebClient {
             println!("{}", gettext("Failed to parse main page."));
             return false;
         }
-        if self.helper.verbose() {
+        if get_helper().verbose() {
             println!("{}\n{}", gettext("Main page's data:"), p.value.as_ref().unwrap().pretty(2).as_str());
         }
         self.get_data_as_mut().replace(p.value.unwrap());
@@ -229,7 +227,7 @@ impl PixivWebClient {
         }
         let r = r.unwrap();
         let v = self.deal_json(r);
-        if self.helper.verbose() && v.is_some() {
+        if get_helper().verbose() && v.is_some() {
             println!("{} {}", gettext("Artwork's data:"), v.as_ref().unwrap().pretty(2));
         }
         v
@@ -259,7 +257,7 @@ impl PixivWebClient {
             println!("{}", gettext("Failed to parse artwork page."));
             return None;
         }
-        if self.helper.verbose() {
+        if get_helper().verbose() {
             println!("{} {}", gettext("Artwork's data:"), p.value.as_ref().unwrap().pretty(2));
         }
         Some(p.value.unwrap())
@@ -273,7 +271,7 @@ impl PixivWebClient {
         }
         let r = r.unwrap();
         let v = self.deal_json(r);
-        if self.helper.verbose() && v.is_some() {
+        if get_helper().verbose() && v.is_some() {
             println!("{} {}", gettext("Artwork's page data:"), v.as_ref().unwrap().pretty(2));
         }
         v
@@ -287,7 +285,7 @@ impl PixivWebClient {
         }
         let r = r.unwrap();
         let v = self.deal_json(r);
-        if self.helper.verbose() && v.is_some() {
+        if get_helper().verbose() && v.is_some() {
             println!("{} {}", gettext("Ugoira's data:"), v.as_ref().unwrap().pretty(2));
         }
         v
@@ -310,7 +308,7 @@ impl PixivWebClient {
 impl Drop for PixivWebClient {
     fn drop(&mut self) {
         if self.is_inited() {
-            let c = self.helper.cookies();
+            let c = get_helper().cookies();
             if c.is_some() {
                 if !self.client.save_cookies(c.as_ref().unwrap()) {
                     println!("{} {}", gettext("Warning: Failed to save cookies file:"), c.as_ref().unwrap());

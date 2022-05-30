@@ -61,11 +61,12 @@ mod ugoira;
 mod utils;
 mod webclient;
 
-use i18n::gettext;
-use opts::Command;
-use opts::CommandOpts;
-use opts::ConfigCommand;
-use settings::SettingStore;
+use crate::i18n::gettext;
+use crate::opthelper::get_helper;
+use crate::opts::Command;
+use crate::opts::CommandOpts;
+use crate::opts::ConfigCommand;
+use crate::settings::SettingStore;
 
 pub struct Main {
     pub cmd: Option<CommandOpts>,
@@ -135,6 +136,7 @@ impl Main {
             }
             None => {}
         }
+        get_helper().update(cmd.clone(), self.settings.as_ref().unwrap().clone());
         match cmd.cmd {
             Command::Config => {
                 self.deal_config_cmd();

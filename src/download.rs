@@ -9,7 +9,7 @@ use crate::data::video::get_video_metadata;
 use crate::downloader::pd_file::enums::PdFileResult;
 use crate::downloader::pd_file::PdFile;
 use crate::gettext;
-use crate::opthelper::OptHelper;
+use crate::opthelper::get_helper;
 use crate::pixiv_link::PixivID;
 use crate::pixiv_web::PixivWebClient;
 #[cfg(feature = "ugoira")]
@@ -26,7 +26,7 @@ use std::sync::Arc;
 
 impl Main {
     pub fn download(&mut self) -> i32 {
-        let pw = Arc::new(PixivWebClient::new(&self));
+        let pw = Arc::new(PixivWebClient::new());
         if !pw.init() {
             println!("{}", gettext("Failed to initialize pixiv web api client."));
             return 1;
@@ -53,7 +53,7 @@ impl Main {
         0
     }
 
-    pub async fn download_artwork_page(pw: Arc<PixivWebClient>, page: JsonValue, np: u16, progress_bars: Arc<MultiProgress>, datas: Arc<PixivData>, base: Arc<PathBuf>, helper: Arc<OptHelper>) -> i32 {
+    pub async fn download_artwork_page(pw: Arc<PixivWebClient>, page: JsonValue, np: u16, progress_bars: Arc<MultiProgress>, datas: Arc<PixivData>, base: Arc<PathBuf>) -> i32 {
         let link = &page["urls"]["original"];
         if !link.is_string() {
             println!("{}", gettext("Failed to get original picture's link."));
@@ -67,6 +67,7 @@ impl Main {
         }
         let file_name = file_name.unwrap();
         let file_name = base.join(file_name);
+        let helper = get_helper();
         let pdf = match PdFile::open(&file_name) {
             Ok(f) => {
                 match f {
@@ -152,7 +153,7 @@ impl Main {
             }
         }
         let r = r.unwrap();
-        let re = WebClient::adownload_stream(&file_name, r, &helper, Some(progress_bars)).await;
+        let re = WebClient::adownload_stream(&file_name, r, Some(progress_bars)).await;
         if re.is_err() {
             println!("{} {}", gettext("Failed to download image:"), link);
             return 1;
@@ -174,7 +175,7 @@ impl Main {
         let mut re = None;
         let pages;
         let mut ajax_ver = true;
-        let helper = Arc::new(pw.helper.clone());
+        let helper = get_helper();
         if helper.use_webpage() {
             re = pw.get_artwork(id);
             if re.is_some() {
@@ -208,7 +209,7 @@ impl Main {
         }
         let base = Arc::new(PathBuf::from("."));
         let json_file = base.join(format!("{}.json", id));
-        let mut datas = PixivData::new(id, (*helper).clone()).unwrap();
+        let mut datas = PixivData::new(id).unwrap();
         if ajax_ver {
             datas.from_web_page_ajax_data(&re, true);
         } else {
@@ -264,7 +265,7 @@ impl Main {
                             return 1;
                         }
                         let r = r.unwrap();
-                        let re = WebClient::download_stream(&file_name, r, &helper);
+                        let re = WebClient::download_stream(&file_name, r);
                         if re.is_err() {
                             println!("{} {}", gettext("Failed to download ugoira:"), src);
                             return 1;
@@ -315,7 +316,7 @@ impl Main {
             let progress_bars = Arc::new(MultiProgress::new());
             let mut tasks = Vec::new();
             for page in pages_data.members() {
-                let f = tokio::spawn(Self::download_artwork_page(Arc::clone(&pw), page.clone(), np, Arc::clone(&progress_bars), Arc::clone(&datas), Arc::clone(&base), Arc::clone(&helper)));
+                let f = tokio::spawn(Self::download_artwork_page(Arc::clone(&pw), page.clone(), np, Arc::clone(&progress_bars), Arc::clone(&datas), Arc::clone(&base)));
                 tasks.push(f);
                 np += 1;
             }
@@ -377,7 +378,7 @@ impl Main {
                     return 1;
                 }
                 let r = r.unwrap();
-                let re = WebClient::download_stream(&file_name, r, &helper);
+                let re = WebClient::download_stream(&file_name, r);
                 if re.is_err() {
                     println!("{} {}", gettext("Failed to download image:"), link);
                     return 1;
@@ -447,7 +448,7 @@ impl Main {
                 return 1;
             }
             let r = r.unwrap();
-            let re = WebClient::download_stream(&file_name, r, &helper);
+            let re = WebClient::download_stream(&file_name, r);
             if re.is_err() {
                 println!("{} {}", gettext("Failed to download image:"), link);
                 return 1;

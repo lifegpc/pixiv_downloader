@@ -366,3 +366,9 @@ pub fn parse_cmd() -> Option<CommandOpts> {
     }
     re
 }
+
+impl Default for CommandOpts {
+    fn default() -> Self {
+        Self::new(Command::None)
+    }
+}
