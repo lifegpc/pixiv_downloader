@@ -21,7 +21,7 @@ pub struct OptHelper {
     opt: RwLock<CommandOpts>,
     /// Settings
     settings: RwLock<SettingStore>,
-    default_retry_interval: RwLock<NonTailList<Duration>>,
+    default_retry_interval: NonTailList<Duration>,
     _author_name_filters: RwLock<Vec<AuthorNameFilter>>,
     _use_progress_bar: RwLock<Option<UseProgressBar>>,
 }
@@ -57,9 +57,6 @@ impl OptHelper {
     }
 
     pub fn update(&self, opt: CommandOpts, settings: SettingStore) {
-        let mut l = NonTailList::default();
-        l += Duration::new(3, 0);
-        self.default_retry_interval.replace_with2(l);
         if settings.have("author-name-filters") {
             self._author_name_filters.replace_with2(AuthorNameFilter::from_json(settings.get("author-name-filters").unwrap()).unwrap());
         }
@@ -103,7 +100,7 @@ impl OptHelper {
             let v = self.settings.get_ref().get("retry-interval").unwrap();
             return parse_retry_interval_from_json(v).unwrap();
         }
-        self.default_retry_interval.get_ref().clone()
+        self.default_retry_interval.clone()
     }
 
     /// Return whether to use data from webpage first.
@@ -161,10 +158,12 @@ impl OptHelper {
 
 impl Default for OptHelper {
     fn default() -> Self {
+        let mut l = NonTailList::default();
+        l += Duration::new(3, 0);
         Self {
             opt: RwLock::new(CommandOpts::default()),
             settings: RwLock::new(SettingStore::default()),
-            default_retry_interval: RwLock::new(NonTailList::default()),
+            default_retry_interval: l,
             _author_name_filters: RwLock::new(Vec::new()),
             _use_progress_bar: RwLock::new(None),
         }
