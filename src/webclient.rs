@@ -2,6 +2,7 @@ extern crate spin_on;
 
 use crate::cookies::Cookie;
 use crate::cookies::CookieJar;
+use crate::ext::atomic::AtomicQuick;
 use crate::ext::json::ToJson;
 use crate::gettext;
 use crate::list::NonTailList;
@@ -27,7 +28,6 @@ use std::sync::RwLockReadGuard;
 use std::sync::RwLockWriteGuard;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicU64;
-use std::sync::atomic::Ordering;
 use std::time::Duration;
 
 /// Convert data to HTTP headers map
@@ -178,7 +178,7 @@ impl WebClient {
 
     /// return retry times, 0 means disable
     pub fn get_retry(&self) -> u64 {
-        self.retry.load(Ordering::Relaxed)
+        self.retry.qload()
     }
 
     pub async fn aget_retry_interval_as_mut<'a>(&'a self) -> RwLockWriteGuard<'a, Option<NonTailList<Duration>>> {
@@ -212,7 +212,7 @@ impl WebClient {
     }
 
     pub fn get_verbose(&self) -> bool {
-        self.verbose.load(Ordering::Relaxed)
+        self.verbose.qload()
     }
 
     /// Used to handle Set-Cookie header in an [Response]
@@ -276,11 +276,11 @@ impl WebClient {
 
     /// Set retry times, 0 means disable
     pub fn set_retry(&self, retry: u64) {
-        self.retry.store(retry, Ordering::Relaxed)
+        self.retry.qstore(retry)
     }
 
     pub fn set_verbose(&self, verbose: bool) {
-        self.verbose.store(verbose, Ordering::Relaxed)
+        self.verbose.qstore(verbose)
     }
 
     /// Send GET requests with parameters

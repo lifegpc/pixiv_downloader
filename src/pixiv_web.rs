@@ -1,4 +1,5 @@
 use crate::downloader::pd_file::PdFile;
+use crate::ext::atomic::AtomicQuick;
 use crate::ext::rw_lock::GetRwLock;
 use crate::gettext;
 use crate::opthelper::get_helper;
@@ -13,7 +14,6 @@ use std::sync::RwLock;
 use std::sync::RwLockReadGuard;
 use std::sync::RwLockWriteGuard;
 use std::sync::atomic::AtomicBool;
-use std::sync::atomic::Ordering;
 use std::time::Duration;
 
 /// A client which use Pixiv's web API
@@ -68,7 +68,7 @@ impl PixivWebClient {
     }
 
     pub fn is_inited(&self) -> bool {
-        self.inited.load(Ordering::Relaxed)
+        self.inited.qload()
     }
 
     pub fn init(&self) -> bool {
@@ -88,7 +88,7 @@ impl PixivWebClient {
             self.client.set_header("Accept-Language", "ja");
             self.params.get_mut().replace(json::object! { "lang": "ja" });
         }
-        self.inited.store(true, Ordering::Relaxed);
+        self.inited.qstore(true);
         true
     }
 

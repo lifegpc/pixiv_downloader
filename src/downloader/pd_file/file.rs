@@ -4,6 +4,7 @@ use crate::downloader::pd_file::enums::PdFileStatus;
 use crate::downloader::pd_file::enums::PdFileType;
 use crate::downloader::pd_file::part_status::PdFilePartStatus;
 use crate::downloader::pd_file::version::PdFileVersion;
+use crate::ext::atomic::AtomicQuick;
 use crate::ext::io::StructRead;
 use crate::ext::replace::ReplaceWith2;
 use crate::ext::rw_lock::GetRwLock;
@@ -30,7 +31,6 @@ use std::sync::RwLock;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicU32;
 use std::sync::atomic::AtomicU64;
-use std::sync::atomic::Ordering;
 
 lazy_static! {
     #[doc(hidden)]
@@ -108,7 +108,7 @@ impl PdFile {
     #[inline]
     /// Returns the size of the downloaded data
     pub fn get_downloaded_file_size(&self) -> u64 {
-        self.downloaded_file_size.load(Ordering::Relaxed)
+        self.downloaded_file_size.qload()
     }
 
     /// Return status data of a part
@@ -137,7 +137,7 @@ impl PdFile {
     #[inline]
     /// Returns true if stored in memory only.
     fn is_mem_only(&self) -> bool {
-        self.mem_only.load(Ordering::Relaxed)
+        self.mem_only.qload()
     }
 
     #[inline]
@@ -149,7 +149,7 @@ impl PdFile {
     #[inline]
     /// Returns true if needed to save to file.
     fn is_need_saved(&self) -> bool {
-        self.need_saved.load(Ordering::Relaxed)
+        self.need_saved.qload()
     }
 
     /// Open a new [PdFile] if download is needed.
@@ -237,8 +237,8 @@ impl PdFile {
         let f = File::create(p)?;
         self.file.get_mut().replace(f);
         self.file_path.get_mut().replace(PathBuf::from(p));
-        self.mem_only.store(false, Ordering::Relaxed);
-        self.need_saved.store(true, Ordering::Relaxed);
+        self.mem_only.qstore(false);
+        self.need_saved.qstore(true);
         Ok(())
     }
 
@@ -280,7 +280,7 @@ impl PdFile {
         } else {
             self.file_name.get_mut().replace(String::from(fname));
             if !self.is_mem_only() {
-                self.need_saved.store(true, Ordering::Relaxed);
+                self.need_saved.qstore(true);
                 // Rewrite all datas.
                 self.write()?;
             }
@@ -301,11 +301,11 @@ impl PdFile {
         f.write_all(&self.status.get_ref().int_value().to_le_bytes())?;
         let ftype = self.ftype.get_ref();
         f.write_all(&ftype.int_value().to_le_bytes())?;
-        let file_size = self.file_size.load(Ordering::Relaxed);
+        let file_size = self.file_size.qload();
         f.write_all(&file_size.to_le_bytes())?;
-        f.write_all(&self.downloaded_file_size.load(Ordering::Relaxed).to_le_bytes())?;
+        f.write_all(&self.downloaded_file_size.qload().to_le_bytes())?;
         let part_size = if ftype.is_multi() {
-            self.part_size.load(Ordering::Relaxed)
+            self.part_size.qload()
         } else {
             0
         };
@@ -320,7 +320,7 @@ impl PdFile {
                 }
             }
         }
-        self.need_saved.store(false, Ordering::Relaxed);
+        self.need_saved.qstore(false);
         Ok(())
     }
 }

@@ -17,9 +17,11 @@ pub trait AtomicQuick<T> {
 macro_rules! impl_atomic_quick_with_atomic {
     ($type1:ty, $type2:ty) => {
         impl AtomicQuick<$type2> for $type1 {
+            #[inline]
             fn qload(&self) -> $type2 {
                 self.load(Ordering::Relaxed)
             }
+            #[inline]
             fn qstore(&self, value: $type2) {
                 self.store(value, Ordering::Relaxed)
             }
