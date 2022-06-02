@@ -103,6 +103,8 @@ pub struct WebClient {
 
 impl WebClient {
     /// Create a new instance of client
+    /// 
+    /// This function will not handle any basic options, please use [Self::default()] instead. 
     pub fn new() -> Self {
         Self {
             client: Client::new(),
@@ -620,6 +622,13 @@ impl WebClient {
 impl Default for WebClient {
     fn default() -> Self {
         let c = Self::new();
+        let opt = get_helper();
+        c.set_verbose(opt.verbose());
+        match opt.retry() {
+            Some(retry) => { c.set_retry(retry) }
+            None => {}
+        }
+        c.get_retry_interval_as_mut().replace(opt.retry_interval());
         c
     }
 }

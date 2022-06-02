@@ -99,7 +99,7 @@ impl Downloader<File> {
             None => { None }
         };
         Ok(DownloaderResult::Ok(Self {
-            client: Arc::new(WebClient::new()),
+            client: Arc::new(WebClient::default()),
             pd: Arc::new(pd_file),
             url: Arc::new(url.into_url()?),
             headers: Arc::new(h),

@@ -30,7 +30,7 @@ pub struct PixivWebClient {
 impl PixivWebClient {
     pub fn new() -> Self {
         Self {
-            client: WebClient::new(),
+            client: WebClient::default(),
             inited: Arc::new(AtomicBool::new(false)),
             data: RwLock::new(None),
             params: RwLock::new(None),
@@ -88,12 +88,6 @@ impl PixivWebClient {
             self.client.set_header("Accept-Language", "ja");
             self.params.get_mut().replace(json::object! { "lang": "ja" });
         }
-        self.client.set_verbose(helper.verbose());
-        let retry = helper.retry();
-        if retry.is_some() {
-            self.client.set_retry(retry.unwrap());
-        }
-        self.client.get_retry_interval_as_mut().replace(helper.retry_interval());
         self.inited.store(true, Ordering::Relaxed);
         true
     }
