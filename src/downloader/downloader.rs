@@ -1,9 +1,9 @@
 use super::pd_file::PdFile;
-use super::pd_file::PdFilePartStatus;
 use super::pd_file::PdFileResult;
 use super::enums::DownloaderResult;
 use super::enums::DownloaderStatus;
 use super::error::DownloaderError;
+use super::tasks::create_download_tasks_simple;
 use crate::ext::atomic::AtomicQuick;
 use crate::ext::rw_lock::GetRwLock;
 use crate::utils::ask_need_overwrite;
@@ -24,7 +24,7 @@ use url::Url;
 
 #[derive(Debug)]
 /// A file downloader
-pub struct Downloader<T: Write + Seek> {
+pub struct DownloaderInternal<T: Write + Seek + Send + Sync> {
     /// The webclient
     client: Arc<WebClient>,
     /// The download status
@@ -38,18 +38,18 @@ pub struct Downloader<T: Write + Seek> {
     /// The status of the downloader
     status: RwLock<DownloaderStatus>,
     /// All tasks
-    tasks: Vec<JoinHandle<PdFilePartStatus>>,
+    tasks: RwLock<Vec<JoinHandle<bool>>>,
     /// Whether to enable mulitple thread mode
     multi: AtomicBool,
 }
 
-impl Downloader<File> {
-    /// Create a new [Downloader] instance
+impl DownloaderInternal<File> {
+    /// Create a new [DownloaderInternal] instance
     /// * `url` - The url of the file
     /// * `header` - HTTP headers
     /// * `path` - The path to store downloaded file.
     /// * `overwrite` - Whether to overwrite file
-    pub fn new<U: IntoUrl, H: ToHeaders, P: AsRef<Path> + ?Sized>(url: U, headers: H, path: Option<&P>, overwrite: Option<bool>) -> Result<DownloaderResult<File>, DownloaderError> {
+    pub fn new<U: IntoUrl, H: ToHeaders, P: AsRef<Path> + ?Sized>(url: U, headers: H, path: Option<&P>, overwrite: Option<bool>) -> Result<DownloaderResult<Self>, DownloaderError> {
         let h = match headers.to_headers() {
             Some(h) => { h }
             None => { HashMap::new() }
@@ -105,20 +105,21 @@ impl Downloader<File> {
             headers: Arc::new(h),
             file: RwLock::new(file),
             status: RwLock::new(DownloaderStatus::Created),
-            tasks: Vec::new(),
+            tasks: RwLock::new(Vec::new()),
             multi: AtomicBool::new(false),
         }))
     }
 }
 
-impl <T: Write + Seek> Downloader<T> {
-    /// Start download if download not started.
-    /// 
-    /// Returns the status of the Downloader
-    pub fn download(&self) -> DownloaderStatus {
-        if !self.is_created() {
-            return self.status.get_ref().clone();
-        }
+impl <T: Write + Seek + Send + Sync> DownloaderInternal<T> {
+    /// Add a new task to tasks
+    /// * `task` - Task
+    pub fn add_task(&self, task: JoinHandle<bool>) {
+        self.tasks.get_mut().push(task)
+    }
+
+    /// Return the status of the downloader.
+    pub fn get_status(&self) -> DownloaderStatus {
         self.status.get_ref().clone()
     }
 
@@ -137,4 +138,55 @@ impl <T: Write + Seek> Downloader<T> {
             self.multi.qload()
         }
     }
+}
+
+/// A file downloader
+pub struct Downloader<T: Write + Seek + Send + Sync> {
+    /// internal type
+    downloader: Arc<DownloaderInternal<T>>,
+}
+
+impl Downloader<File> {
+    /// Create a new [Downloader] instance
+    /// * `url` - The url of the file
+    /// * `header` - HTTP headers
+    /// * `path` - The path to store downloaded file.
+    /// * `overwrite` - Whether to overwrite file
+    pub fn new<U: IntoUrl, H: ToHeaders, P: AsRef<Path> + ?Sized>(url: U, headers: H, path: Option<&P>, overwrite: Option<bool>) -> Result<DownloaderResult<Self>, DownloaderError> {
+        Ok(match DownloaderInternal::<File>::new(url, headers, path, overwrite)? {
+            DownloaderResult::Ok(d) => {
+                DownloaderResult::Ok(Self { downloader: Arc::new(d) })
+            }
+            DownloaderResult::Canceled => { DownloaderResult::Canceled }
+        })
+    }
+}
+
+macro_rules! define_downloader_fn {
+    {$f:ident, $t:ty, $doc:expr} => {
+        #[inline]
+        #[doc = $doc]
+        pub fn $f(&self) -> $t {
+            self.downloader.$f()
+        }
+    }
+}
+
+impl <T: Write + Seek + Send + Sync + 'static> Downloader<T> {
+    /// Start download if download not started.
+    /// 
+    /// Returns the status of the Downloader
+    pub fn download(&self) -> DownloaderStatus {
+        if !self.is_created() {
+            return self.downloader.get_status();
+        }
+        if !self.is_multi_threads() {
+            let task = tokio::spawn(create_download_tasks_simple(Arc::clone(&self.downloader)));
+            self.downloader.add_task(task);
+        }
+        self.downloader.get_status()
+    }
+
+    define_downloader_fn!(is_created, bool, "Returns true if the downloader is created just now.");
+    define_downloader_fn!(is_multi_threads, bool, "Returns true if is multiple thread mode.");
 }

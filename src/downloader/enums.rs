@@ -1,18 +1,14 @@
-use super::downloader::Downloader;
-use std::io::Seek;
-use std::io::Write;
-
 #[derive(Debug)]
-/// The result when try create a new [Downloader] interface
-pub enum DownloaderResult<T: Write + Seek> {
+/// The result when try create a new [super::Downloader] interface
+pub enum DownloaderResult<T> {
     /// Created successfully
-    Ok(Downloader<T>),
+    Ok(T),
     /// The target file already downloaded and overwrite is disabled.
     Canceled,
 }
 
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
-/// The status of the [Downloader]
+/// The status of the [super::Downloader]
 pub enum DownloaderStatus {
     /// The downloader is just created
     Created,
