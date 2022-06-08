@@ -666,6 +666,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "http-content-range"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9f0d1a8ef218a86416107794b34cc446958d9203556c312bb41eab4c924c1d2e"
+
+[[package]]
 name = "httparse"
 version = "1.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1152,6 +1158,8 @@ dependencies = [
  "getopts",
  "gettext",
  "html_parser",
+ "http",
+ "http-content-range",
  "indicatif",
  "int-enum",
  "json",

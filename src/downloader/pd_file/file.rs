@@ -85,6 +85,22 @@ impl PdFile {
         }
     }
 
+    /// Set the status to the initailzed status.
+    pub fn clear(&self) -> Result<(), PdFileError> {
+        self.status.replace_with2(PdFileStatus::Started);
+        self.ftype.replace_with2(PdFileType::SingleThread);
+        self.file_size.qstore(0);
+        self.downloaded_file_size.qstore(0);
+        self.part_size.qstore(0);
+        self.part_datas.get_mut().clear();
+        if !self.is_mem_only() {
+            self.need_saved.qstore(true);
+            // Rewrite all datas.
+            self.write()?;
+        }
+        Ok(())
+    }
+
     /// Close the file.
     /// This function will return error if write failed.
     /// If you want to force close the file. Please use [Self::force_close()].
@@ -109,6 +125,12 @@ impl PdFile {
     /// Returns the size of the downloaded data
     pub fn get_downloaded_file_size(&self) -> u64 {
         self.downloaded_file_size.qload()
+    }
+
+    #[inline]
+    /// The target size of the file. 0 if unknown.
+    pub fn get_file_size(&self) -> u64 {
+        self.file_size.qload()
     }
 
     /// Return status data of a part

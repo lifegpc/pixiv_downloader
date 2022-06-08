@@ -8,6 +8,8 @@ extern crate derive_more;
 extern crate flagset;
 extern crate futures_util;
 extern crate json;
+extern crate http;
+extern crate http_content_range;
 extern crate indicatif;
 extern crate int_enum;
 #[macro_use]

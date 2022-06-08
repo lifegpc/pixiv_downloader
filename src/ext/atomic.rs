@@ -2,12 +2,12 @@ use std::sync::atomic::Ordering;
 
 /// A trait to help to load and store atomic value quickly.
 pub trait AtomicQuick<T> {
-    /// Loads a value from the atomic integer
+    /// Loads a value from the atomic integer in [Ordering::SeqCst] mode.
     fn qload(&self) -> T;
-    /// Stores a value into the atomic integer.
+    /// Stores a value into the atomic integer in [Ordering::SeqCst] mode.
     fn qstore(&self, value: T);
     #[inline]
-    /// Stores a value into the atomic integer.
+    /// Stores a value into the atomic integer in [Ordering::SeqCst] mode.
     /// Alias for [Self::qstore]
     fn qsave(&self, value: T) {
         self.qstore(value)
@@ -19,11 +19,11 @@ macro_rules! impl_atomic_quick_with_atomic {
         impl AtomicQuick<$type2> for $type1 {
             #[inline]
             fn qload(&self) -> $type2 {
-                self.load(Ordering::Relaxed)
+                self.load(Ordering::SeqCst)
             }
             #[inline]
             fn qstore(&self, value: $type2) {
-                self.store(value, Ordering::Relaxed)
+                self.store(value, Ordering::SeqCst)
             }
         }
     }

@@ -26,19 +26,19 @@ use url::Url;
 /// A file downloader
 pub struct DownloaderInternal<T: Write + Seek + Send + Sync> {
     /// The webclient
-    client: Arc<WebClient>,
+    pub client: Arc<WebClient>,
     /// The download status
-    pd: Arc<PdFile>,
+    pub pd: Arc<PdFile>,
     /// The url of the file
-    url: Arc<Url>,
+    pub url: Arc<Url>,
     /// The HTTP headers map
-    headers: Arc<HashMap<String, String>>,
+    pub headers: Arc<HashMap<String, String>>,
     /// The target file
     file: RwLock<Option<T>>,
     /// The status of the downloader
     status: RwLock<DownloaderStatus>,
     /// All tasks
-    tasks: RwLock<Vec<JoinHandle<bool>>>,
+    tasks: RwLock<Vec<JoinHandle<Result<(), DownloaderError>>>>,
     /// Whether to enable mulitple thread mode
     multi: AtomicBool,
 }
@@ -114,7 +114,7 @@ impl DownloaderInternal<File> {
 impl <T: Write + Seek + Send + Sync> DownloaderInternal<T> {
     /// Add a new task to tasks
     /// * `task` - Task
-    pub fn add_task(&self, task: JoinHandle<bool>) {
+    pub fn add_task(&self, task: JoinHandle<Result<(), DownloaderError>>) {
         self.tasks.get_mut().push(task)
     }
 
@@ -162,6 +162,7 @@ impl Downloader<File> {
     }
 }
 
+#[doc(hidden)]
 macro_rules! define_downloader_fn {
     {$f:ident, $t:ty, $doc:expr} => {
         #[inline]
