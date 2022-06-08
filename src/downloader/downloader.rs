@@ -3,18 +3,21 @@ use super::pd_file::PdFileResult;
 use super::enums::DownloaderResult;
 use super::enums::DownloaderStatus;
 use super::error::DownloaderError;
+use super::local_file::LocalFile;
 use super::tasks::create_download_tasks_simple;
 use crate::ext::atomic::AtomicQuick;
+use crate::ext::io::ClearFile;
 use crate::ext::rw_lock::GetRwLock;
+use crate::ext::try_err::TryErr;
 use crate::utils::ask_need_overwrite;
 use crate::webclient::WebClient;
 use crate::webclient::ToHeaders;
 use reqwest::IntoUrl;
 use std::collections::HashMap;
-use std::fs::File;
 use std::fs::remove_file;
 use std::io::Seek;
 use std::io::Write;
+use std::ops::DerefMut;
 use std::path::Path;
 use std::sync::Arc;
 use std::sync::RwLock;
@@ -24,7 +27,7 @@ use url::Url;
 
 #[derive(Debug)]
 /// A file downloader
-pub struct DownloaderInternal<T: Write + Seek + Send + Sync> {
+pub struct DownloaderInternal<T: Write + Seek + Send + Sync + ClearFile> {
     /// The webclient
     pub client: Arc<WebClient>,
     /// The download status
@@ -43,7 +46,7 @@ pub struct DownloaderInternal<T: Write + Seek + Send + Sync> {
     multi: AtomicBool,
 }
 
-impl DownloaderInternal<File> {
+impl DownloaderInternal<LocalFile> {
     /// Create a new [DownloaderInternal] instance
     /// * `url` - The url of the file
     /// * `header` - HTTP headers
@@ -91,9 +94,9 @@ impl DownloaderInternal<File> {
         let file = match path {
             Some(p) => {
                 if already_exists {
-                    Some(File::open(p)?)
+                    Some(LocalFile::open(p)?)
                 } else {
-                    Some(File::create(p)?)
+                    Some(LocalFile::create(p)?)
                 }
             }
             None => { None }
@@ -111,11 +114,20 @@ impl DownloaderInternal<File> {
     }
 }
 
-impl <T: Write + Seek + Send + Sync> DownloaderInternal<T> {
+impl <T: Write + Seek + Send + Sync + ClearFile> DownloaderInternal<T> {
     /// Add a new task to tasks
     /// * `task` - Task
     pub fn add_task(&self, task: JoinHandle<Result<(), DownloaderError>>) {
         self.tasks.get_mut().push(task)
+    }
+
+    /// Clear all datas in file
+    pub fn clear_file(&self) -> std::io::Result<()> {
+        match self.file.get_mut().deref_mut() {
+            Some(f) => { f.clear_file()? }
+            None => {}
+        };
+        Ok(())
     }
 
     /// Return the status of the downloader.
@@ -138,22 +150,32 @@ impl <T: Write + Seek + Send + Sync> DownloaderInternal<T> {
             self.multi.qload()
         }
     }
+
+    /// Write datas to the file.
+    /// * `data` - Data
+    pub fn write(&self, data: &[u8]) -> Result<(), DownloaderError> {
+        match self.file.get_mut().deref_mut() {
+            Some(f) => { f.write_all(data)? }
+            None => {}
+        }
+        Ok(())
+    } 
 }
 
 /// A file downloader
-pub struct Downloader<T: Write + Seek + Send + Sync> {
+pub struct Downloader<T: Write + Seek + Send + Sync + ClearFile> {
     /// internal type
     downloader: Arc<DownloaderInternal<T>>,
 }
 
-impl Downloader<File> {
+impl Downloader<LocalFile> {
     /// Create a new [Downloader] instance
     /// * `url` - The url of the file
     /// * `header` - HTTP headers
     /// * `path` - The path to store downloaded file.
     /// * `overwrite` - Whether to overwrite file
     pub fn new<U: IntoUrl, H: ToHeaders, P: AsRef<Path> + ?Sized>(url: U, headers: H, path: Option<&P>, overwrite: Option<bool>) -> Result<DownloaderResult<Self>, DownloaderError> {
-        Ok(match DownloaderInternal::<File>::new(url, headers, path, overwrite)? {
+        Ok(match DownloaderInternal::<LocalFile>::new(url, headers, path, overwrite)? {
             DownloaderResult::Ok(d) => {
                 DownloaderResult::Ok(Self { downloader: Arc::new(d) })
             }
@@ -173,7 +195,7 @@ macro_rules! define_downloader_fn {
     }
 }
 
-impl <T: Write + Seek + Send + Sync + 'static> Downloader<T> {
+impl <T: Write + Seek + Send + Sync + ClearFile + 'static> Downloader<T> {
     /// Start download if download not started.
     /// 
     /// Returns the status of the Downloader

@@ -51,3 +51,9 @@ impl<T: Read> StructRead for T {
         }
     }
 }
+
+/// Clear all datas in file
+pub trait ClearFile {
+    /// Clear all datas in file
+    fn clear_file(&mut self) -> std::io::Result<()>;
+}

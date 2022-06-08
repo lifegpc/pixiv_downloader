@@ -1,3 +1,4 @@
+use crate::ext::io::ClearFile;
 use crate::ext::try_err::TryErr;
 use crate::gettext;
 use super::error::DownloaderError;
@@ -9,7 +10,7 @@ use std::io::Write;
 use std::sync::Arc;
 
 /// Create a download tasks in simple thread mode.
-pub async fn create_download_tasks_simple<T: Seek + Write + Send + Sync>(d: Arc<DownloaderInternal<T>>) -> Result<(), DownloaderError> {
+pub async fn create_download_tasks_simple<T: Seek + Write + Send + Sync + ClearFile>(d: Arc<DownloaderInternal<T>>) -> Result<(), DownloaderError> {
     let start = if d.pd.is_downloading() {
         d.pd.get_downloaded_file_size()
     } else {
@@ -55,6 +56,7 @@ pub async fn create_download_tasks_simple<T: Seek + Write + Send + Sync>(d: Arc<
         };
         if need_reget {
             d.pd.clear()?;
+            d.clear_file()?;
             result = d.client.get(d.url.deref().clone(), d.headers.deref().clone()).try_err(gettext("Failed to get url."))?;
             status = result.status();
         }
