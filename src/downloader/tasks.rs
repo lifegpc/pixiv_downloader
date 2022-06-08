@@ -26,28 +26,32 @@ pub async fn create_download_tasks_simple<T: Seek + Write + Send + Sync>(d: Arc<
         result = d.client.get(d.url.deref().clone(), d.headers.deref().clone()).try_err(gettext("Failed to get url."))?;
         status = result.status();
     } else if status == 206 {
-        let range = ContentRange::parse_bytes(result.headers()["Content-Range"].as_bytes());
-        let need_reget = match range {
-            ContentRange::Bytes(b) => {
-                if file_size != 0 && b.complete_length != file_size {
-                    true
-                } else if start != b.first_byte {
-                    true
-                } else {
-                    false
+        let headers = result.headers();
+        let need_reget = if headers.contains_key("Content-Range") {
+            match ContentRange::parse_bytes(headers["Content-Range"].as_bytes()) {
+                ContentRange::Bytes(b) => {
+                    if file_size != 0 && b.complete_length != file_size {
+                        true
+                    } else if start != b.first_byte {
+                        true
+                    } else {
+                        false
+                    }
                 }
-            }
-            ContentRange::UnboundBytes(b) => {
-                if start != b.first_byte {
-                    true
-                } else {
-                    false
+                ContentRange::UnboundBytes(b) => {
+                    if start != b.first_byte {
+                        true
+                    } else {
+                        false
+                    }
                 }
+                ContentRange::Unknown => {
+                    true
+                }
+                _ => { false }
             }
-            ContentRange::Unknown => {
-                true
-            }
-            _ => { false }
+        } else {
+            true
         };
         if need_reget {
             d.pd.clear()?;
