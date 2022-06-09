@@ -38,3 +38,8 @@ fn check_user_or_not(obj: &JsonValue) -> bool {
     let r = UseOrNot::from_json(obj);
     r.is_ok()
 }
+
+#[test]
+fn test_get_settings_list() {
+    get_settings_list();
+}
