@@ -300,7 +300,7 @@ impl PdFile {
         }
         remove_file(self.file_path.get_ref().as_ref().unwrap())?;
         f.take();
-        f.replace(File::open(self.file_path.get_ref().as_ref().unwrap())?);
+        f.replace(File::create(self.file_path.get_ref().as_ref().unwrap())?);
         Ok(())
     }
 
