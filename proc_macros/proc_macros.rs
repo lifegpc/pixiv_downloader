@@ -68,9 +68,11 @@ pub fn impl_struct_writer_write(item: TokenStream) -> TokenStream {
     let befname = format!("write_be_{}", i);
     let befname = Ident::new(&befname, i.span());
     let stream = quote! {
+        #[inline]
         fn #lefname(&mut self, data: #i) -> Result<(), Self::Error> {
             self.write_all(&data.to_le_bytes())
         }
+        #[inline]
         fn #befname(&mut self, data: #i) -> Result<(), Self::Error> {
             self.write_all(&data.to_be_bytes())
         }
