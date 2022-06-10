@@ -38,6 +38,9 @@ lazy_static! {
     static ref MAGIC_WORDS: Vec<u8> = vec![0x50, 0x44, 0xff, 0xff];
 }
 
+/// The offset of the status in pd file
+const STATUS_OFFSET: SeekFrom = SeekFrom::Start(10);
+/// The offset of the file_size in pd file 
 const FILE_SIZE_OFFSET: SeekFrom = SeekFrom::Start(12);
 
 #[derive(Debug)]
@@ -114,6 +117,20 @@ impl PdFile {
             self.write()?;
         }
         self.force_close();
+        Ok(())
+    }
+
+    /// Complete the download.
+    pub fn complete(&self) -> Result<(), PdFileError> {
+        self.set_completed();
+        if !self.is_mem_only() {
+            self.need_saved.qstore(true);
+            let mut f = self.file.get_mut();
+            let f = f.as_mut().unwrap();
+            f.seek(STATUS_OFFSET)?;
+            f.write_le_u8(self.status.get_ref().int_value())?;
+            self.need_saved.qstore(false);
+        }
         Ok(())
     }
 

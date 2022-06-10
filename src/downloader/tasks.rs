@@ -3,7 +3,9 @@ use crate::ext::try_err::TryErr;
 use crate::gettext;
 use super::error::DownloaderError;
 use super::downloader::DownloaderInternal;
+use futures_util::StreamExt;
 use http_content_range::ContentRange;
+use reqwest::Response;
 use std::ops::Deref;
 use std::io::Seek;
 use std::io::Write;
@@ -70,6 +72,28 @@ pub async fn create_download_tasks_simple<T: Seek + Write + Send + Sync + ClearF
                 d.pd.set_file_size(len)?;
             }
             None => {}
+        }
+    }
+    handle_download(d, result).await
+}
+
+/// Handle download process
+pub async fn handle_download<T: Seek + Write + Send + Sync + ClearFile>(d: Arc<DownloaderInternal<T>>, re: Response) -> Result<(), DownloaderError> {
+    let mut stream = re.bytes_stream();
+    loop {
+        let mut n = stream.next();
+        let re = tokio::time::timeout(std::time::Duration::from_secs(10), &mut n).await;
+        match re {
+            Ok(s) => {
+                match s {
+                    Some(data) => {}
+                    None => {
+                        d.pd.complete()?;
+                        break;
+                    }
+                }
+            }
+            Err(_) => {} // TODO: Timed out
         }
     }
     Ok(())
