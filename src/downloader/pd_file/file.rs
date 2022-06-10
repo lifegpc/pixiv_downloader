@@ -95,6 +95,8 @@ impl PdFile {
         self.part_datas.get_mut().clear();
         if !self.is_mem_only() {
             self.need_saved.qstore(true);
+            // Remove old file and reopen
+            self.reopen()?;
             // Rewrite all datas.
             self.write()?;
         }
@@ -287,6 +289,18 @@ impl PdFile {
         }
     }
 
+    /// Reopen file with remove old file
+    pub fn reopen(&self) -> Result<(), PdFileError> {
+        let mut f = self.file.get_mut();
+        if f.is_none() {
+            return Ok(());
+        }
+        remove_file(self.file_path.get_ref().as_ref().unwrap())?;
+        f.take();
+        f.replace(File::open(self.file_path.get_ref().as_ref().unwrap())?);
+        Ok(())
+    }
+
     #[inline]
     /// Set status to alreay downloaded.
     fn set_completed(&self) {
@@ -303,6 +317,7 @@ impl PdFile {
             self.file_name.get_mut().replace(String::from(fname));
             if !self.is_mem_only() {
                 self.need_saved.qstore(true);
+                self.reopen()?;
                 // Rewrite all datas.
                 self.write()?;
             }
