@@ -6,6 +6,7 @@ use crate::downloader::pd_file::part_status::PdFilePartStatus;
 use crate::downloader::pd_file::version::PdFileVersion;
 use crate::ext::atomic::AtomicQuick;
 use crate::ext::io::StructRead;
+use crate::ext::io::StructWrite;
 use crate::ext::replace::ReplaceWith2;
 use crate::ext::rw_lock::GetRwLock;
 use crate::ext::try_err::TryErr;
@@ -36,6 +37,8 @@ lazy_static! {
     #[doc(hidden)]
     static ref MAGIC_WORDS: Vec<u8> = vec![0x50, 0x44, 0xff, 0xff];
 }
+
+const FILE_SIZE_OFFSET: SeekFrom = SeekFrom::Start(12);
 
 #[derive(Debug)]
 /// The pd file
@@ -325,6 +328,21 @@ impl PdFile {
         }
     }
 
+    /// Set the target size of the file. If unknown, set this to 0.
+    /// * `file_size` - The target size of the file.
+    pub fn set_file_size(&self, file_size: u64) -> Result<(), PdFileError> {
+        self.file_size.qstore(file_size);
+        if !self.is_mem_only() {
+            self.need_saved.qstore(true);
+            let mut f = self.file.get_mut();
+            let f = f.as_mut().unwrap();
+            f.seek(FILE_SIZE_OFFSET)?;
+            f.write_le_u64(file_size)?;
+            self.need_saved.qstore(false);
+        }
+        Ok(())
+    }
+
     /// Write all data to the file.
     pub fn write(&self) -> Result<(), PdFileError> {
         let mut f = self.file.get_mut();
@@ -334,19 +352,19 @@ impl PdFile {
         self.version.write_to(&mut f)?;
         let file_name = self.file_name.get_ref().try_err2(gettext("File name is not set."))?;
         let file_name = file_name.as_bytes();
-        f.write_all(&(file_name.len() as u32).to_le_bytes())?;
-        f.write_all(&self.status.get_ref().int_value().to_le_bytes())?;
+        f.write_le_u32(file_name.len() as u32)?;
+        f.write_le_u8(self.status.get_ref().int_value())?;
         let ftype = self.ftype.get_ref();
-        f.write_all(&ftype.int_value().to_le_bytes())?;
+        f.write_le_u8(ftype.int_value())?;
         let file_size = self.file_size.qload();
-        f.write_all(&file_size.to_le_bytes())?;
-        f.write_all(&self.downloaded_file_size.qload().to_le_bytes())?;
+        f.write_le_u64(file_size)?;
+        f.write_le_u64(self.downloaded_file_size.qload())?;
         let part_size = if ftype.is_multi() {
             self.part_size.qload()
         } else {
             0
         };
-        f.write_all(&part_size.to_le_bytes())?;
+        f.write_le_u32(part_size)?;
         f.write_all(file_name)?;
         if ftype.is_multi() && file_size != 0 && part_size != 0 {
             let part_counts = (file_size + (part_size as u64) - 1) / (part_size as u64);

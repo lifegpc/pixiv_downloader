@@ -64,5 +64,13 @@ pub async fn create_download_tasks_simple<T: Seek + Write + Send + Sync + ClearF
     if status.as_u16() >= 400 {
         return Err(DownloaderError::from(status));
     }
+    if file_size == 0 && status != 206 {
+        match result.content_length() {
+            Some(len) => {
+                d.pd.set_file_size(len)?;
+            }
+            None => {}
+        }
+    }
     Ok(())
 }
