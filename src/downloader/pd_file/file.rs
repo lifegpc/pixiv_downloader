@@ -42,6 +42,8 @@ lazy_static! {
 const STATUS_OFFSET: SeekFrom = SeekFrom::Start(10);
 /// The offset of the file_size in pd file 
 const FILE_SIZE_OFFSET: SeekFrom = SeekFrom::Start(12);
+/// The offset of the downloaded_file_size in pd file
+const DOWNLOADED_FILE_SIZE_OFFSET: SeekFrom = SeekFrom::Start(20);
 
 #[derive(Debug)]
 /// The pd file
@@ -121,15 +123,12 @@ impl PdFile {
     }
 
     /// Complete the download.
+    /// After calling this function. The pd file will be removed.
     pub fn complete(&self) -> Result<(), PdFileError> {
         self.set_completed();
         if !self.is_mem_only() {
-            self.need_saved.qstore(true);
-            let mut f = self.file.get_mut();
-            let f = f.as_mut().unwrap();
-            f.seek(STATUS_OFFSET)?;
-            f.write_le_u8(self.status.get_ref().int_value())?;
-            self.need_saved.qstore(false);
+            self.force_close();
+            self.remove_pd_file()?;
         }
         Ok(())
     }
@@ -164,6 +163,25 @@ impl PdFile {
         } else {
             None
         }
+    }
+
+    /// Increase the downloaded file size.
+    /// * `size` - The file size want to added.
+    /// 
+    /// Returns the downloaded file size
+    pub fn inc(&self, size: u64) -> Result<u64, PdFileError> {
+        let mut downloaded_size = self.downloaded_file_size.qload();
+        downloaded_size += size;
+        self.downloaded_file_size.qstore(downloaded_size);
+        if !self.is_mem_only() {
+            self.need_saved.qstore(true);
+            let mut f = self.file.get_mut();
+            let f = f.as_mut().unwrap();
+            f.seek(DOWNLOADED_FILE_SIZE_OFFSET)?;
+            f.write_le_u64(downloaded_size)?;
+            self.need_saved.qstore(false);
+        }
+        Ok(downloaded_size)
     }
 
     #[inline]
@@ -327,6 +345,12 @@ impl PdFile {
         self.status.replace_with2(PdFileStatus::Downloaded);
     }
 
+    #[inline]
+    /// Set status to downloading.
+    fn set_downloading(&self) {
+        self.status.replace_with2(PdFileStatus::Downloading);
+    }
+
     /// Set the file name
     /// * `file_name` - The file name. Should not be empty.
     pub fn set_file_name<S: AsRef<str> + ?Sized>(&self, file_name: &S) -> Result<(), PdFileError> {
@@ -347,6 +371,8 @@ impl PdFile {
 
     /// Set the target size of the file. If unknown, set this to 0.
     /// * `file_size` - The target size of the file.
+    /// 
+    /// This will also set the status to downloading.
     pub fn set_file_size(&self, file_size: u64) -> Result<(), PdFileError> {
         self.file_size.qstore(file_size);
         if !self.is_mem_only() {
@@ -355,6 +381,15 @@ impl PdFile {
             let f = f.as_mut().unwrap();
             f.seek(FILE_SIZE_OFFSET)?;
             f.write_le_u64(file_size)?;
+            self.need_saved.qstore(false);
+        }
+        self.set_downloading();
+        if !self.is_mem_only() {
+            self.need_saved.qstore(true);
+            let mut f = self.file.get_mut();
+            let f = f.as_mut().unwrap();
+            f.seek(STATUS_OFFSET)?;
+            f.write_le_u8(self.status.get_ref().int_value())?;
             self.need_saved.qstore(false);
         }
         Ok(())

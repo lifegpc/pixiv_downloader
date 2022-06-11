@@ -16,6 +16,7 @@ use reqwest::IntoUrl;
 use std::collections::HashMap;
 use std::fs::remove_file;
 use std::io::Seek;
+use std::io::SeekFrom;
 use std::io::Write;
 use std::ops::DerefMut;
 use std::path::Path;
@@ -148,6 +149,15 @@ impl <T: Write + Seek + Send + Sync + ClearFile> DownloaderInternal<T> {
             self.pd.is_multi_threads()
         } else {
             self.multi.qload()
+        }
+    }
+
+    /// Seek in the file.
+    /// * `data` - Data
+    pub fn seek(&self, pos: SeekFrom) -> Result<u64, DownloaderError> {
+        match self.file.get_mut().deref_mut() {
+            Some(f) => { Ok(f.seek(pos)?) }
+            None => { Ok(0) }
         }
     }
 

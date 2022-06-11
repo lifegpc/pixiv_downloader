@@ -8,18 +8,35 @@ use http_content_range::ContentRange;
 use reqwest::Response;
 use std::ops::Deref;
 use std::io::Seek;
+use std::io::SeekFrom;
 use std::io::Write;
 use std::sync::Arc;
 
 /// Create a download tasks in simple thread mode.
 pub async fn create_download_tasks_simple<T: Seek + Write + Send + Sync + ClearFile>(d: Arc<DownloaderInternal<T>>) -> Result<(), DownloaderError> {
-    let start = if d.pd.is_downloading() {
+    let mut start = if d.pd.is_downloading() {
         d.pd.get_downloaded_file_size()
     } else {
         0
     };
     let file_size = d.pd.get_file_size();
     let mut headers = d.headers.deref().clone();
+    if start != 0 {
+        match d.seek(SeekFrom::Start(start)) {
+            Ok(data) => {
+                if data != start {
+                    start = 0;
+                }
+            }
+            Err(_) => {
+                start = 0;
+            }
+        }
+        if start == 0 {
+            d.seek(SeekFrom::Start(0))?;
+            d.pd.clear()?;
+        }
+    }
     if start != 0 {
         headers.insert(String::from("Range"), format!("bytes={}-", start));
     }
@@ -80,20 +97,41 @@ pub async fn create_download_tasks_simple<T: Seek + Write + Send + Sync + ClearF
 /// Handle download process
 pub async fn handle_download<T: Seek + Write + Send + Sync + ClearFile>(d: Arc<DownloaderInternal<T>>, re: Response) -> Result<(), DownloaderError> {
     let mut stream = re.bytes_stream();
+    let is_multi = d.is_multi_threads();
     loop {
         let mut n = stream.next();
         let re = tokio::time::timeout(std::time::Duration::from_secs(10), &mut n).await;
         match re {
             Ok(s) => {
                 match s {
-                    Some(data) => {}
+                    Some(data) => {
+                        match data {
+                            Ok(data) => {
+                                d.pd.inc(data.len() as u64)?;
+                                d.write(&data)?;
+                            }
+                            Err(e) => {
+                                if !is_multi {
+                                    d.pd.clear()?;
+                                }
+                                return Err(DownloaderError::from(e));
+                            }
+                        }
+                    }
                     None => {
-                        d.pd.complete()?;
+                        if !is_multi {
+                            d.pd.complete()?;
+                        }
                         break;
                     }
                 }
             }
-            Err(_) => {} // TODO: Timed out
+            Err(e) => {
+                if !is_multi {
+                    d.pd.clear()?;
+                }
+                return Err(DownloaderError::from(e));
+            }
         }
     }
     Ok(())
