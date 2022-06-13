@@ -36,9 +36,20 @@ use std::sync::atomic::AtomicBool;
 use tokio::task::JoinHandle;
 use url::Url;
 
+/// Get the target file name
+pub trait GetTargetFileName {
+    /// Get the target file name.
+    /// The target file name just used in the message in progress bar.
+    /// 
+    /// If is unknown, return [None] is fine.
+    fn get_target_file_name(&self) -> Option<String> {
+        None
+    }
+}
+
 #[derive(Debug)]
 /// A file downloader
-pub struct DownloaderInternal<T: Write + Seek + Send + Sync + ClearFile> {
+pub struct DownloaderInternal<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName> {
     /// The webclient
     pub client: Arc<WebClient>,
     /// The download status
@@ -131,7 +142,7 @@ impl DownloaderInternal<LocalFile> {
     }
 }
 
-impl <T: Write + Seek + Send + Sync + ClearFile> DownloaderInternal<T> {
+impl <T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName> DownloaderInternal<T> {
     /// Add a new task to tasks
     /// * `task` - Task
     pub fn add_task(&self, task: JoinHandle<Result<(), DownloaderError>>) {
@@ -194,6 +205,15 @@ impl <T: Write + Seek + Send + Sync + ClearFile> DownloaderInternal<T> {
     /// Return the status of the downloader.
     pub fn get_status(&self) -> DownloaderStatus {
         self.status.get_ref().clone()
+    }
+
+    #[inline]
+    /// Get the target file name
+    pub fn get_target_file_name(&self) -> Option<String> {
+        match self.file.get_ref().deref() {
+            Some(f) => { f.get_target_file_name() }
+            None => { None }
+        }
     }
 
     #[inline]
@@ -293,7 +313,7 @@ impl <T: Write + Seek + Send + Sync + ClearFile> DownloaderInternal<T> {
 }
 
 /// A file downloader
-pub struct Downloader<T: Write + Seek + Send + Sync + ClearFile> {
+pub struct Downloader<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName> {
     /// internal type
     downloader: Arc<DownloaderInternal<T>>,
     /// The task to check status.
@@ -327,7 +347,7 @@ macro_rules! define_downloader_fn {
     }
 }
 
-impl <T: Write + Seek + Send + Sync + ClearFile + 'static> Downloader<T> {
+impl <T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + 'static> Downloader<T> {
     /// Start download if download not started.
     /// 
     /// Returns the status of the Downloader

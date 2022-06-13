@@ -1,4 +1,5 @@
 use crate::ext::io::ClearFile;
+use super::downloader::GetTargetFileName;
 use std::fs::File;
 use std::fs::remove_file;
 use std::io::Seek;
@@ -52,6 +53,16 @@ impl Deref for LocalFile {
     type Target = File;
     fn deref(&self) -> &Self::Target {
         &self.file.as_ref().unwrap()
+    }
+}
+
+impl GetTargetFileName for LocalFile {
+    #[inline]
+    fn get_target_file_name(&self) -> Option<String> {
+        match self.path.to_str() {
+            Some(s) => { Some(String::from(s)) }
+            None => { None }
+        }
     }
 }
 

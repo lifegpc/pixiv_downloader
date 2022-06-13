@@ -2,6 +2,7 @@ use crate::ext::io::ClearFile;
 use crate::ext::rw_lock::GetRwLock;
 use crate::ext::try_err::TryErr;
 use crate::gettext;
+use super::downloader::GetTargetFileName;
 use super::error::DownloaderError;
 use super::downloader::DownloaderInternal;
 use futures_util::StreamExt;
@@ -16,7 +17,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 /// Create a download tasks in simple thread mode.
-pub async fn create_download_tasks_simple<T: Seek + Write + Send + Sync + ClearFile>(d: Arc<DownloaderInternal<T>>) -> Result<(), DownloaderError> {
+pub async fn create_download_tasks_simple<T: Seek + Write + Send + Sync + ClearFile + GetTargetFileName>(d: Arc<DownloaderInternal<T>>) -> Result<(), DownloaderError> {
     let mut start = if d.pd.is_downloading() {
         d.pd.get_downloaded_file_size()
     } else {
@@ -104,7 +105,7 @@ pub async fn create_download_tasks_simple<T: Seek + Write + Send + Sync + ClearF
 }
 
 /// Handle download process
-pub async fn handle_download<T: Seek + Write + Send + Sync + ClearFile>(d: Arc<DownloaderInternal<T>>, re: Response) -> Result<(), DownloaderError> {
+pub async fn handle_download<T: Seek + Write + Send + Sync + ClearFile + GetTargetFileName>(d: Arc<DownloaderInternal<T>>, re: Response) -> Result<(), DownloaderError> {
     let mut stream = re.bytes_stream();
     let is_multi = d.is_multi_threads();
     loop {
@@ -139,6 +140,9 @@ pub async fn handle_download<T: Seek + Write + Send + Sync + ClearFile>(d: Arc<D
                     None => {
                         if !is_multi {
                             d.pd.complete()?;
+                            if d.enabled_progress_bar() {
+                                d.set_progress_bar_message(format!("{} {}", gettext("Downloaded file:"), d.get_target_file_name().unwrap_or(String::from("(unknown)"))));
+                            }
                         }
                         break;
                     }
@@ -159,7 +163,7 @@ pub async fn handle_download<T: Seek + Write + Send + Sync + ClearFile>(d: Arc<D
 }
 
 /// Check tasks are completed or not. And create new tasks if needed.
-pub async fn check_tasks<T: Seek + Write + Send + Sync + ClearFile + 'static>(d: Arc<DownloaderInternal<T>>) -> Result<(), DownloaderError> {
+pub async fn check_tasks<T: Seek + Write + Send + Sync + ClearFile + GetTargetFileName + 'static>(d: Arc<DownloaderInternal<T>>) -> Result<(), DownloaderError> {
     if !d.is_multi_threads() {
         let task = tokio::spawn(create_download_tasks_simple(Arc::clone(&d)));
         d.add_task(task);
