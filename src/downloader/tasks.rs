@@ -131,6 +131,7 @@ pub async fn handle_download<T: Seek + Write + Send + Sync + ClearFile + GetTarg
                                     d.pd.clear()?;
                                     if d.enabled_progress_bar() {
                                         d.set_progress_bar_position(0);
+                                        d.set_progress_bar_message(format!("{} {}", gettext("Error when downloading file:"), e));
                                     }
                                 }
                                 return Err(DownloaderError::from(e));
@@ -153,6 +154,7 @@ pub async fn handle_download<T: Seek + Write + Send + Sync + ClearFile + GetTarg
                     d.pd.clear()?;
                     if d.enabled_progress_bar() {
                         d.set_progress_bar_position(0);
+                        d.set_progress_bar_message(format!("{} {}", gettext("Error when downloading file:"), e));
                     }
                 }
                 return Err(DownloaderError::from(e));
