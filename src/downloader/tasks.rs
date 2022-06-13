@@ -142,7 +142,7 @@ pub async fn handle_download<T: Seek + Write + Send + Sync + ClearFile + GetTarg
                         if !is_multi {
                             d.pd.complete()?;
                             if d.enabled_progress_bar() {
-                                d.set_progress_bar_message(format!("{} {}", gettext("Downloaded file:"), d.get_target_file_name().unwrap_or(String::from("(unknown)"))));
+                                d.finish_progress_bar_with_message(format!("{} {}", gettext("Downloaded file:"), d.get_target_file_name().unwrap_or(String::from("(unknown)"))));
                             }
                         }
                         break;

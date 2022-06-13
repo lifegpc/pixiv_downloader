@@ -42,6 +42,7 @@ mod data;
 mod download;
 mod downloader;
 mod dur;
+mod error;
 #[cfg(feature = "exif")]
 /// Used to read/modify image's exif data
 mod exif;

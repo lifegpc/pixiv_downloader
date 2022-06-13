@@ -6,8 +6,11 @@ use crate::data::exif::add_exifdata_to_image;
 use crate::data::json::JSONDataFile;
 #[cfg(feature = "ugoira")]
 use crate::data::video::get_video_metadata;
-use crate::downloader::pd_file::enums::PdFileResult;
-use crate::downloader::pd_file::PdFile;
+use crate::downloader::Downloader;
+use crate::downloader::DownloaderResult;
+use crate::downloader::LocalFile;
+use crate::error::PixivDownloaderError;
+use crate::ext::try_err::TryErr;
 use crate::gettext;
 use crate::opthelper::get_helper;
 use crate::pixiv_link::PixivID;
@@ -19,7 +22,9 @@ use crate::utils::get_file_name_from_url;
 use crate::webclient::WebClient;
 use crate::Main;
 use indicatif::MultiProgress;
+use indicatif::ProgressStyle;
 use json::JsonValue;
+use reqwest::IntoUrl;
 use spin_on::spin_on;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -53,122 +58,63 @@ impl Main {
         0
     }
 
-    pub async fn download_artwork_page(pw: Arc<PixivWebClient>, page: JsonValue, np: u16, progress_bars: Arc<MultiProgress>, datas: Arc<PixivData>, base: Arc<PathBuf>) -> i32 {
-        let link = &page["urls"]["original"];
-        if !link.is_string() {
-            println!("{}", gettext("Failed to get original picture's link."));
-            return 1;
-        }
-        let link = link.as_str().unwrap();
-        let file_name = get_file_name_from_url(link);
-        if file_name.is_none() {
-            println!("{} {}", gettext("Failed to get file name from url:"), link);
-            return 1;
-        }
-        let file_name = file_name.unwrap();
+    /// Download artwork link
+    /// * `link` - Link
+    /// * `np` - Number of page in artworks
+    /// * `progress_bars` - Multiple progress bars
+    /// * `datas` - The artwork's data
+    /// * `base` - The directory of the target
+    pub async fn download_artwork_link<L: IntoUrl + Clone>(link: L, np: u16, progress_bars: Option<Arc<MultiProgress>>, datas: Arc<PixivData>, base: Arc<PathBuf>) -> Result<(), PixivDownloaderError> {
+        let file_name = get_file_name_from_url(link.clone()).try_err(format!("{} {}", gettext("Failed to get file name from url:"), link.as_str()))?;
         let file_name = base.join(file_name);
         let helper = get_helper();
-        let pdf = match PdFile::open(&file_name) {
-            Ok(f) => {
-                match f {
-                    PdFileResult::TargetExisted => {
-                        match helper.overwrite() {
-                            Some(overwrite) => {
-                                if !overwrite {
-                                    #[cfg(feature = "exif")]
-                                    {
-                                        if helper.update_exif() {
-                                            if add_exifdata_to_image(&file_name, &datas, np).is_err() {
-                                                println!(
-                                                    "{} {}",
-                                                    gettext("Failed to add exif data to image:"),
-                                                    file_name.to_str().unwrap_or("(null)")
-                                                );
-                                            }
-                                        }
-                                    }
-                                    return 0;
-                                }
-                            }
-                            None => {
-                                if !ask_need_overwrite(file_name.to_str().unwrap()) {
-                                    return 0;
-                                }
-                            }
-                        }
-                        match PdFile::open(&file_name) {
-                            Ok(v) => {
-                                match v {
-                                    PdFileResult::Ok(e) => { Some(e) }
-                                    _ => { None }
-                                }
-                            }
-                            Err(e) => {
-                                println!("{}", e);
-                                None
-                            }
-                        }
-                    }
-                    PdFileResult::Ok(e) => { Some(e) }
-                    PdFileResult::ExistedOk(e) => { Some(e) }
-                }
-            }
-            Err(e) => {
-                println!("{}", e);
-                if file_name.exists() {
-                    match helper.overwrite() {
-                        Some(overwrite) => {
-                            if !overwrite {
-                                #[cfg(feature = "exif")]
-                                {
-                                    if helper.update_exif() {
-                                        if add_exifdata_to_image(&file_name, &datas, np).is_err() {
-                                            println!(
-                                                "{} {}",
-                                                gettext("Failed to add exif data to image:"),
-                                                file_name.to_str().unwrap_or("(null)")
-                                            );
-                                        }
-                                    }
-                                }
-                                return 0;
-                            }
+        let downloader = Downloader::<LocalFile>::new(link, json::object!{"referer": "https://www.pixiv.net/"}, Some(&file_name), helper.overwrite())?;
+        match downloader {
+            DownloaderResult::Ok(d) => {
+                if helper.use_progress_bar() {
+                    let style = ProgressStyle::default_bar()
+                        .template(helper.progress_bar_template().as_ref()).unwrap()
+                        .progress_chars("#>-");
+                    match progress_bars {
+                        Some(b) => {
+                            d.enable_progress_bar(style, Some(&b));
                         }
                         None => {
-                            if !ask_need_overwrite(file_name.to_str().unwrap()) {
-                                return 0;
+                            d.enable_progress_bar(style, None);
+                        }
+                    }
+                    d.download();
+                    d.join().await?;
+                    if d.is_downloaded() {
+                        #[cfg(feature = "exif")]
+                        {
+                            if add_exifdata_to_image(&file_name, &datas, np).is_err() {
+                                println!(
+                                    "{} {}",
+                                    gettext("Failed to add exif data to image:"),
+                                    file_name.to_str().unwrap_or("(null)")
+                                );
                             }
                         }
                     }
                 }
-                None
             }
-        };
-        let r;
-        {
-            r = pw.adownload_image(link, &pdf).await;
-            if r.is_none() {
-                println!("{} {}", gettext("Failed to download image:"), link);
-                return 1;
-            }
-        }
-        let r = r.unwrap();
-        let re = WebClient::adownload_stream(&file_name, r, Some(progress_bars)).await;
-        if re.is_err() {
-            println!("{} {}", gettext("Failed to download image:"), link);
-            return 1;
-        }
-        #[cfg(feature = "exif")]
-        {
-            if add_exifdata_to_image(&file_name, &datas, np).is_err() {
-                println!(
-                    "{} {}",
-                    gettext("Failed to add exif data to image:"),
-                    file_name.to_str().unwrap_or("(null)")
-                );
+            DownloaderResult::Canceled => {
+                #[cfg(feature = "exif")]
+                {
+                    if helper.update_exif() && file_name.exists() {
+                        if add_exifdata_to_image(&file_name, &datas, np).is_err() {
+                            println!(
+                                "{} {}",
+                                gettext("Failed to add exif data to image:"),
+                                file_name.to_str().unwrap_or("(null)")
+                            );
+                        }
+                    }
+                }
             }
         }
-        0
+        Ok(())
     }
 
     pub fn download_artwork(&self, pw: Arc<PixivWebClient>, id: u64) -> i32 {
@@ -315,15 +261,35 @@ impl Main {
             let pages_data = pages_data.as_ref().unwrap();
             let progress_bars = Arc::new(MultiProgress::new());
             let mut tasks = Vec::new();
+            let mut re = 0;
             for page in pages_data.members() {
-                let f = tokio::spawn(Self::download_artwork_page(Arc::clone(&pw), page.clone(), np, Arc::clone(&progress_bars), Arc::clone(&datas), Arc::clone(&base)));
+                let url = page["urls"]["original"].as_str();
+                if url.is_none() {
+                    println!("{}", gettext("Failed to get original picture's link."));
+                    re |= 1;
+                    continue;
+                }
+                let f = tokio::spawn(Self::download_artwork_link(url.unwrap().to_owned(), np, Some(Arc::clone(&progress_bars)), Arc::clone(&datas), Arc::clone(&base)));
                 tasks.push(f);
                 np += 1;
             }
-            let mut re = 0;
             for task in tasks {
                 let r = spin_on(task);
-                re |= r.unwrap_or(1);
+                re |= match r {
+                    Ok(v) => {
+                        match v {
+                            Ok(()) => { 0 }
+                            Err(e) => {
+                                println!("{} {}", gettext("Failed to download artwork:"), e);
+                                1
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        println!("{} {}", gettext("Failed to download artwork:"), e);
+                        1
+                    }
+                };
             }
             return re;
         }

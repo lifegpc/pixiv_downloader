@@ -9,7 +9,6 @@ use crate::ext::atomic::AtomicQuick;
 use crate::ext::io::ClearFile;
 use crate::ext::replace::ReplaceWith2;
 use crate::ext::rw_lock::GetRwLock;
-use crate::ext::try_err::TryErr;
 use crate::gettext;
 use crate::utils::ask_need_overwrite;
 use crate::utils::get_file_name_from_url;
@@ -33,6 +32,7 @@ use std::path::Path;
 use std::sync::Arc;
 use std::sync::RwLock;
 use std::sync::atomic::AtomicBool;
+use std::time::Duration;
 use tokio::task::JoinHandle;
 use url::Url;
 
@@ -316,8 +316,6 @@ impl <T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName> DownloaderI
 pub struct Downloader<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName> {
     /// internal type
     downloader: Arc<DownloaderInternal<T>>,
-    /// The task to check status.
-    task: RwLock<Option<JoinHandle<Result<(), DownloaderError>>>>,
 }
 
 impl Downloader<LocalFile> {
@@ -329,7 +327,7 @@ impl Downloader<LocalFile> {
     pub fn new<U: IntoUrl, H: ToHeaders, P: AsRef<Path> + ?Sized>(url: U, headers: H, path: Option<&P>, overwrite: Option<bool>) -> Result<DownloaderResult<Self>, DownloaderError> {
         Ok(match DownloaderInternal::<LocalFile>::new(url, headers, path, overwrite)? {
             DownloaderResult::Ok(d) => {
-                DownloaderResult::Ok(Self { downloader: Arc::new(d), task: RwLock::new(None) })
+                DownloaderResult::Ok(Self { downloader: Arc::new(d) })
             }
             DownloaderResult::Canceled => { DownloaderResult::Canceled }
         })
@@ -356,18 +354,19 @@ impl <T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + 'static> D
             return self.downloader.get_status();
         }
         self.downloader.set_downloading();
-        self.task.get_mut().replace(tokio::spawn(check_tasks(Arc::clone(&self.downloader))));
+        tokio::spawn(check_tasks(Arc::clone(&self.downloader)));
         self.downloader.get_status()
     }
 
     /// Wait the downloader.
     pub async fn join(&self) -> Result<(), DownloaderError> {
-        match self.task.get_mut().deref_mut() {
-            Some(v) => { 
-                v.await?
+        loop {
+            if !self.is_downloading() {
+                break;
             }
-            None => { Ok(()) }
+            tokio::time::sleep(Duration::new(0, 1_000_000)).await;
         }
+        Ok(())
     }
 
     /// Disable progress bar

@@ -8,7 +8,6 @@ use crate::gettext;
 use crate::list::NonTailList;
 use crate::opthelper::get_helper;
 use futures_util::StreamExt;
-use indicatif::MultiProgress;
 use indicatif::ProgressBar;
 use indicatif::ProgressStyle;
 use json::JsonValue;
@@ -468,92 +467,6 @@ impl WebClient {
             r = r.header("Cookie", c.as_str());
         }
         r
-    }
-
-    /// Download a stream
-    /// * `file_name` - File name
-    /// * `r` - Response
-    /// * `opt` - Options
-    /// * `progess_bars` - Multiple progress bars
-    /// 
-    /// Note: If file already exists, will remove existing file first.
-    pub async fn adownload_stream<S: AsRef<OsStr> + ?Sized>(file_name: &S, r: Response, progress_bars: Option<Arc<MultiProgress>>) -> Result<(), ()> {
-        let content_length = r.content_length();
-        let opt = get_helper();
-        let use_progress_bar = match &content_length {
-            Some(_) => { opt.use_progress_bar() }
-            None => { false }
-        };
-        let mut bar = if use_progress_bar {
-            Some(ProgressBar::new(content_length.unwrap()))
-        } else {
-            None
-        };
-        let p = Path::new(file_name);
-        if bar.is_some() {
-            bar.as_mut().unwrap().set_style(ProgressStyle::default_bar()
-                .template(opt.progress_bar_template().as_ref()).unwrap()
-                .progress_chars("#>-"));
-            let tmp = p.file_name().unwrap_or(p.as_os_str());
-            bar.as_mut().unwrap().set_message(gettext("Downloading \"<loc>\".").replace("<loc>", tmp.to_str().unwrap_or("<NULL>")));
-            if progress_bars.is_some() {
-                bar = Some(progress_bars.unwrap().add(bar.unwrap()));
-            }
-        }
-        if p.exists() {
-            let re = remove_file(p);
-            if re.is_err() {
-                if bar.is_none() {
-                    println!("{} {}", gettext("Failed to remove file:"), re.unwrap_err());
-                } else {
-                    bar.as_ref().unwrap().set_message(format!("{} {}", gettext("Failed to remove file:"), re.unwrap_err()));
-                    bar.as_ref().unwrap().abandon();
-                }
-                return Err(());
-            }
-        }
-        let f = File::create(p);
-        if f.is_err() {
-            if bar.is_none() {
-                println!("{} {}", gettext("Failed to create file:"), f.unwrap_err());
-            } else {
-                bar.as_ref().unwrap().set_message(format!("{} {}", gettext("Failed to create file:"), f.unwrap_err()));
-                bar.as_ref().unwrap().abandon();
-            }
-            return Err(());
-        }
-        let mut f = f.unwrap();
-        let mut stream = r.bytes_stream();
-        while let Some(data) = stream.next().await {
-            if data.is_err() {
-                if bar.is_none() {
-                    println!("{} {}", gettext("Error when downloading file:"), data.unwrap_err());
-                } else {
-                    bar.as_ref().unwrap().set_message(format!("{} {}", gettext("Error when downloading file:"), data.unwrap_err()));
-                    bar.as_ref().unwrap().abandon();
-                }
-                return Err(());
-            }
-            let data = data.unwrap();
-            if bar.is_some() {
-                bar.as_ref().unwrap().inc(data.len() as u64);
-                bar.as_ref().unwrap().tick();
-            }
-            let r = f.write(&data);
-            if r.is_err() {
-                if bar.is_none() {
-                    println!("{} {}", gettext("Failed to write file:"), r.unwrap_err());
-                } else {
-                    bar.as_ref().unwrap().set_message(format!("{} {}", gettext("Failed to write file:"), r.unwrap_err()));
-                    bar.as_ref().unwrap().abandon();
-                }
-                return Err(());
-            }
-        }
-        if bar.is_some() {
-            bar.as_mut().unwrap().finish_with_message(format!("{} {}", gettext("Downloaded image:"), p.to_str().unwrap_or("(null)")));
-        }
-        Ok(())
     }
 
     /// Download a stream
