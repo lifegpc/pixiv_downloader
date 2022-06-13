@@ -5,6 +5,8 @@ A pixiv downloader written in Rust.
 * Merge ugoira(GIF) pictures to video files.
 ### TODO
 - [ ] Add support for multiple threads download.
+- [ ] Batch download.
+- [ ] Fanbox support.
 ## Rust features flags
 ### all
 Enable all unconflicted features, this will enable [`exif`](#exif) and [`ugoira`](#ugoira).
