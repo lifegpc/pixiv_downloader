@@ -1,4 +1,5 @@
 use crate::ext::io::ClearFile;
+use crate::ext::rw_lock::GetRwLock;
 use crate::ext::try_err::TryErr;
 use crate::gettext;
 use super::error::DownloaderError;
@@ -6,11 +7,13 @@ use super::downloader::DownloaderInternal;
 use futures_util::StreamExt;
 use http_content_range::ContentRange;
 use reqwest::Response;
+use spin_on::spin_on;
 use std::ops::Deref;
 use std::io::Seek;
 use std::io::SeekFrom;
 use std::io::Write;
 use std::sync::Arc;
+use std::time::Duration;
 
 /// Create a download tasks in simple thread mode.
 pub async fn create_download_tasks_simple<T: Seek + Write + Send + Sync + ClearFile>(d: Arc<DownloaderInternal<T>>) -> Result<(), DownloaderError> {
@@ -40,10 +43,10 @@ pub async fn create_download_tasks_simple<T: Seek + Write + Send + Sync + ClearF
     if start != 0 {
         headers.insert(String::from("Range"), format!("bytes={}-", start));
     }
-    let mut result = d.client.get(d.url.deref().clone(), headers).try_err(gettext("Failed to get url."))?;
+    let mut result = d.client.aget(d.url.deref().clone(), headers).await.try_err(gettext("Failed to get url."))?;
     let mut status = result.status();
     if status == 416 {
-        result = d.client.get(d.url.deref().clone(), d.headers.deref().clone()).try_err(gettext("Failed to get url."))?;
+        result = d.client.aget(d.url.deref().clone(), d.headers.deref().clone()).await.try_err(gettext("Failed to get url."))?;
         status = result.status();
     } else if status == 206 {
         let headers = result.headers();
@@ -107,7 +110,9 @@ pub async fn handle_download<T: Seek + Write + Send + Sync + ClearFile>(d: Arc<D
                     Some(data) => {
                         match data {
                             Ok(data) => {
-                                d.pd.inc(data.len() as u64)?;
+                                if !is_multi {
+                                    d.pd.inc(data.len() as u64)?;
+                                }
                                 d.write(&data)?;
                             }
                             Err(e) => {
@@ -132,6 +137,48 @@ pub async fn handle_download<T: Seek + Write + Send + Sync + ClearFile>(d: Arc<D
                 }
                 return Err(DownloaderError::from(e));
             }
+        }
+    }
+    Ok(())
+}
+
+/// Check tasks are completed or not. And create new tasks if needed.
+pub async fn check_tasks<T: Seek + Write + Send + Sync + ClearFile + 'static>(d: Arc<DownloaderInternal<T>>) -> Result<(), DownloaderError> {
+    if !d.is_multi_threads() {
+        let task = tokio::spawn(create_download_tasks_simple(Arc::clone(&d)));
+        d.add_task(task);
+    }
+    loop {
+        tokio::time::sleep(Duration::new(0, 10_000_000)).await;
+        let mut need_break = false;
+        {
+            let mut tasks = d.tasks.get_mut();
+            tasks.retain_mut(|task| {
+                if task.is_finished() {
+                    let re = spin_on(task).unwrap();
+                    match re {
+                        Ok(_) => {
+                            if !d.is_multi_threads() {
+                                d.set_downloaded();
+                                need_break = true;
+                            }
+                        }
+                        Err(_) => {
+                            let task = tokio::spawn(create_download_tasks_simple(Arc::clone(&d)));
+                            d.add_task(task);
+                        }
+                    }
+                    false
+                } else {
+                    true
+                }
+            });
+        }
+        if !d.is_multi_threads() && d.tasks.get_ref().len() == 0 {
+            need_break = true;
+        }
+        if need_break {
+            break;
         }
     }
     Ok(())

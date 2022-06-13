@@ -4,9 +4,10 @@ use super::enums::DownloaderResult;
 use super::enums::DownloaderStatus;
 use super::error::DownloaderError;
 use super::local_file::LocalFile;
-use super::tasks::create_download_tasks_simple;
+use super::tasks::check_tasks;
 use crate::ext::atomic::AtomicQuick;
 use crate::ext::io::ClearFile;
+use crate::ext::replace::ReplaceWith2;
 use crate::ext::rw_lock::GetRwLock;
 use crate::ext::try_err::TryErr;
 use crate::utils::ask_need_overwrite;
@@ -14,6 +15,8 @@ use crate::webclient::WebClient;
 use crate::webclient::ToHeaders;
 use reqwest::IntoUrl;
 use std::collections::HashMap;
+#[cfg(test)]
+use std::fs::create_dir;
 use std::fs::remove_file;
 use std::io::Seek;
 use std::io::SeekFrom;
@@ -42,7 +45,7 @@ pub struct DownloaderInternal<T: Write + Seek + Send + Sync + ClearFile> {
     /// The status of the downloader
     status: RwLock<DownloaderStatus>,
     /// All tasks
-    tasks: RwLock<Vec<JoinHandle<Result<(), DownloaderError>>>>,
+    pub tasks: RwLock<Vec<JoinHandle<Result<(), DownloaderError>>>>,
     /// Whether to enable mulitple thread mode
     multi: AtomicBool,
 }
@@ -143,6 +146,12 @@ impl <T: Write + Seek + Send + Sync + ClearFile> DownloaderInternal<T> {
     }
 
     #[inline]
+    /// Returns true if the downloader is downloading now.
+    pub fn is_downloading(&self) -> bool {
+        *self.status.get_ref() == DownloaderStatus::Downloading
+    }
+
+    #[inline]
     /// Returns true if is multiple thread mode.
     pub fn is_multi_threads(&self) -> bool {
         if self.pd.is_downloading() {
@@ -161,6 +170,18 @@ impl <T: Write + Seek + Send + Sync + ClearFile> DownloaderInternal<T> {
         }
     }
 
+    #[inline]
+    /// Set the status to [DownloaderStatus::Downloading] and returns the current value
+    pub fn set_downloading(&self) -> DownloaderStatus {
+        self.status.replace_with2(DownloaderStatus::Downloading)
+    }
+
+    #[inline]
+    /// Set the status to [DownloaderStatus::Downloaded] and returns the current value
+    pub fn set_downloaded(&self) -> DownloaderStatus {
+        self.status.replace_with2(DownloaderStatus::Downloaded)
+    }
+
     /// Write datas to the file.
     /// * `data` - Data
     pub fn write(&self, data: &[u8]) -> Result<(), DownloaderError> {
@@ -176,6 +197,8 @@ impl <T: Write + Seek + Send + Sync + ClearFile> DownloaderInternal<T> {
 pub struct Downloader<T: Write + Seek + Send + Sync + ClearFile> {
     /// internal type
     downloader: Arc<DownloaderInternal<T>>,
+    /// The task to check status.
+    task: RwLock<Option<JoinHandle<Result<(), DownloaderError>>>>,
 }
 
 impl Downloader<LocalFile> {
@@ -187,7 +210,7 @@ impl Downloader<LocalFile> {
     pub fn new<U: IntoUrl, H: ToHeaders, P: AsRef<Path> + ?Sized>(url: U, headers: H, path: Option<&P>, overwrite: Option<bool>) -> Result<DownloaderResult<Self>, DownloaderError> {
         Ok(match DownloaderInternal::<LocalFile>::new(url, headers, path, overwrite)? {
             DownloaderResult::Ok(d) => {
-                DownloaderResult::Ok(Self { downloader: Arc::new(d) })
+                DownloaderResult::Ok(Self { downloader: Arc::new(d), task: RwLock::new(None) })
             }
             DownloaderResult::Canceled => { DownloaderResult::Canceled }
         })
@@ -213,13 +236,42 @@ impl <T: Write + Seek + Send + Sync + ClearFile + 'static> Downloader<T> {
         if !self.is_created() {
             return self.downloader.get_status();
         }
-        if !self.is_multi_threads() {
-            let task = tokio::spawn(create_download_tasks_simple(Arc::clone(&self.downloader)));
-            self.downloader.add_task(task);
-        }
+        self.downloader.set_downloading();
+        self.task.get_mut().replace(tokio::spawn(check_tasks(Arc::clone(&self.downloader))));
         self.downloader.get_status()
     }
 
+    pub async fn join(&self) -> Result<(), DownloaderError> {
+        match self.task.get_mut().deref_mut() {
+            Some(v) => { 
+                let re = v.await;
+                re.unwrap()
+            }
+            None => { Ok(()) }
+        }
+    }
+
     define_downloader_fn!(is_created, bool, "Returns true if the downloader is created just now.");
+    define_downloader_fn!(is_downloading, bool, "Returns true if the downloader is downloading now.");
     define_downloader_fn!(is_multi_threads, bool, "Returns true if is multiple thread mode.");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn test_downloader() {
+    let p = Path::new("./test");
+    if !p.exists() {
+        let re = create_dir("./test");
+        assert!(re.is_ok() || p.exists());
+    }
+    let url = "https://i.pximg.net/img-original/img/2022/06/12/23/49/43/99014872_p0.png";
+    let pb = p.join("99014872_p0.png");
+    let downloader = Downloader::<LocalFile>::new(url, json::object!{"referer": "https://www.pixiv.net/"}, Some(&pb), Some(true)).unwrap();
+    match downloader {
+        DownloaderResult::Ok(v) => {
+            assert_eq!(v.is_created(), true);
+            v.download();
+            assert!(v.join().await.is_ok());
+        }
+        DownloaderResult::Canceled => { panic!("This should not happened.") }
+    }
 }
