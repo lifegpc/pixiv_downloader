@@ -27,3 +27,12 @@ impl<T, E> TryErr<T, E> for Option<T> {
         }
     }
 }
+
+impl<T, E, E2> TryErr<T, E> for Result<T, E2> {
+    fn try_err(self, err: E) -> Result<T, E> {
+        match self {
+            Ok(v) => { Ok(v) }
+            Err(_) => { Err(err) }
+        }
+    }
+}

@@ -7,9 +7,11 @@ use crate::data::json::JSONDataFile;
 #[cfg(feature = "ugoira")]
 use crate::data::video::get_video_metadata;
 use crate::downloader::Downloader;
+use crate::downloader::DownloaderError;
 use crate::downloader::DownloaderResult;
 use crate::downloader::LocalFile;
 use crate::error::PixivDownloaderError;
+use crate::concat_pixiv_downloader_error;
 use crate::ext::try_err::TryErr;
 use crate::gettext;
 use crate::opthelper::get_helper;
@@ -49,6 +51,12 @@ impl Main {
             match id {
                 PixivID::Artwork(id) => {
                     let r = self.download_artwork(Arc::clone(&pw), id.clone());
+                    let r = if r.is_ok() {
+                        0
+                    } else {
+                        println!("{} {}", gettext("Failed to download artwork:"), r.unwrap_err());
+                        1
+                    };
                     if r != 0 {
                         return r;
                     }
@@ -64,7 +72,7 @@ impl Main {
     /// * `progress_bars` - Multiple progress bars
     /// * `datas` - The artwork's data
     /// * `base` - The directory of the target
-    pub async fn download_artwork_link<L: IntoUrl + Clone>(link: L, np: u16, progress_bars: Option<Arc<MultiProgress>>, datas: Arc<PixivData>, base: Arc<PathBuf>) -> Result<(), PixivDownloaderError> {
+    pub async fn download_artwork_link<L: IntoUrl + Clone>(link: L, np: u16, progress_bars: Option<Arc<MultiProgress>>, datas: Arc<PixivData>, base: Arc<PathBuf>) -> Result<(), DownloaderError> {
         let file_name = get_file_name_from_url(link.clone()).try_err(format!("{} {}", gettext("Failed to get file name from url:"), link.as_str()))?;
         let file_name = base.join(file_name);
         let helper = get_helper();
@@ -117,7 +125,7 @@ impl Main {
         Ok(())
     }
 
-    pub fn download_artwork(&self, pw: Arc<PixivWebClient>, id: u64) -> i32 {
+    pub fn download_artwork(&self, pw: Arc<PixivWebClient>, id: u64) -> Result<(), PixivDownloaderError> {
         let mut re = None;
         let pages;
         let mut ajax_ver = true;
@@ -131,27 +139,19 @@ impl Main {
         if re.is_none() {
             re = pw.get_artwork_ajax(id);
         }
-        if re.is_none() {
-            return 1;
-        }
-        let re = re.unwrap();
+        let re = re.try_err(gettext("Failed to get artwork's data."))?;
         if ajax_ver {
             pages = (&re["pageCount"]).as_u64();
         } else {
             pages = (&re["illust"][format!("{}", id).as_str()]["pageCount"]).as_u64();
         }
-        if pages.is_none() {
-            println!("{}", gettext("Failed to get page count."));
-            return 1;
-        }
-        let pages = pages.unwrap();
+        let pages = pages.try_err(gettext("Failed to get page count."))?;
         let mut pages_data: Option<JsonValue> = None;
         if pages > 1 {
             pages_data = pw.get_illust_pages(id);
         }
         if pages > 1 && pages_data.is_none() {
-            println!("{}", gettext("Failed to get pages' data."));
-            return 1;
+            return Err(PixivDownloaderError::from(gettext("Failed to get pages' data.")));
         }
         let base = Arc::new(PathBuf::from("."));
         let json_file = base.join(format!("{}.json", id));
@@ -164,8 +164,7 @@ impl Main {
         let datas = Arc::new(datas);
         let json_data = JSONDataFile::from(Arc::clone(&datas));
         if !json_data.save(&json_file) {
-            println!("{}", gettext("Failed to save metadata to JSON file."));
-            return 1;
+            return Err(PixivDownloaderError::from(gettext("Failed to save metadata to JSON file.")));
         }
         let illust_type = if ajax_ver {
             (&re["illustType"]).as_i64()
@@ -177,24 +176,9 @@ impl Main {
             match illust_type {
                 0 => { }
                 2 => {
-                    let ugoira_data = pw.get_ugoira(id);
-                    if ugoira_data.is_none() {
-                        println!("{}", gettext("Failed to get ugoira's data."));
-                        return 1;
-                    }
-                    let ugoira_data = ugoira_data.unwrap();
-                    let src = (&ugoira_data["originalSrc"]).as_str();
-                    if src.is_none() {
-                        println!("{}", gettext("Can not find source link for ugoira."));
-                        return 1;
-                    }
-                    let src = src.unwrap();
-                    let file_name = get_file_name_from_url(src);
-                    if file_name.is_none() {
-                        println!("{} {}", gettext("Failed to get file name from url:"), src);
-                        return 1;
-                    }
-                    let file_name = file_name.unwrap();
+                    let ugoira_data = pw.get_ugoira(id).try_err(gettext("Failed to get ugoira's data."))?;
+                    let src = (&ugoira_data["originalSrc"]).as_str().try_err(gettext("Can not find source link for ugoira."))?;
+                    let file_name = get_file_name_from_url(src).try_err(format!("{} {}", gettext("Failed to get file name from url:"), src))?;
                     let file_name = base.join(file_name);
                     let dw = if file_name.exists() {
                         match helper.overwrite() {
@@ -205,17 +189,8 @@ impl Main {
                         true
                     };
                     if dw {
-                        let r = pw.download_image(src);
-                        if r.is_none() {
-                            println!("{} {}", gettext("Failed to download ugoira:"), src);
-                            return 1;
-                        }
-                        let r = r.unwrap();
-                        let re = WebClient::download_stream(&file_name, r);
-                        if re.is_err() {
-                            println!("{} {}", gettext("Failed to download ugoira:"), src);
-                            return 1;
-                        }
+                        let r = pw.download_image(src).try_err(format!("{} {}", gettext("Failed to download ugoira:"), src))?;
+                        WebClient::download_stream(&file_name, r).try_err(format!("{} {}", gettext("Failed to download ugoira:"), src))?;
                         println!(
                             "{} {} -> {}",
                             gettext("Downloaded ugoira:"),
@@ -233,23 +208,12 @@ impl Main {
                             }
                         };
                         let options = AVDict::new();
-                        match UgoiraFrames::from_json(&ugoira_data["frames"]) {
-                            Ok(frames) => {
-                                let output_file_name = base.join(format!("{}.mp4", id));
-                                let re = convert_ugoira_to_mp4(&file_name, &output_file_name, &frames, 60f32, &options, &metadata);
-                                if re.is_err() {
-                                    println!("{} {}", gettext("Failed to convert from ugoira to mp4 video file:"), re.unwrap_err());
-                                    return 1;
-                                }
-                                println!("{}", gettext("Converted <src> -> <dest>").replace("<src>", file_name.to_str().unwrap_or("(null)")).replace("<dest>", output_file_name.to_str().unwrap_or("(null)")).as_str());
-                            }
-                            Err(e) => {
-                                println!("{} {}", gettext("Failed to parse frames:"), e);
-                                return 1;
-                            }
-                        }
+                        let frames =  UgoiraFrames::from_json(&ugoira_data["frames"])?;
+                        let output_file_name = base.join(format!("{}.mp4", id));
+                        convert_ugoira_to_mp4(&file_name, &output_file_name, &frames, 60f32, &options, &metadata)?;
+                        println!("{}", gettext("Converted <src> -> <dest>").replace("<src>", file_name.to_str().unwrap_or("(null)")).replace("<dest>", output_file_name.to_str().unwrap_or("(null)")).as_str());
                     }
-                    return 0;
+                    return Ok(());
                 }
                 _ => { println!("{} {}", gettext("Warning: Unknown illust type:"), illust_type) }
             }
@@ -261,12 +225,11 @@ impl Main {
             let pages_data = pages_data.as_ref().unwrap();
             let progress_bars = Arc::new(MultiProgress::new());
             let mut tasks = Vec::new();
-            let mut re = 0;
+            let mut re: Result<(), PixivDownloaderError> = Ok(());
             for page in pages_data.members() {
                 let url = page["urls"]["original"].as_str();
                 if url.is_none() {
-                    println!("{}", gettext("Failed to get original picture's link."));
-                    re |= 1;
+                    concat_pixiv_downloader_error!(re, Err::<(), &str>(gettext("Failed to get original picture's link.")));
                     continue;
                 }
                 let f = tokio::spawn(Self::download_artwork_link(url.unwrap().to_owned(), np, Some(Arc::clone(&progress_bars)), Arc::clone(&datas), Arc::clone(&base)));
@@ -275,21 +238,20 @@ impl Main {
             }
             for task in tasks {
                 let r = spin_on(task);
-                re |= match r {
-                    Ok(v) => {
-                        match v {
-                            Ok(()) => { 0 }
+                let r = match r {
+                    Ok(r) => {
+                        match r {
+                            Ok(o) => { Ok(o) }
                             Err(e) => {
-                                println!("{} {}", gettext("Failed to download artwork:"), e);
-                                1
+                                Err(PixivDownloaderError::from(e))
                             }
                         }
                     }
                     Err(e) => {
-                        println!("{} {}", gettext("Failed to download artwork:"), e);
-                        1
+                        Err(PixivDownloaderError::from(e))
                     }
                 };
+                concat_pixiv_downloader_error!(re, r);
             }
             return re;
         }
@@ -298,18 +260,8 @@ impl Main {
             let mut np = 0u16;
             let pages_data = pages_data.as_ref().unwrap();
             for page in pages_data.members() {
-                let link = &page["urls"]["original"];
-                if !link.is_string() {
-                    println!("{}", gettext("Failed to get original picture's link."));
-                    return 1;
-                }
-                let link = link.as_str().unwrap();
-                let file_name = get_file_name_from_url(link);
-                if file_name.is_none() {
-                    println!("{} {}", gettext("Failed to get file name from url:"), link);
-                    return 1;
-                }
-                let file_name = file_name.unwrap();
+                let link = page["urls"]["original"].as_str().try_err(gettext("Failed to get original picture's link."))?;
+                let file_name = get_file_name_from_url(link).try_err(format!("{} {}", gettext("Failed to get file name from url:"), link))?;
                 let file_name = base.join(file_name);
                 if file_name.exists() {
                     match helper.overwrite() {
@@ -338,17 +290,8 @@ impl Main {
                         }
                     }
                 }
-                let r = pw.download_image(link);
-                if r.is_none() {
-                    println!("{} {}", gettext("Failed to download image:"), link);
-                    return 1;
-                }
-                let r = r.unwrap();
-                let re = WebClient::download_stream(&file_name, r);
-                if re.is_err() {
-                    println!("{} {}", gettext("Failed to download image:"), link);
-                    return 1;
-                }
+                let r = pw.download_image(link).try_err(format!("{} {}", gettext("Failed to download image:"), link))?;
+                WebClient::download_stream(&file_name, r).try_err(format!("{} {}", gettext("Failed to download image:"), link))?;
                 println!(
                     "{} {} -> {}",
                     gettext("Downloaded image:"),
@@ -372,18 +315,8 @@ impl Main {
                 (&re["urls"]["original"]).as_str()
             } else {
                 (&re["illust"][format!("{}", id)]["urls"]["original"]).as_str()
-            };
-            if link.is_none() {
-                println!("{}", gettext("Failed to get original picture's link."));
-                return 1;
-            }
-            let link = link.unwrap();
-            let file_name = get_file_name_from_url(link);
-            if file_name.is_none() {
-                println!("{} {}", gettext("Failed to get file name from url:"), link);
-                return 1;
-            }
-            let file_name = file_name.unwrap();
+            }.try_err(gettext("Failed to get original picture's link."))?;
+            let file_name = get_file_name_from_url(link).try_err(format!("{} {}", gettext("Failed to get file name from url:"), link))?;
             let file_name = base.join(file_name);
             if file_name.exists() {
                 let overwrite = match helper.overwrite() {
@@ -405,20 +338,11 @@ impl Main {
                             );
                         }
                     }
-                    return 0;
+                    return Ok(());
                 }
             }
-            let r = pw.download_image(link);
-            if r.is_none() {
-                println!("{} {}", gettext("Failed to download image:"), link);
-                return 1;
-            }
-            let r = r.unwrap();
-            let re = WebClient::download_stream(&file_name, r);
-            if re.is_err() {
-                println!("{} {}", gettext("Failed to download image:"), link);
-                return 1;
-            }
+            let r = pw.download_image(link).try_err(format!("{} {}", gettext("Failed to download image:"), link))?;
+            WebClient::download_stream(&file_name, r).try_err(format!("{} {}", gettext("Failed to download image:"), link))?;
             println!(
                 "{} {} -> {}",
                 gettext("Downloaded image:"),
@@ -436,6 +360,6 @@ impl Main {
                 }
             }
         }
-        0
+        Ok(())
     }
 }
