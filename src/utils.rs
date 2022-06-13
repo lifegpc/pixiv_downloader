@@ -45,6 +45,7 @@ pub fn ask_need_overwrite(path: &str) -> bool {
     }
 }
 
+/// Get file name from url.
 pub fn get_file_name_from_url<U: IntoUrl>(url: U) -> Option<String> {
     let u = url.into_url();
     if u.is_err() {

@@ -7,8 +7,11 @@ use std::ops::Deref;
 use std::path::Path;
 use std::path::PathBuf;
 
+/// A wrapper for [File], add support for clear file content.
 pub struct LocalFile {
+    /// The file.
     file: Option<File>,
+    /// The path of the file.
     path: PathBuf,
 }
 

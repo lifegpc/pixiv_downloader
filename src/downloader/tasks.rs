@@ -90,9 +90,15 @@ pub async fn create_download_tasks_simple<T: Seek + Write + Send + Sync + ClearF
         match result.content_length() {
             Some(len) => {
                 d.pd.set_file_size(len)?;
+                if d.enabled_progress_bar() {
+                    d.set_progress_bar_length(len);
+                }
             }
             None => {}
         }
+    }
+    if d.enabled_progress_bar() {
+        d.set_progress_bar_message(gettext("Downloading \"<loc>\".").replace("<loc>", d.get_file_name().as_str()));
     }
     handle_download(d, result).await
 }
@@ -111,13 +117,20 @@ pub async fn handle_download<T: Seek + Write + Send + Sync + ClearFile>(d: Arc<D
                         match data {
                             Ok(data) => {
                                 if !is_multi {
-                                    d.pd.inc(data.len() as u64)?;
+                                    let len = data.len() as u64;
+                                    d.pd.inc(len)?;
+                                    if d.enabled_progress_bar() {
+                                        d.inc_progress_bar(len);
+                                    }
                                 }
                                 d.write(&data)?;
                             }
                             Err(e) => {
                                 if !is_multi {
                                     d.pd.clear()?;
+                                    if d.enabled_progress_bar() {
+                                        d.set_progress_bar_position(0);
+                                    }
                                 }
                                 return Err(DownloaderError::from(e));
                             }
@@ -134,6 +147,9 @@ pub async fn handle_download<T: Seek + Write + Send + Sync + ClearFile>(d: Arc<D
             Err(e) => {
                 if !is_multi {
                     d.pd.clear()?;
+                    if d.enabled_progress_bar() {
+                        d.set_progress_bar_position(0);
+                    }
                 }
                 return Err(DownloaderError::from(e));
             }

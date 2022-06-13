@@ -10,10 +10,16 @@ use crate::ext::io::ClearFile;
 use crate::ext::replace::ReplaceWith2;
 use crate::ext::rw_lock::GetRwLock;
 use crate::ext::try_err::TryErr;
+use crate::gettext;
 use crate::utils::ask_need_overwrite;
+use crate::utils::get_file_name_from_url;
 use crate::webclient::WebClient;
 use crate::webclient::ToHeaders;
+use indicatif::ProgressBar;
+use indicatif::ProgressStyle;
+use indicatif::MultiProgress;
 use reqwest::IntoUrl;
+use std::borrow::Cow;
 use std::collections::HashMap;
 #[cfg(test)]
 use std::fs::create_dir;
@@ -21,6 +27,7 @@ use std::fs::remove_file;
 use std::io::Seek;
 use std::io::SeekFrom;
 use std::io::Write;
+use std::ops::Deref;
 use std::ops::DerefMut;
 use std::path::Path;
 use std::sync::Arc;
@@ -48,6 +55,10 @@ pub struct DownloaderInternal<T: Write + Seek + Send + Sync + ClearFile> {
     pub tasks: RwLock<Vec<JoinHandle<Result<(), DownloaderError>>>>,
     /// Whether to enable mulitple thread mode
     multi: AtomicBool,
+    /// Whether to enable the progess bar.
+    progress_bar: AtomicBool,
+    /// The progress bar.
+    progress: RwLock<Option<ProgressBar>>,
 }
 
 impl DownloaderInternal<LocalFile> {
@@ -114,6 +125,8 @@ impl DownloaderInternal<LocalFile> {
             status: RwLock::new(DownloaderStatus::Created),
             tasks: RwLock::new(Vec::new()),
             multi: AtomicBool::new(false),
+            progress_bar: AtomicBool::new(false),
+            progress: RwLock::new(None),
         }))
     }
 }
@@ -134,9 +147,62 @@ impl <T: Write + Seek + Send + Sync + ClearFile> DownloaderInternal<T> {
         Ok(())
     }
 
+    /// Disable the progress bar
+    pub fn disable_progress_bar(&self) {
+        self.progress_bar.qstore(false);
+        self.progress.get_mut().take();
+    }
+
+    /// Enable the progress bar
+    /// * `style` - The style of the progress bar
+    /// * `mults` - The instance of [MultiProgress] if multiple progress bars are needed.
+    pub fn enable_progress_bar(&self, style: ProgressStyle, mults: Option<&MultiProgress>) {
+        let mut bar = ProgressBar::new(0).with_style(style);
+        match mults {
+            Some(bars) => {
+                bar = bars.add(bar);
+            }
+            None => { }
+        }
+        self.progress_bar.qstore(true);
+        self.progress.get_mut().replace(bar);
+    }
+
+    #[inline]
+    /// Returns true if the progress bar is enabled.
+    pub fn enabled_progress_bar(&self) -> bool {
+        self.progress_bar.qload()
+    }
+
+    #[inline]
+    /// Finishes the progress bar and sets a message
+    pub fn finish_progress_bar_with_message(&self, msg: impl Into<Cow<'static, str>>) {
+        match self.progress.get_ref().deref() {
+            Some(p) => { p.finish_with_message(msg) }
+            None => { }
+        }
+    }
+
+    #[inline]
+    /// Get the file name from url.
+    /// If not available, use `(Unknown)`
+    pub fn get_file_name(&self) -> String {
+        get_file_name_from_url(self.url.deref().clone()).unwrap_or(String::from(gettext("(Unknown)")))
+    }
+
+    #[inline]
     /// Return the status of the downloader.
     pub fn get_status(&self) -> DownloaderStatus {
         self.status.get_ref().clone()
+    }
+
+    #[inline]
+    /// Advances the position of the progress bar by `delta`
+    pub fn inc_progress_bar(&self, delta: u64) {
+        match self.progress.get_ref().deref() {
+            Some(p) => { p.inc(delta) }
+            None => { }
+        }
     }
 
     #[inline]
@@ -149,6 +215,12 @@ impl <T: Write + Seek + Send + Sync + ClearFile> DownloaderInternal<T> {
     /// Returns true if the downloader is downloading now.
     pub fn is_downloading(&self) -> bool {
         *self.status.get_ref() == DownloaderStatus::Downloading
+    }
+
+    #[inline]
+    /// Returns true if the downloader is downloaded complete.
+    pub fn is_downloaded(&self) -> bool {
+        *self.status.get_ref() == DownloaderStatus::Downloaded
     }
 
     #[inline]
@@ -180,6 +252,33 @@ impl <T: Write + Seek + Send + Sync + ClearFile> DownloaderInternal<T> {
     /// Set the status to [DownloaderStatus::Downloaded] and returns the current value
     pub fn set_downloaded(&self) -> DownloaderStatus {
         self.status.replace_with2(DownloaderStatus::Downloaded)
+    }
+
+    #[inline]
+    /// Sets the length of the progress bar
+    pub fn set_progress_bar_length(&self, length: u64) {
+        match self.progress.get_ref().deref() {
+            Some(p) => { p.set_length(length) }
+            None => { }
+        }
+    }
+
+    #[inline]
+    /// Sets the position of the progress bar
+    pub fn set_progress_bar_position(&self, pos: u64) {
+        match self.progress.get_ref().deref() {
+            Some(p) => { p.set_position(pos) }
+            None => { }
+        }
+    }
+
+    #[inline]
+    /// Sets the current message of the progress bar
+    pub fn set_progress_bar_message(&self, msg: impl Into<Cow<'static, str>>) {
+        match self.progress.get_ref().deref() {
+            Some(p) => { p.set_message(msg) }
+            None => { }
+        }
     }
 
     /// Write datas to the file.
@@ -241,19 +340,31 @@ impl <T: Write + Seek + Send + Sync + ClearFile + 'static> Downloader<T> {
         self.downloader.get_status()
     }
 
+    /// Wait the downloader.
     pub async fn join(&self) -> Result<(), DownloaderError> {
         match self.task.get_mut().deref_mut() {
             Some(v) => { 
-                let re = v.await;
-                re.unwrap()
+                v.await?
             }
             None => { Ok(()) }
         }
     }
 
+    /// Disable progress bar
+    pub fn disable_progress_bar(&self) {
+        self.downloader.disable_progress_bar()
+    }
+
+    /// Enable the progress bar
+    /// * `style` - The style of the progress bar
+    /// * `mults` - The instance of [MultiProgress] if multiple progress bars are needed.
+    pub fn enable_progress_bar(&self, style: ProgressStyle, mults: Option<&MultiProgress>) {
+        self.downloader.enable_progress_bar(style, mults)
+    }
     define_downloader_fn!(is_created, bool, "Returns true if the downloader is created just now.");
     define_downloader_fn!(is_downloading, bool, "Returns true if the downloader is downloading now.");
     define_downloader_fn!(is_multi_threads, bool, "Returns true if is multiple thread mode.");
+    define_downloader_fn!(is_downloaded, bool, "Returns true if the downloader is downloaded complete.");
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
@@ -269,8 +380,10 @@ async fn test_downloader() {
     match downloader {
         DownloaderResult::Ok(v) => {
             assert_eq!(v.is_created(), true);
+            v.disable_progress_bar();
             v.download();
-            assert!(v.join().await.is_ok());
+            v.join().await.unwrap();
+            assert_eq!(v.is_downloaded(), true);
         }
         DownloaderResult::Canceled => { panic!("This should not happened.") }
     }

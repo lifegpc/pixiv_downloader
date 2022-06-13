@@ -1,6 +1,7 @@
 use crate::downloader::pd_file::PdFileError;
 use http::status::StatusCode;
 use tokio::time::error::Elapsed;
+use tokio::task::JoinError;
 
 #[derive(Debug, derive_more::From)]
 pub enum DownloaderError {
@@ -10,6 +11,7 @@ pub enum DownloaderError {
     String(String),
     ErrorStatusCode(StatusCode),
     Timeout(Elapsed),
+    JoinError(JoinError),
 }
 
 impl From<&str> for DownloaderError {
