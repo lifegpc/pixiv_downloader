@@ -10,6 +10,7 @@ use crate::ext::io::ClearFile;
 use crate::ext::replace::ReplaceWith2;
 use crate::ext::rw_lock::GetRwLock;
 use crate::gettext;
+use crate::list::NonTailList;
 use crate::opthelper::OptHelper;
 use crate::utils::ask_need_overwrite;
 use crate::utils::get_file_name_from_url;
@@ -31,6 +32,7 @@ use std::ops::Deref;
 use std::ops::DerefMut;
 use std::path::Path;
 use std::sync::atomic::AtomicBool;
+use std::sync::atomic::AtomicI64;
 use std::sync::Arc;
 use std::sync::RwLock;
 use std::time::Duration;
@@ -71,15 +73,25 @@ pub struct DownloaderInternal<T: Write + Seek + Send + Sync + ClearFile + GetTar
     progress_bar: AtomicBool,
     /// The progress bar.
     progress: RwLock<Option<ProgressBar>>,
+    /// The error message when panic.
+    pub error: RwLock<Option<DownloaderError>>,
+    /// The maximum retry count. -1 means always retry.
+    max_retry_count: AtomicI64,
+    /// Retry intervals.
+    retry_interval: RwLock<NonTailList<Duration>>,
+    /// Current retry count
+    retry_count: AtomicI64,
 }
 
 impl DownloaderInternal<LocalFile> {
     /// Create a new [DownloaderInternal] instance
+    /// * `client` - The web client interface.
     /// * `url` - The url of the file
     /// * `header` - HTTP headers
     /// * `path` - The path to store downloaded file.
     /// * `overwrite` - Whether to overwrite file
     pub fn new<U: IntoUrl, H: ToHeaders, P: AsRef<Path> + ?Sized>(
+        client: Arc<WebClient>,
         url: U,
         headers: H,
         path: Option<&P>,
@@ -131,8 +143,10 @@ impl DownloaderInternal<LocalFile> {
             }
             None => None,
         };
+        let mut l = NonTailList::<Duration>::default();
+        l += Duration::new(3, 0);
         Ok(DownloaderResult::Ok(Self {
-            client: Arc::new(WebClient::default()),
+            client: client,
             pd: Arc::new(pd_file),
             url: Arc::new(url.into_url()?),
             headers: Arc::new(h),
@@ -142,6 +156,10 @@ impl DownloaderInternal<LocalFile> {
             multi: AtomicBool::new(false),
             progress_bar: AtomicBool::new(false),
             progress: RwLock::new(None),
+            error: RwLock::new(None),
+            max_retry_count: AtomicI64::new(3),
+            retry_interval: RwLock::new(l),
+            retry_count: AtomicI64::new(0),
         }))
     }
 }
@@ -207,6 +225,26 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName> DownloaderIn
     }
 
     #[inline]
+    /// Get panic error
+    pub fn get_panic(&self) -> Option<DownloaderError> {
+        self.error.get_mut().take()
+    }
+
+    /// Increase the retry count and return the duration should waited.
+    /// If [None] is returned, should stop retry.
+    pub fn get_retry_duration(&self) -> Option<Duration> {
+        let rc = self.retry_count.qload();
+        let mc = self.max_retry_count.qload();
+        if mc >= 0 && rc >= mc {
+            None
+        } else {
+            let dur = self.retry_interval.get_ref()[mc as usize];
+            self.retry_count.qstore(rc + 1);
+            Some(dur)
+        }
+    }
+
+    #[inline]
     /// Return the status of the downloader.
     pub fn get_status(&self) -> DownloaderStatus {
         self.status.get_ref().clone()
@@ -249,6 +287,12 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName> DownloaderIn
     }
 
     #[inline]
+    /// Returns true if the downloader is panic.
+    pub fn is_panic(&self) -> bool {
+        *self.status.get_ref() == DownloaderStatus::Panic
+    }
+
+    #[inline]
     /// Returns true if is multiple thread mode.
     pub fn is_multi_threads(&self) -> bool {
         if self.pd.is_downloading() {
@@ -280,6 +324,14 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName> DownloaderIn
     }
 
     #[inline]
+    /// Set the downloader is panic and set the error.
+    /// * `err` - Error
+    pub fn set_panic(&self, err: DownloaderError) {
+        self.status.replace_with2(DownloaderStatus::Panic);
+        self.error.get_mut().replace(err);
+    }
+
+    #[inline]
     /// Sets the length of the progress bar
     pub fn set_progress_bar_length(&self, length: u64) {
         match self.progress.get_ref().deref() {
@@ -306,6 +358,18 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName> DownloaderIn
         }
     }
 
+    #[inline]
+    /// Set the maximum retry count. -1 means always.
+    pub fn set_max_retry_count(&self, max_retry_count: i64) {
+        self.max_retry_count.qstore(max_retry_count)
+    }
+
+    #[inline]
+    /// Set the retry interval.
+    pub fn set_retry_interval(&self, retry_interval: NonTailList<Duration>) {
+        self.retry_interval.replace_with2(retry_interval);
+    }
+
     /// Write datas to the file.
     /// * `data` - Data
     pub fn write(&self, data: &[u8]) -> Result<(), DownloaderError> {
@@ -324,6 +388,7 @@ pub struct Downloader<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileN
 }
 
 impl Downloader<LocalFile> {
+    #[inline]
     /// Create a new [Downloader] instance
     /// * `url` - The url of the file
     /// * `header` - HTTP headers
@@ -335,8 +400,30 @@ impl Downloader<LocalFile> {
         path: Option<&P>,
         overwrite: Option<bool>,
     ) -> Result<DownloaderResult<Self>, DownloaderError> {
+        Self::new2(
+            Arc::new(WebClient::default()),
+            url,
+            headers,
+            path,
+            overwrite,
+        )
+    }
+
+    /// Create a new [Downloader] instance
+    /// * `client` - The web client interface.
+    /// * `url` - The url of the file
+    /// * `header` - HTTP headers
+    /// * `path` - The path to store downloaded file.
+    /// * `overwrite` - Whether to overwrite file
+    pub fn new2<U: IntoUrl, H: ToHeaders, P: AsRef<Path> + ?Sized>(
+        client: Arc<WebClient>,
+        url: U,
+        headers: H,
+        path: Option<&P>,
+        overwrite: Option<bool>,
+    ) -> Result<DownloaderResult<Self>, DownloaderError> {
         Ok(
-            match DownloaderInternal::<LocalFile>::new(url, headers, path, overwrite)? {
+            match DownloaderInternal::<LocalFile>::new(client, url, headers, path, overwrite)? {
                 DownloaderResult::Ok(d) => DownloaderResult::Ok(Self {
                     downloader: Arc::new(d),
                 }),
@@ -395,6 +482,11 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + 'static> Do
         self.downloader.enable_progress_bar(style, mults)
     }
 
+    /// Get panic error
+    pub fn get_panic(self) -> Option<DownloaderError> {
+        self.downloader.get_panic()
+    }
+
     /// Handle options
     /// * `mults` - The instance of [MultiProgress] if multiple progress bars are needed.
     pub fn handle_options(&self, helper: &OptHelper, mults: Option<Arc<MultiProgress>>) {
@@ -414,6 +506,23 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + 'static> Do
         } else {
             self.disable_progress_bar();
         }
+        match helper.retry() {
+            Some(u) => self.set_max_retry_count(u as i64),
+            None => {}
+        }
+        self.set_retry_interval(helper.retry_interval());
+    }
+
+    #[inline]
+    /// Set the maximum retry count. -1 means always.
+    pub fn set_max_retry_count(&self, max_retry_count: i64) {
+        self.downloader.set_max_retry_count(max_retry_count)
+    }
+
+    #[inline]
+    /// Set the retry interval.
+    pub fn set_retry_interval(&self, retry_interval: NonTailList<Duration>) {
+        self.downloader.set_retry_interval(retry_interval)
     }
     define_downloader_fn!(
         is_created,
@@ -435,6 +544,7 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + 'static> Do
         bool,
         "Returns true if the downloader is downloaded complete."
     );
+    define_downloader_fn!(is_panic, bool, "Returns true if the downloader is panic.");
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
@@ -460,6 +570,39 @@ async fn test_downloader() {
             v.download();
             v.join().await.unwrap();
             assert_eq!(v.is_downloaded(), true);
+        }
+        DownloaderResult::Canceled => {
+            panic!("This should not happened.")
+        }
+    }
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn test_failed_downloader() {
+    let p = Path::new("./test");
+    if !p.exists() {
+        let re = create_dir("./test");
+        assert!(re.is_ok() || p.exists());
+    }
+    let url = "https://a.com/ssdassaodasdas";
+    let pb = p.join("addd");
+    let client = Arc::new(WebClient::default());
+    let mut retry_interval = NonTailList::<Duration>::default();
+    retry_interval += Duration::new(0, 0);
+    client
+        .aget_retry_interval_as_mut()
+        .await
+        .replace(retry_interval.clone());
+    let downloader =
+        Downloader::<LocalFile>::new2(client, url, None, Some(&pb), Some(true)).unwrap();
+    match downloader {
+        DownloaderResult::Ok(v) => {
+            v.set_retry_interval(retry_interval);
+            assert_eq!(v.is_created(), true);
+            v.disable_progress_bar();
+            v.download();
+            v.join().await.unwrap();
+            assert_eq!(v.is_panic(), true);
         }
         DownloaderResult::Canceled => {
             panic!("This should not happened.")

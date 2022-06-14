@@ -16,4 +16,6 @@ pub enum DownloaderStatus {
     Downloading,
     /// The downloader is downloaded complete
     Downloaded,
+    /// The downloader is stoped
+    Panic,
 }

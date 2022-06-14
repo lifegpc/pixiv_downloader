@@ -205,6 +205,7 @@ pub async fn check_tasks<
     loop {
         tokio::time::sleep(Duration::new(0, 10_000_000)).await;
         let mut need_break = false;
+        let mut dur = None;
         {
             let mut tasks = d.tasks.get_mut();
             tasks.retain_mut(|task| {
@@ -217,9 +218,17 @@ pub async fn check_tasks<
                                 need_break = true;
                             }
                         }
-                        Err(_) => {
-                            let task = tokio::spawn(create_download_tasks_simple(Arc::clone(&d)));
-                            d.add_task(task);
+                        Err(e) => {
+                            println!("{}", e);
+                            if !d.is_multi_threads() {
+                                match d.get_retry_duration() {
+                                    Some(d) => dur = Some(d),
+                                    None => {
+                                        d.set_panic(e);
+                                        need_break = true;
+                                    }
+                                }
+                            }
                         }
                     }
                     false
@@ -228,11 +237,22 @@ pub async fn check_tasks<
                 }
             });
         }
-        if !d.is_multi_threads() && d.tasks.get_ref().len() == 0 {
-            need_break = true;
+        if !d.is_multi_threads() && dur.is_some() {
+            let dur = dur.unwrap();
+            if !dur.is_zero() {
+                tokio::time::sleep(dur).await;
+            }
+            let task = tokio::spawn(create_download_tasks_simple(Arc::clone(&d)));
+            d.add_task(task);
         }
         if need_break {
             break;
+        }
+    }
+    if d.is_panic() {
+        let tasks = d.tasks.get_ref();
+        for i in tasks.iter() {
+            i.abort();
         }
     }
     Ok(())

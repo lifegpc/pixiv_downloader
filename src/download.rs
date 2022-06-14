@@ -109,6 +109,11 @@ impl Main {
                             );
                         }
                     }
+                } else if d.is_panic() {
+                    return Err(PixivDownloaderError::from(
+                        d.get_panic()
+                            .try_err(gettext("Failed to get error message."))?,
+                    ));
                 }
             }
             DownloaderResult::Canceled => {
