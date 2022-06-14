@@ -26,7 +26,6 @@ use indicatif::MultiProgress;
 use indicatif::ProgressStyle;
 use json::JsonValue;
 use reqwest::IntoUrl;
-use spin_on::spin_on;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -236,7 +235,7 @@ impl Main {
                 np += 1;
             }
             for task in tasks {
-                let r = spin_on(task);
+                let r = task.await;
                 let r = match r {
                     Ok(r) => { r }
                     Err(e) => {

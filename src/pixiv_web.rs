@@ -114,7 +114,7 @@ impl PixivWebClient {
             println!("{} {}", gettext("Failed to get main page:"), status);
             return false;
         }
-        let data = spin_on(r.text_with_charset("UTF-8"));
+        let data = r.text_with_charset("UTF-8").await;
         if data.is_err() {
             println!("{} {}", gettext("Failed to get main page:"), data.unwrap_err());
             return false;
@@ -132,11 +132,11 @@ impl PixivWebClient {
         true
     }
 
-    pub fn deal_json(&self, r: Response) -> Option<JsonValue> {
+    pub async fn deal_json(&self, r: Response) -> Option<JsonValue> {
         let status = r.status();
         let code = status.as_u16();
         let is_status_err = code >= 400;
-        let data = spin_on(r.text_with_charset("UTF-8"));
+        let data = r.text_with_charset("UTF-8").await;
         if data.is_err() {
             if is_status_err {
                 println!("HTTP ERROR {}", status);
@@ -220,7 +220,7 @@ impl PixivWebClient {
             return None;
         }
         let r = r.unwrap();
-        let v = self.deal_json(r);
+        let v = self.deal_json(r).await;
         if get_helper().verbose() && v.is_some() {
             println!("{} {}", gettext("Artwork's data:"), v.as_ref().unwrap().pretty(2));
         }
@@ -240,7 +240,7 @@ impl PixivWebClient {
             println!("{} {}", gettext("Failed to get artwork page:"), status);
             return None;
         }
-        let data = spin_on(r.text_with_charset("UTF-8"));
+        let data = r.text_with_charset("UTF-8").await;
         if data.is_err() {
             println!("{} {}", gettext("Failed to get artwork page:"), data.unwrap_err());
             return None;
@@ -264,7 +264,7 @@ impl PixivWebClient {
             return None;
         }
         let r = r.unwrap();
-        let v = self.deal_json(r);
+        let v = self.deal_json(r).await;
         if get_helper().verbose() && v.is_some() {
             println!("{} {}", gettext("Artwork's page data:"), v.as_ref().unwrap().pretty(2));
         }
@@ -278,7 +278,7 @@ impl PixivWebClient {
             return None;
         }
         let r = r.unwrap();
-        let v = self.deal_json(r);
+        let v = self.deal_json(r).await;
         if get_helper().verbose() && v.is_some() {
             println!("{} {}", gettext("Ugoira's data:"), v.as_ref().unwrap().pretty(2));
         }
