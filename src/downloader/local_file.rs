@@ -1,7 +1,7 @@
-use crate::ext::io::ClearFile;
 use super::downloader::GetTargetFileName;
-use std::fs::File;
+use crate::ext::io::ClearFile;
 use std::fs::remove_file;
+use std::fs::File;
 use std::io::Seek;
 use std::io::Write;
 use std::ops::Deref;
@@ -60,8 +60,8 @@ impl GetTargetFileName for LocalFile {
     #[inline]
     fn get_target_file_name(&self) -> Option<String> {
         match self.path.to_str() {
-            Some(s) => { Some(String::from(s)) }
-            None => { None }
+            Some(s) => Some(String::from(s)),
+            None => None,
         }
     }
 }

@@ -1,9 +1,9 @@
 use crate::downloader::pd_file::PdFileError;
 use crate::gettext;
 use http::status::StatusCode;
-use tokio::time::error::Elapsed;
-use tokio::task::JoinError;
 use std::fmt::Display;
+use tokio::task::JoinError;
+use tokio::time::error::Elapsed;
 
 /// File downloader's error
 #[derive(Debug, derive_more::From)]
@@ -39,19 +39,13 @@ impl Display for DownloaderError {
                 f.write_str(gettext("Errors occured when operating files: "))?;
                 e.fmt(f)
             }
-            Self::String(e) => {
-                f.write_str(e)
-            }
+            Self::String(e) => f.write_str(e),
             Self::ErrorStatusCode(e) => {
                 f.write_str("HTTP ERROR ")?;
                 e.fmt(f)
             }
-            Self::Timeout(e) => {
-                e.fmt(f)
-            }
-            Self::JoinError(e) => {
-                e.fmt(f)
-            }
+            Self::Timeout(e) => e.fmt(f),
+            Self::JoinError(e) => e.fmt(f),
         }
     }
 }

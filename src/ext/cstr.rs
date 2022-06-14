@@ -2,9 +2,9 @@
 use c_fixed_string::CFixedStr;
 #[cfg(feature = "c_fixed_string")]
 use c_fixed_string::CFixedString;
-use std::ffi::NulError;
 use std::ffi::CStr;
 use std::ffi::CString;
+use std::ffi::NulError;
 use std::fmt::Display;
 
 #[derive(Debug, derive_more::From, PartialEq)]
@@ -15,7 +15,7 @@ pub enum ToCStrError {
 impl Display for ToCStrError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Null(e) => { e.fmt(f) }
+            Self::Null(e) => e.fmt(f),
         }
     }
 }
@@ -58,7 +58,7 @@ impl ToCStr for String {
 impl ToCStr for CFixedStr {
     fn to_cstr(&self) -> Result<CString, ToCStrError> {
         Ok(self.to_c_str().into_owned())
-    }    
+    }
 }
 
 #[cfg(feature = "c_fixed_string")]

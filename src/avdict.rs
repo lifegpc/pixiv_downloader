@@ -27,12 +27,12 @@ pub enum AVDictError {
     /// The error code from ffmpeg
     CodeError(AVDictCodeError),
     /// The error occured when convert data to the string in C.
-    ToCstr(ToCStrError)
+    ToCstr(ToCStrError),
 }
 
 impl From<&str> for AVDictError {
     fn from(s: &str) -> Self {
-       Self::String(String::from(s)) 
+        Self::String(String::from(s))
     }
 }
 
@@ -45,10 +45,14 @@ impl From<c_int> for AVDictError {
 impl Display for AVDictError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::String(s) => { f.write_str(s) }
-            Self::Utf8Error(s) => { f.write_fmt(format_args!("{} {}", gettext("Failed to decode string with UTF-8:"), s)) }
-            Self::CodeError(s) => { f.write_fmt(format_args!("{}", s)) }
-            Self::ToCstr(s) => { f.write_fmt(format_args!("{}", s)) }
+            Self::String(s) => f.write_str(s),
+            Self::Utf8Error(s) => f.write_fmt(format_args!(
+                "{} {}",
+                gettext("Failed to decode string with UTF-8:"),
+                s
+            )),
+            Self::CodeError(s) => f.write_fmt(format_args!("{}", s)),
+            Self::ToCstr(s) => f.write_fmt(format_args!("{}", s)),
         }
     }
 }
@@ -78,21 +82,19 @@ impl AVDictCodeError {
 impl Display for AVDictCodeError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.to_str() {
-            Ok(s) => {
-                f.write_str(s.as_str())
-            }
-            Err(e) => {
-                f.write_fmt(format_args!("{} {}", gettext("Failed to get error message:"), e))
-            }
+            Ok(s) => f.write_str(s.as_str()),
+            Err(e) => f.write_fmt(format_args!(
+                "{} {}",
+                gettext("Failed to get error message:"),
+                e
+            )),
         }
     }
 }
 
 impl From<c_int> for AVDictCodeError {
     fn from(i: c_int) -> Self {
-        Self {
-            err: i,
-        }
+        Self { err: i }
     }
 }
 
@@ -143,15 +145,17 @@ impl AVDict {
         if re != 0 {
             Err(re)?;
         }
-        Ok(Self {
-            m,
-        })
+        Ok(Self { m })
     }
 
     /// Set all entries in the map to the dictionary
     /// * `maps` - The map which contains entries
     /// * `flags` - The flags to use when setting entries.
-    pub fn from_map<K: ToCStr, V: ToCStr, F: ToFlagSet<AVDictFlags>>(&mut self, maps: &HashMap<K, V>, flags: F) -> Result<(), AVDictError> {
+    pub fn from_map<K: ToCStr, V: ToCStr, F: ToFlagSet<AVDictFlags>>(
+        &mut self,
+        maps: &HashMap<K, V>,
+        flags: F,
+    ) -> Result<(), AVDictError> {
         let flags = flags.to_flag_set();
         for (k, v) in maps {
             self.set(k, v, flags)?;
@@ -162,12 +166,23 @@ impl AVDict {
     /// Get a dictionary value with matching key.
     /// * `key` - The matching key
     /// * `flags` - The flags to control how entry is retrieved.
-    pub fn get<K: ToCStr, F: ToFlagSet<AVDictFlags>>(&self, key: K, flags: F) -> Result<Option<CString>, AVDictError> {
+    pub fn get<K: ToCStr, F: ToFlagSet<AVDictFlags>>(
+        &self,
+        key: K,
+        flags: F,
+    ) -> Result<Option<CString>, AVDictError> {
         if self.m.is_null() {
             return Ok(None);
         }
         let k = key.to_cstr()?;
-        let re = unsafe { _avdict::avdict_get(self.m, k.as_ptr(), 0 as *mut _avdict::AVDictEntry, flags.to_bits()) };
+        let re = unsafe {
+            _avdict::avdict_get(
+                self.m,
+                k.as_ptr(),
+                0 as *mut _avdict::AVDictEntry,
+                flags.to_bits(),
+            )
+        };
         if !re.is_null() && unsafe { !(*re).value.is_null() } {
             let s = unsafe { CStr::from_ptr((*re).value) };
             let s = s.to_owned();
@@ -176,12 +191,23 @@ impl AVDict {
         Ok(None)
     }
 
-    pub fn get_all<K: ToCStr, F: ToFlagSet<AVDictFlags>>(&self, key: K, flags: F) -> Result<Option<Vec<CString>>, AVDictError> {
+    pub fn get_all<K: ToCStr, F: ToFlagSet<AVDictFlags>>(
+        &self,
+        key: K,
+        flags: F,
+    ) -> Result<Option<Vec<CString>>, AVDictError> {
         if self.m.is_null() {
             return Ok(None);
         }
         let k = key.to_cstr()?;
-        let mut re = unsafe { _avdict::avdict_get(self.m, k.as_ptr(), 0 as *mut _avdict::AVDictEntry, flags.to_bits()) };
+        let mut re = unsafe {
+            _avdict::avdict_get(
+                self.m,
+                k.as_ptr(),
+                0 as *mut _avdict::AVDictEntry,
+                flags.to_bits(),
+            )
+        };
         let mut l = Vec::new();
         while !re.is_null() {
             if unsafe { (*re).value.is_null() } {
@@ -210,7 +236,9 @@ impl AVDict {
     pub fn get_string(&self, key_val_sep: char, pairs_sep: char) -> Result<CString, AVDictError> {
         let mut buf = 0 as *mut c_char;
         let pbuf: *mut *mut c_char = &mut buf;
-        let re = unsafe { _avdict::avdict_get_string(self.m, pbuf, key_val_sep as c_char, pairs_sep as c_char) };
+        let re = unsafe {
+            _avdict::avdict_get_string(self.m, pbuf, key_val_sep as c_char, pairs_sep as c_char)
+        };
         if re != 0 {
             Err(re)?;
         }
@@ -237,26 +265,39 @@ impl AVDict {
     }
 
     /// Parse the key/value pairs list and add the parsed entries to a dictionary.
-    /// 
+    ///
     /// In case of failure, all the successfully set entries are stored.
     /// * `s` - string
     /// * `key_val_sep` - a list of characters used to separate key from value
     /// * `pairs_sep` - a list of characters used to separate two pairs from each other
     /// * `flags` - flags to use when adding to dictionary.
     /// StrdupKey and StrdipValue are ignored since the key/value tokens will always be duplicated.
-    pub fn parse_string<K: ToCStr, V: ToCStr, S: ToCStr, F: ToFlagSet<AVDictFlags>>(&mut self, s: K, key_val_sep: V, pairs_sep: S, flags: F) -> Result<(), AVDictError> {
+    pub fn parse_string<K: ToCStr, V: ToCStr, S: ToCStr, F: ToFlagSet<AVDictFlags>>(
+        &mut self,
+        s: K,
+        key_val_sep: V,
+        pairs_sep: S,
+        flags: F,
+    ) -> Result<(), AVDictError> {
         let pm: *mut *mut _avdict::AVDict = &mut self.m;
         let s = s.to_cstr()?;
         let k = key_val_sep.to_cstr()?;
         let p = pairs_sep.to_cstr()?;
-        let re = unsafe { _avdict::avdict_parse_string(pm, s.as_ptr(), k.as_ptr(), p.as_ptr(), flags.to_bits()) };
+        let re = unsafe {
+            _avdict::avdict_parse_string(pm, s.as_ptr(), k.as_ptr(), p.as_ptr(), flags.to_bits())
+        };
         if re != 0 {
             Err(re)?;
         }
         Ok(())
     }
 
-    pub fn set<K: ToCStr, V: ToCStr, F: ToFlagSet<AVDictFlags>>(&mut self, key: K, value: V, flags: F) -> Result<(), AVDictError> {
+    pub fn set<K: ToCStr, V: ToCStr, F: ToFlagSet<AVDictFlags>>(
+        &mut self,
+        key: K,
+        value: V,
+        flags: F,
+    ) -> Result<(), AVDictError> {
         let pm: *mut *mut _avdict::AVDict = &mut self.m;
         let k = key.to_cstr()?;
         let v = value.to_cstr()?;
@@ -267,7 +308,12 @@ impl AVDict {
         Ok(())
     }
 
-    pub fn set_int<K: ToCStr, F: ToFlagSet<AVDictFlags>>(&mut self, key: K, value: i64, flags: F) -> Result<(), AVDictError> {
+    pub fn set_int<K: ToCStr, F: ToFlagSet<AVDictFlags>>(
+        &mut self,
+        key: K,
+        value: i64,
+        flags: F,
+    ) -> Result<(), AVDictError> {
         let pm: *mut *mut _avdict::AVDict = &mut self.m;
         let k = key.to_cstr()?;
         let re = unsafe { _avdict::avdict_set_int(pm, k.as_ptr(), value, flags.to_bits()) };
@@ -306,14 +352,14 @@ impl Drop for AVDict {
     }
 }
 
-impl <K: ToCStr, V: ToCStr> TryFrom<HashMap<K, V>> for AVDict {
+impl<K: ToCStr, V: ToCStr> TryFrom<HashMap<K, V>> for AVDict {
     type Error = AVDictError;
     fn try_from(value: HashMap<K, V>) -> Result<Self, Self::Error> {
         Self::try_from(&value)
     }
 }
 
-impl <K: ToCStr, V: ToCStr> TryFrom<&HashMap<K, V>> for AVDict {
+impl<K: ToCStr, V: ToCStr> TryFrom<&HashMap<K, V>> for AVDict {
     type Error = AVDictError;
     fn try_from(value: &HashMap<K, V>) -> Result<Self, Self::Error> {
         let mut d = Self::new();
@@ -349,7 +395,14 @@ impl<'a> Iterator for AVDictItor<'a> {
         }
         self.started = true;
         let m = unsafe { self.d.to_raw_handle() };
-        let re = unsafe { _avdict::avdict_get(m, NULLSTR.as_ptr(), self.cur as *const _avdict::AVDictEntry, AVDictFlags::IgnoreSuffix.to_bits()) };
+        let re = unsafe {
+            _avdict::avdict_get(
+                m,
+                NULLSTR.as_ptr(),
+                self.cur as *const _avdict::AVDictEntry,
+                AVDictFlags::IgnoreSuffix.to_bits(),
+            )
+        };
         self.cur = re;
         if re.is_null() {
             return None;
@@ -380,15 +433,21 @@ fn test_avdict() {
     d2.set("b", "ok", AVDictFlags::Multikey).unwrap();
     d2.set("b", "test", AVDictFlags::Multikey).unwrap();
     assert_eq!(Ok(Some(CString::new("ok").unwrap())), d2.get("b", None));
-    assert_eq!(Ok(Some(vec![
-        CString::new("ok").unwrap(),
-        CString::new("test").unwrap(),
-    ])), d2.get_all("b", None));
+    assert_eq!(
+        Ok(Some(vec![
+            CString::new("ok").unwrap(),
+            CString::new("test").unwrap(),
+        ])),
+        d2.get_all("b", None)
+    );
     d.set_int("i", 17, None).unwrap();
     assert_eq!(Ok(Some(CString::new("17").unwrap())), d.get("i", None));
     d.set("c", "test", AVDictFlags::Append).unwrap();
     d.set("c", "test2", AVDictFlags::Append).unwrap();
-    assert_eq!(Ok(Some(CString::new("testtest2").unwrap())), d.get("c", None));
+    assert_eq!(
+        Ok(Some(CString::new("testtest2").unwrap())),
+        d.get("c", None)
+    );
     assert_eq!(3, d.len());
     assert_eq!(3, d2.len());
     let mut m = HashMap::new();
@@ -402,7 +461,13 @@ fn test_avdict() {
     let mut d4 = AVDict::new();
     d4.parse_string("a=b b=c", "=", " ", None).unwrap();
     assert_eq!(2, d4.len());
-    assert_eq!(Ok(CString::new("a=b b=c").unwrap()), d4.get_string('=', ' '));
+    assert_eq!(
+        Ok(CString::new("a=b b=c").unwrap()),
+        d4.get_string('=', ' ')
+    );
     let mut it = d4.iter();
-    assert_eq!(Some((CString::new("a").unwrap(), CString::new("b").unwrap())), it.next());
+    assert_eq!(
+        Some((CString::new("a").unwrap(), CString::new("b").unwrap())),
+        it.next()
+    );
 }

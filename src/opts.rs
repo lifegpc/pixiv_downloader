@@ -139,8 +139,8 @@ pub fn print_usage(prog: &str, opts: &Options) {
 /// Prase bool string
 pub fn parse_bool<T: AsRef<str>>(s: Option<T>) -> Result<Option<bool>, String> {
     let tmp = match s {
-        Some(s) => { Some(s.as_ref().to_lowercase()) }
-        None => { None }
+        Some(s) => Some(s.as_ref().to_lowercase()),
+        None => None,
     };
     match tmp {
         Some(t) => {
@@ -156,7 +156,7 @@ pub fn parse_bool<T: AsRef<str>>(s: Option<T>) -> Result<Option<bool>, String> {
                 Err(format!("{} {}", gettext("Invalid boolean value:"), t))
             }
         }
-        None => { Ok(None) }
+        None => Ok(None),
     }
 }
 
@@ -165,8 +165,15 @@ pub fn parse_bool<T: AsRef<str>>(s: Option<T>) -> Result<Option<bool>, String> {
 /// * `key` - The key of the option.
 /// * `default` - The value if option is present but the data is not obtained.
 /// * `callback` - The function to process the obtained data.
-pub fn parse_optional_opt<T, F, E>(opts: &getopts::Matches, key: &str, default: T, callback: F) -> Result<Option<T>, E>
-    where F: Fn(Option<String>) -> Result<Option<T>, E> {
+pub fn parse_optional_opt<T, F, E>(
+    opts: &getopts::Matches,
+    key: &str,
+    default: T,
+    callback: F,
+) -> Result<Option<T>, E>
+where
+    F: Fn(Option<String>) -> Result<Option<T>, E>,
+{
     if !opts.opt_present(key) {
         return Ok(None);
     }
@@ -312,7 +319,8 @@ pub fn parse_cmd() -> Option<CommandOpts> {
     let yes = result.opt_present("yes");
     let no = result.opt_present("no");
     re.as_mut().unwrap().overwrite = if yes && no {
-        if result.opt_positions("yes").last().unwrap() > result.opt_positions("no").last().unwrap() {
+        if result.opt_positions("yes").last().unwrap() > result.opt_positions("no").last().unwrap()
+        {
             Some(true)
         } else {
             Some(false)
@@ -329,7 +337,11 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         let s = s.trim();
         let c = s.parse::<u64>();
         if c.is_err() {
-            println!("{} {}", gettext("Retry count must be an non-negative integer:"), c.unwrap_err());
+            println!(
+                "{} {}",
+                gettext("Retry count must be an non-negative integer:"),
+                c.unwrap_err()
+            );
             return None;
         }
         re.as_mut().unwrap().retry = Some(c.unwrap());
@@ -338,7 +350,11 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         let s = result.opt_str("retry-interval").unwrap();
         let r = parse_retry_interval_from_str(s.as_str());
         if r.is_err() {
-            println!("{} {}", gettext("Failed to parse retry interval:"), r.unwrap_err());
+            println!(
+                "{} {}",
+                gettext("Failed to parse retry interval:"),
+                r.unwrap_err()
+            );
             return None;
         }
         re.as_mut().unwrap().retry_interval = Some(r.unwrap());
@@ -352,7 +368,13 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         let s = result.opt_str("use-progress-bar").unwrap();
         let r = UseOrNot::from_str(s.as_str());
         if r.is_err() {
-            println!("{} {}", gettext("Failed to parse <opt>:").replace("<opt>", "use-progress-bar").as_str(), r.unwrap_err());
+            println!(
+                "{} {}",
+                gettext("Failed to parse <opt>:")
+                    .replace("<opt>", "use-progress-bar")
+                    .as_str(),
+                r.unwrap_err()
+            );
             return None;
         }
         re.as_mut().unwrap().use_progress_bar = Some(r.unwrap());
@@ -360,7 +382,13 @@ pub fn parse_cmd() -> Option<CommandOpts> {
     match parse_optional_opt(&result, "download-multiple-images", true, parse_bool) {
         Ok(b) => re.as_mut().unwrap().download_multiple_images = b,
         Err(e) => {
-            println!("{} {}", gettext("Failed to parse <opt>:").replace("<opt>", "download-multiple-images").as_str(), e);
+            println!(
+                "{} {}",
+                gettext("Failed to parse <opt>:")
+                    .replace("<opt>", "download-multiple-images")
+                    .as_str(),
+                e
+            );
             return None;
         }
     }

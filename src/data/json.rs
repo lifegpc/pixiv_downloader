@@ -8,8 +8,8 @@ use json::JsonValue;
 use std::collections::HashMap;
 use std::convert::From;
 use std::ffi::OsStr;
-use std::fs::File;
 use std::fs::remove_file;
+use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 use std::sync::Arc;
@@ -97,7 +97,8 @@ impl From<&PixivData> for JSONDataFile {
             f.add("author", p.author.as_ref().unwrap()).unwrap();
         }
         if p.description.is_some() {
-            f.add("description", p.description.as_ref().unwrap()).unwrap();
+            f.add("description", p.description.as_ref().unwrap())
+                .unwrap();
             let pd = parse_description(p.description.as_ref().unwrap());
             if pd.is_some() {
                 f.add("parsed_description", pd.unwrap()).unwrap();

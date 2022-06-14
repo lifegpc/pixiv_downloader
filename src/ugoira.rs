@@ -5,8 +5,8 @@ use crate::ext::cstr::ToCStr;
 use crate::ext::cstr::ToCStrError;
 use crate::ext::json::ToJson;
 use crate::ext::rawhandle::ToRawHandle;
-use crate::gettext;
 use crate::ext::try_err::TryErr;
+use crate::gettext;
 use std::convert::AsRef;
 use std::default::Default;
 use std::ffi::CStr;
@@ -14,7 +14,7 @@ use std::ffi::OsStr;
 use std::fmt::Debug;
 use std::fmt::Display;
 #[cfg(test)]
-use std::fs::{File, create_dir};
+use std::fs::{create_dir, File};
 #[cfg(test)]
 use std::io::Read;
 use std::ops::Drop;
@@ -52,20 +52,24 @@ pub enum UgoiraError {
 impl Display for UgoiraError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::String(s) => { f.write_str(s) }
-            Self::Utf8(s) => { f.write_fmt(format_args!("{} {}", gettext("Failed to decode string with UTF-8:"), s)) }
-            Self::ToCStr(s) => { f.write_fmt(format_args!("{}", s)) }
-            Self::FfmpegError(s) => { f.write_fmt(format_args!("{}", s)) }
-            Self::CodeError(s) => { f.write_fmt(format_args!("{}", s)) }
-            Self::ZipError(s) => { f.write_fmt(format_args!("{}", s)) }
-            Self::ZipError2(s) => { f.write_fmt(format_args!("{}", s)) }
+            Self::String(s) => f.write_str(s),
+            Self::Utf8(s) => f.write_fmt(format_args!(
+                "{} {}",
+                gettext("Failed to decode string with UTF-8:"),
+                s
+            )),
+            Self::ToCStr(s) => f.write_fmt(format_args!("{}", s)),
+            Self::FfmpegError(s) => f.write_fmt(format_args!("{}", s)),
+            Self::CodeError(s) => f.write_fmt(format_args!("{}", s)),
+            Self::ZipError(s) => f.write_fmt(format_args!("{}", s)),
+            Self::ZipError2(s) => f.write_fmt(format_args!("{}", s)),
         }
     }
 }
 
 impl From<&str> for UgoiraError {
     fn from(s: &str) -> Self {
-       Self::String(String::from(s)) 
+        Self::String(String::from(s))
     }
 }
 
@@ -103,19 +107,19 @@ pub struct UgoiraCodeError {
 impl UgoiraCodeError {
     fn to_str(&self) -> &'static str {
         match self.code {
-            UGOIRA_OK => { "OK" }
-            UGOIRA_NULL_POINTER => { gettext("Arguments have null pointers.") }
-            UGOIRA_INVALID_MAX_FPS => { gettext("Invalid max fps.") }
-            UGOIRA_INVALID_FRAMES => { gettext("Invalid frames.") }
-            UGOIRA_INVALID_CRF => { gettext("Invalid crf.") }
-            UGOIRA_REMOVE_OUTPUT_FILE_FAILED => { gettext("Can not remove output file.") }
-            UGOIRA_OOM => { gettext("Out of memory.") }
-            UGOIRA_NO_VIDEO_STREAM => { gettext("No video stream available in the file.") }
-            UGOIRA_NO_AVAILABLE_DECODER => { gettext("No available decoder.") }
-            UGOIRA_NO_AVAILABLE_ENCODER => { gettext("No available encoder.") }
-            UGOIRA_OPEN_FILE => { gettext("Failed to open output file.") }
-            UGOIRA_UNABLE_SCALE => { gettext("Unable to scale image.") }
-            _ => { gettext("Unknown error.") }
+            UGOIRA_OK => "OK",
+            UGOIRA_NULL_POINTER => gettext("Arguments have null pointers."),
+            UGOIRA_INVALID_MAX_FPS => gettext("Invalid max fps."),
+            UGOIRA_INVALID_FRAMES => gettext("Invalid frames."),
+            UGOIRA_INVALID_CRF => gettext("Invalid crf."),
+            UGOIRA_REMOVE_OUTPUT_FILE_FAILED => gettext("Can not remove output file."),
+            UGOIRA_OOM => gettext("Out of memory."),
+            UGOIRA_NO_VIDEO_STREAM => gettext("No video stream available in the file."),
+            UGOIRA_NO_AVAILABLE_DECODER => gettext("No available decoder."),
+            UGOIRA_NO_AVAILABLE_ENCODER => gettext("No available encoder."),
+            UGOIRA_OPEN_FILE => gettext("Failed to open output file."),
+            UGOIRA_UNABLE_SCALE => gettext("Unable to scale image."),
+            _ => gettext("Unknown error."),
         }
     }
 }
@@ -134,9 +138,7 @@ impl Display for UgoiraCodeError {
 
 impl From<c_int> for UgoiraCodeError {
     fn from(v: c_int) -> Self {
-        Self {
-            code: v,
-        }
+        Self { code: v }
     }
 }
 
@@ -161,15 +163,21 @@ impl UgoiraZipError {
 
 impl Display for UgoiraZipError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(self.to_str().unwrap_or(format!("{} {}", gettext("Failed to get error message:"), self.code)).as_str())
+        f.write_str(
+            self.to_str()
+                .unwrap_or(format!(
+                    "{} {}",
+                    gettext("Failed to get error message:"),
+                    self.code
+                ))
+                .as_str(),
+        )
     }
 }
 
 impl From<c_int> for UgoiraZipError {
     fn from(v: c_int) -> Self {
-        Self {
-            code: v,
-        }
+        Self { code: v }
     }
 }
 
@@ -200,14 +208,26 @@ impl Debug for UgoiraZipError2 {
             f.write_str("UgoiraError2 { None }")
         } else {
             let err = unsafe { *self.err };
-            f.write_fmt(format_args!("UgoiraZipError2 {{ {}, {} }}", err.sys_err, err.zip_err ))
+            f.write_fmt(format_args!(
+                "UgoiraZipError2 {{ {}, {} }}",
+                err.sys_err, err.zip_err
+            ))
         }
     }
 }
 
 impl Display for UgoiraZipError2 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(self.to_str().unwrap_or(format!("{} {}, {}", gettext("Failed to get error message:"), unsafe { (*self.err).sys_err }, unsafe { (*self.err).zip_err })).as_str())
+        f.write_str(
+            self.to_str()
+                .unwrap_or(format!(
+                    "{} {}, {}",
+                    gettext("Failed to get error message:"),
+                    unsafe { (*self.err).sys_err },
+                    unsafe { (*self.err).zip_err }
+                ))
+                .as_str(),
+        )
     }
 }
 
@@ -222,9 +242,7 @@ impl Drop for UgoiraZipError2 {
 
 impl From<*mut _ugoira::zip_error_t> for UgoiraZipError2 {
     fn from(err: *mut _ugoira::zip_error_t) -> Self {
-        Self {
-            err,
-        }
+        Self { err }
     }
 }
 
@@ -285,7 +303,9 @@ impl UgoiraFrames {
     }
 
     pub fn from_json<T: ToJson>(value: T) -> Result<Self, UgoiraError> {
-        let obj = value.to_json().try_err(gettext("Failed to get JSON object."))?;
+        let obj = value
+            .to_json()
+            .try_err(gettext("Failed to get JSON object."))?;
         if !obj.is_array() {
             Err(gettext("Unsupported JSON type."))?;
         }
@@ -349,15 +369,43 @@ impl ToRawHandle<_ugoira::AVDictionary> for AVDict {
     }
 }
 
-pub fn convert_ugoira_to_mp4<S: AsRef<OsStr> + ?Sized, D: AsRef<OsStr> + ?Sized, F: AsRef<UgoiraFrames> + ?Sized, O: AsRef<AVDict> + ?Sized, M: AsRef<AVDict> + ?Sized>(src: &S, dest: &D, frames: &F, max_fps: f32, opts: &O, metadata: &M) -> Result<(), UgoiraError> {
+pub fn convert_ugoira_to_mp4<
+    S: AsRef<OsStr> + ?Sized,
+    D: AsRef<OsStr> + ?Sized,
+    F: AsRef<UgoiraFrames> + ?Sized,
+    O: AsRef<AVDict> + ?Sized,
+    M: AsRef<AVDict> + ?Sized,
+>(
+    src: &S,
+    dest: &D,
+    frames: &F,
+    max_fps: f32,
+    opts: &O,
+    metadata: &M,
+) -> Result<(), UgoiraError> {
     let src = src.as_ref();
     let dest = dest.as_ref();
     let frames = frames.as_ref();
     let opts = opts.as_ref();
     let metadata = metadata.as_ref();
-    let src = src.to_str().try_err(gettext("Failed to convert path."))?.to_cstr()?;
-    let dest = dest.to_str().try_err(gettext("Failed to convert path."))?.to_cstr()?;
-    let re = unsafe { _ugoira::convert_ugoira_to_mp4(src.as_ptr(), dest.as_ptr(), frames.to_const_handle(), max_fps, opts.to_const_handle(), metadata.to_const_handle()) };
+    let src = src
+        .to_str()
+        .try_err(gettext("Failed to convert path."))?
+        .to_cstr()?;
+    let dest = dest
+        .to_str()
+        .try_err(gettext("Failed to convert path."))?
+        .to_cstr()?;
+    let re = unsafe {
+        _ugoira::convert_ugoira_to_mp4(
+            src.as_ptr(),
+            dest.as_ptr(),
+            frames.to_const_handle(),
+            max_fps,
+            opts.to_const_handle(),
+            metadata.to_const_handle(),
+        )
+    };
     if re.code != 0 {
         Err(re)?;
     }
@@ -422,5 +470,12 @@ fn test_convert_ugoira_to_mp4() -> Result<(), UgoiraError> {
     metadata.set("title", "動く nachoneko :3", None).unwrap();
     metadata.set("artist", "甘城なつき", None).unwrap();
     let options = AVDict::new();
-    convert_ugoira_to_mp4("./testdata/74841737_ugoira600x600.zip", target, &frames, 60f32, &options, &metadata)
+    convert_ugoira_to_mp4(
+        "./testdata/74841737_ugoira600x600.zip",
+        target,
+        &frames,
+        60f32,
+        &options,
+        &metadata,
+    )
 }

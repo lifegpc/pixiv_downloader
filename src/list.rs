@@ -44,12 +44,15 @@ impl<T> AsRef<NonTailList<T>> for NonTailList<T> {
 impl<T: Clone> Clone for NonTailList<T> {
     fn clone(&self) -> Self {
         Self {
-            data: self.data.clone()
+            data: self.data.clone(),
         }
     }
 }
 
-impl<T: Debug> Debug for NonTailList<T> where Vec<T>: Debug {
+impl<T: Debug> Debug for NonTailList<T>
+where
+    Vec<T>: Debug,
+{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Vec::<T>::fmt(&self.data, f)
     }
@@ -57,9 +60,7 @@ impl<T: Debug> Debug for NonTailList<T> where Vec<T>: Debug {
 
 impl<T> Default for NonTailList<T> {
     fn default() -> Self {
-        Self {
-            data: Vec::new(),
-        }
+        Self { data: Vec::new() }
     }
 }
 
@@ -73,17 +74,13 @@ impl<T: Clone> From<&[T]> for NonTailList<T> {
 
 impl<T> From<Vec<T>> for NonTailList<T> {
     fn from(list: Vec<T>) -> Self {
-        Self {
-            data: list,
-        }
+        Self { data: list }
     }
 }
 
 impl<T: Clone> From<&Vec<T>> for NonTailList<T> {
     fn from(list: &Vec<T>) -> Self {
-        Self {
-            data: list.clone(),
-        }
+        Self { data: list.clone() }
     }
 }
 
@@ -95,7 +92,7 @@ impl<T: FromStr> FromStr for NonTailList<T> {
     /// ```
     /// let l: NonTailList<i32> = NonTailList::from_str("1,2,3").unwrap();
     /// ```
-    fn from_str(s: &str) -> Result<Self, Self::Err>{
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut l: Vec<T> = Vec::new();
         let r = s.split(",");
         for i in r {
@@ -103,9 +100,7 @@ impl<T: FromStr> FromStr for NonTailList<T> {
             let a = i.parse::<T>()?;
             l.push(a);
         }
-        Ok(Self {
-            data: l,
-        })
+        Ok(Self { data: l })
     }
 }
 
@@ -144,7 +139,10 @@ impl<T> IndexMut<usize> for NonTailList<T> {
     }
 }
 
-impl<T, V> PartialEq<Vec<V>> for NonTailList<T> where T: PartialEq<V> {
+impl<T, V> PartialEq<Vec<V>> for NonTailList<T>
+where
+    T: PartialEq<V>,
+{
     fn eq(&self, other: &Vec<V>) -> bool {
         &self.data == other
     }

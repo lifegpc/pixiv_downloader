@@ -17,16 +17,16 @@ use std::collections::HashMap;
 use std::convert::TryInto;
 use std::default::Default;
 use std::ffi::OsStr;
-use std::fs::File;
 use std::fs::remove_file;
+use std::fs::File;
 use std::io::Write;
 use std::path::Path;
+use std::sync::atomic::AtomicBool;
+use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 use std::sync::RwLock;
 use std::sync::RwLockReadGuard;
 use std::sync::RwLockWriteGuard;
-use std::sync::atomic::AtomicBool;
-use std::sync::atomic::AtomicU64;
 use std::time::Duration;
 
 /// Convert data to HTTP headers map
@@ -102,8 +102,8 @@ pub struct WebClient {
 
 impl WebClient {
     /// Create a new instance of client
-    /// 
-    /// This function will not handle any basic options, please use [Self::default()] instead. 
+    ///
+    /// This function will not handle any basic options, please use [Self::default()] instead.
     pub fn new() -> Self {
         Self {
             client: Client::new(),
@@ -118,7 +118,9 @@ impl WebClient {
     pub async fn aget_cookies_as_mut<'a>(&'a self) -> RwLockWriteGuard<'a, CookieJar> {
         loop {
             match self.cookies.try_write() {
-                Ok(f) => { return f; }
+                Ok(f) => {
+                    return f;
+                }
                 Err(_) => {
                     tokio::time::sleep(Duration::new(0, 1_000_000)).await;
                 }
@@ -133,7 +135,9 @@ impl WebClient {
     pub async fn aget_cookies<'a>(&'a self) -> RwLockReadGuard<'a, CookieJar> {
         loop {
             match self.cookies.try_read() {
-                Ok(f) => { return f; }
+                Ok(f) => {
+                    return f;
+                }
                 Err(_) => {
                     tokio::time::sleep(Duration::new(0, 1_000_000)).await;
                 }
@@ -145,10 +149,14 @@ impl WebClient {
         spin_on(self.aget_cookies())
     }
 
-    pub async fn aget_headers_as_mut<'a>(&'a self) -> RwLockWriteGuard<'a, HashMap<String, String>> {
+    pub async fn aget_headers_as_mut<'a>(
+        &'a self,
+    ) -> RwLockWriteGuard<'a, HashMap<String, String>> {
         loop {
             match self.headers.try_write() {
-                Ok(f) => { return f; }
+                Ok(f) => {
+                    return f;
+                }
                 Err(_) => {
                     tokio::time::sleep(Duration::new(0, 1_000_000)).await;
                 }
@@ -163,7 +171,9 @@ impl WebClient {
     pub async fn aget_headers<'a>(&'a self) -> RwLockReadGuard<'a, HashMap<String, String>> {
         loop {
             match self.headers.try_read() {
-                Ok(f) => { return f; }
+                Ok(f) => {
+                    return f;
+                }
                 Err(_) => {
                     tokio::time::sleep(Duration::new(0, 1_000_000)).await;
                 }
@@ -180,10 +190,14 @@ impl WebClient {
         self.retry.qload()
     }
 
-    pub async fn aget_retry_interval_as_mut<'a>(&'a self) -> RwLockWriteGuard<'a, Option<NonTailList<Duration>>> {
+    pub async fn aget_retry_interval_as_mut<'a>(
+        &'a self,
+    ) -> RwLockWriteGuard<'a, Option<NonTailList<Duration>>> {
         loop {
             match self.retry_interval.try_write() {
-                Ok(f) => { return f; }
+                Ok(f) => {
+                    return f;
+                }
                 Err(_) => {
                     tokio::time::sleep(Duration::new(0, 1_000_000)).await;
                 }
@@ -191,14 +205,20 @@ impl WebClient {
         }
     }
 
-    pub fn get_retry_interval_as_mut<'a>(&'a self) -> RwLockWriteGuard<'a, Option<NonTailList<Duration>>> {
+    pub fn get_retry_interval_as_mut<'a>(
+        &'a self,
+    ) -> RwLockWriteGuard<'a, Option<NonTailList<Duration>>> {
         spin_on(self.aget_retry_interval_as_mut())
     }
 
-    pub async fn aget_retry_interval<'a>(&'a self) -> RwLockReadGuard<'a, Option<NonTailList<Duration>>> {
+    pub async fn aget_retry_interval<'a>(
+        &'a self,
+    ) -> RwLockReadGuard<'a, Option<NonTailList<Duration>>> {
         loop {
             match self.retry_interval.try_read() {
-                Ok(f) => { return f; }
+                Ok(f) => {
+                    return f;
+                }
                 Err(_) => {
                     tokio::time::sleep(Duration::new(0, 1_000_000)).await;
                 }
@@ -243,7 +263,7 @@ impl WebClient {
 
     /// Read cookies from file.
     /// * `file_name`: File name
-    /// 
+    ///
     /// returns true if readed successfully.
     /// # Note
     /// If read failed, will clean all entries in the current [CookieJar]
@@ -258,7 +278,7 @@ impl WebClient {
 
     /// Save cookies to file
     /// * `file_name`: File name
-    /// 
+    ///
     /// returns true if saved successfully.
     pub fn save_cookies(&self, file_name: &str) -> bool {
         self.get_cookies_as_mut().save(file_name)
@@ -267,10 +287,11 @@ impl WebClient {
     /// Set new HTTP header
     /// * `key` - The key of the new HTTP header
     /// * `value` - The value of the new HTTP value
-    /// 
+    ///
     /// Returns the old HTTP header value if presented.
     pub fn set_header(&self, key: &str, value: &str) -> Option<String> {
-        self.get_headers_as_mut().insert(String::from(key), String::from(value))
+        self.get_headers_as_mut()
+            .insert(String::from(key), String::from(value))
     }
 
     /// Set retry times, 0 means disable
@@ -293,7 +314,12 @@ impl WebClient {
     /// client.get_with_param("https://test.com/a", json::array![["daa", "param1"]], None);
     /// ```
     /// It will GET `https://test.com/a?data=param1`, `https://test.com/a?daa=%7B%22ad%22%3A%22test%22%7D`, `https://test.com/a?daa=param1`
-    pub async fn get_with_param<U: IntoUrl + Clone, J: ToJson, H: ToHeaders + Clone>(&self, url: U, param: J, headers: H) -> Option<Response> {
+    pub async fn get_with_param<U: IntoUrl + Clone, J: ToJson, H: ToHeaders + Clone>(
+        &self,
+        url: U,
+        param: J,
+        headers: H,
+    ) -> Option<Response> {
         let u = url.into_url();
         if u.is_err() {
             println!("{} \"{}\"", gettext("Can not parse URL:"), u.unwrap_err());
@@ -360,7 +386,11 @@ impl WebClient {
     }
 
     /// Send Get Requests
-    pub async fn get<U: IntoUrl + Clone, H: ToHeaders + Clone>(&self, url: U, headers: H) -> Option<Response> {
+    pub async fn get<U: IntoUrl + Clone, H: ToHeaders + Clone>(
+        &self,
+        url: U,
+        headers: H,
+    ) -> Option<Response> {
         let mut count = 0u64;
         let retry = self.get_retry();
         while count <= retry {
@@ -370,13 +400,24 @@ impl WebClient {
             }
             count += 1;
             if count <= retry {
-                let t = self.get_retry_interval().as_ref().unwrap()[(count - 1).try_into().unwrap()];
+                let t =
+                    self.get_retry_interval().as_ref().unwrap()[(count - 1).try_into().unwrap()];
                 if !t.is_zero() {
-                    println!("{}", gettext("Retry after <num> seconds.").replace("<num>", format!("{}", t.as_secs_f64()).as_str()).as_str());
+                    println!(
+                        "{}",
+                        gettext("Retry after <num> seconds.")
+                            .replace("<num>", format!("{}", t.as_secs_f64()).as_str())
+                            .as_str()
+                    );
                     tokio::time::sleep(t).await;
                 }
             }
-            println!("{}", gettext("Retry <count> times now.").replace("<count>", format!("{}", count).as_str()).as_str());
+            println!(
+                "{}",
+                gettext("Retry <count> times now.")
+                    .replace("<count>", format!("{}", count).as_str())
+                    .as_str()
+            );
         }
         None
     }
@@ -428,14 +469,14 @@ impl WebClient {
     /// * `file_name` - File name
     /// * `r` - Response
     /// * `opt` - Options
-    /// 
+    ///
     /// Note: If file already exists, will remove existing file first.
     pub fn download_stream<S: AsRef<OsStr> + ?Sized>(file_name: &S, r: Response) -> Result<(), ()> {
         let content_length = r.content_length();
         let opt = get_helper();
         let use_progress_bar = match &content_length {
-            Some(_) => { opt.use_progress_bar() }
-            None => { false }
+            Some(_) => opt.use_progress_bar(),
+            None => false,
         };
         let mut bar = if use_progress_bar {
             Some(ProgressBar::new(content_length.unwrap()))
@@ -443,9 +484,12 @@ impl WebClient {
             None
         };
         if bar.is_some() {
-            bar.as_mut().unwrap().set_style(ProgressStyle::default_bar()
-                .template(opt.progress_bar_template().as_ref()).unwrap()
-                .progress_chars("#>-"));
+            bar.as_mut().unwrap().set_style(
+                ProgressStyle::default_bar()
+                    .template(opt.progress_bar_template().as_ref())
+                    .unwrap()
+                    .progress_chars("#>-"),
+            );
         }
         let mut downloaded = 0usize;
         let p = Path::new(file_name);
@@ -458,7 +502,10 @@ impl WebClient {
         }
         if bar.is_some() {
             let tmp = p.file_name().unwrap_or(p.as_os_str());
-            bar.as_mut().unwrap().set_message(gettext("Downloading \"<loc>\".").replace("<loc>", tmp.to_str().unwrap_or("<NULL>")));
+            bar.as_mut().unwrap().set_message(
+                gettext("Downloading \"<loc>\".")
+                    .replace("<loc>", tmp.to_str().unwrap_or("<NULL>")),
+            );
         }
         let f = File::create(p);
         if f.is_err() {
@@ -469,7 +516,11 @@ impl WebClient {
         let mut stream = r.bytes_stream();
         while let Some(data) = spin_on(stream.next()) {
             if data.is_err() {
-                println!("{} {}", gettext("Error when downloading file:"), data.unwrap_err());
+                println!(
+                    "{} {}",
+                    gettext("Error when downloading file:"),
+                    data.unwrap_err()
+                );
                 return Err(());
             }
             let data = data.unwrap();
@@ -493,7 +544,7 @@ impl Default for WebClient {
         let opt = get_helper();
         c.set_verbose(opt.verbose());
         match opt.retry() {
-            Some(retry) => { c.set_retry(retry) }
+            Some(retry) => c.set_retry(retry),
             None => {}
         }
         c.get_retry_interval_as_mut().replace(opt.retry_interval());

@@ -7,18 +7,18 @@ use std::sync::RwLockWriteGuard;
 pub trait ReplaceWith<T> {
     /// Replace current value with another value
     /// * `another` - another value
-    /// 
+    ///
     /// Returns the old value.
     fn replace_with(&mut self, another: T) -> T;
 }
 
 /// Replace current value with another value
-/// 
+///
 /// If you want to mutably borrows, please use [ReplaceWith] instead.
 pub trait ReplaceWith2<T> {
     /// Replace current value with another value
     /// * `another` - another value
-    /// 
+    ///
     /// Returns the old value.
     fn replace_with2(&self, another: T) -> T;
 }

@@ -17,8 +17,8 @@ pub fn get_video_metadata(data: &PixivData) -> Result<AVDict, AVDictError> {
         let odesc = data.description.as_ref().unwrap();
         let desc = parse_description(odesc);
         let des = match &desc {
-            Some(d) => { d }
-            None => { odesc }
+            Some(d) => d,
+            None => odesc,
         };
         d.set("comment", des, None)?;
     }

@@ -22,13 +22,20 @@ pub struct OutOfBoundsError<T> {
 
 impl<T> OutOfBoundsError<T> {
     pub fn new<S: AsRef<str> + ?Sized>(t: &S, v: T) -> Self {
-        Self { t: String::from(t.as_ref()), v: v }
+        Self {
+            t: String::from(t.as_ref()),
+            v: v,
+        }
     }
 }
 
 impl<T: Display> Display for OutOfBoundsError<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("Failed to set type {} with value {}", self.t.as_str(), self.v))
+        f.write_fmt(format_args!(
+            "Failed to set type {} with value {}",
+            self.t.as_str(),
+            self.v
+        ))
     }
 }
 
@@ -43,7 +50,11 @@ struct PdFilePartStatusInternal {
 
 impl Debug for PdFilePartStatusInternal {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("{{ status: {:?}, downloaded_size: {:?} }}", self.status(), self.downloaded_size()))
+        f.write_fmt(format_args!(
+            "{{ status: {:?}, downloaded_size: {:?} }}",
+            self.status(),
+            self.downloaded_size()
+        ))
     }
 }
 
@@ -61,7 +72,9 @@ impl PdFilePartStatus {
         let mut status = PdFilePartStatusInternal::new();
         status.set_status(PdFilePartStatus2::Waited);
         status.set_downloaded_size(0);
-        Self { status: RwLock::new(status) }
+        Self {
+            status: RwLock::new(status),
+        }
     }
 
     #[inline]
@@ -79,20 +92,19 @@ impl PdFilePartStatus {
     /// Set the new downloaded size
     pub fn set_downloaded_size(&self, new_size: u32) -> Result<(), PdFileError> {
         match self.status.get_mut().set_downloaded_size_checked(new_size) {
-            Ok(_) => { Ok(()) }
-            Err(_) => {
-                Err(PdFileError::from(OutOfBoundsError::new("u32", new_size)))
-            }
+            Ok(_) => Ok(()),
+            Err(_) => Err(PdFileError::from(OutOfBoundsError::new("u32", new_size))),
         }
     }
 
     /// Set the status of this part
     pub fn set_status(&self, status: PdFilePartStatus2) -> Result<(), PdFileError> {
         match self.status.get_mut().set_status_checked(status) {
-            Ok(_) => { Ok(()) }
-            Err(_) => {
-                Err(PdFileError::from(OutOfBoundsError::new("PdFilePartStatus", status)))
-            }
+            Ok(_) => Ok(()),
+            Err(_) => Err(PdFileError::from(OutOfBoundsError::new(
+                "PdFilePartStatus",
+                status,
+            ))),
         }
     }
 
@@ -117,11 +129,14 @@ impl PdFilePartStatus {
     /// Create a new instance of the [PdFilePartStatus] from bytes.
     /// * `bytes` - The data
     /// * `offset` - The offset of the needed data
-    /// 
+    ///
     /// Returns a new instance if succeed otherwise a Error because the data is less than 4 bytes.
     /// # Panics
     /// Will panic if unwanted error occured
-    pub fn from_bytes<T: AsRef<[u8]> + ?Sized>(bytes: &T, offset: usize) -> Result<Self, PdFileError> {
+    pub fn from_bytes<T: AsRef<[u8]> + ?Sized>(
+        bytes: &T,
+        offset: usize,
+    ) -> Result<Self, PdFileError> {
         let value = bytes.as_ref();
         if (value.len() - offset) < 4 {
             Err(gettext("At least 4 bytes is needed."))?;
@@ -135,7 +150,9 @@ impl PdFilePartStatus {
         ds += (value[offset + 2] as u32) * 0x40_00;
         ds += (value[offset + 3] as u32) * 0x40_00_00;
         status.set_downloaded_size(ds);
-        Ok(Self { status: RwLock::new(status) })
+        Ok(Self {
+            status: RwLock::new(status),
+        })
     }
 
     /// Get bytes
@@ -153,7 +170,7 @@ impl PdFilePartStatus {
 
     /// Create a new instance of the [PdFilePartStatus] from reader
     /// * `reader` - The reader which implement the [Read] trait
-    /// 
+    ///
     /// Returns Error or [PdFilePartStatus] instance.
     pub fn read_from<R: Read>(reader: &mut R) -> Result<Self, PdFileError> {
         let mut buf = [0u8; 4];
@@ -163,7 +180,7 @@ impl PdFilePartStatus {
 
     /// Write version bytes to writer.
     /// * `writer` - The writer which implement the [Write] trait
-    /// 
+    ///
     /// Returns io Result.
     pub fn write_to<W: Write>(&self, writer: &mut W) -> std::io::Result<()> {
         writer.write_all(&self.to_bytes())

@@ -11,6 +11,6 @@ pub mod pd_file;
 /// Deal download tasks
 pub mod tasks;
 pub use downloader::Downloader;
-pub use error::DownloaderError;
 pub use enums::DownloaderResult;
+pub use error::DownloaderError;
 pub use local_file::LocalFile;

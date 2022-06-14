@@ -3,8 +3,8 @@ extern crate syn;
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::Ident;
 use syn::parse_macro_input;
+use syn::Ident;
 
 #[proc_macro]
 pub fn define_struct_reader_fn(item: TokenStream) -> TokenStream {

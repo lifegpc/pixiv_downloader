@@ -1,7 +1,7 @@
 use crate::ext::json::FromJson;
 use crate::ext::json::ToJson;
-use crate::gettext;
 use crate::ext::try_err::TryErr;
+use crate::gettext;
 use std::str::FromStr;
 
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
@@ -15,15 +15,18 @@ pub enum UseOrNot {
 }
 
 /// Convert to bool (whether to enable some features)
-pub trait ToBool where Self: AsRef<UseOrNot> {
+pub trait ToBool
+where
+    Self: AsRef<UseOrNot>,
+{
     /// Auto detect function.
     fn detect(&self) -> bool;
     /// Return whether to enable some features
     fn to_bool(&self) -> bool {
         match self.as_ref() {
-            UseOrNot::Auto => { self.detect() }
-            UseOrNot::Yes => { true }
-            UseOrNot::No => { false }
+            UseOrNot::Auto => self.detect(),
+            UseOrNot::Yes => true,
+            UseOrNot::No => false,
         }
     }
 }

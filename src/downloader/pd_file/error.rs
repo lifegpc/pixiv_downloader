@@ -30,7 +30,9 @@ impl Display for PdFileError {
                 f.write_str(gettext("Invalid pd file."))?;
             }
             Self::Unsupported => {
-                f.write_str(gettext("The pd file is newer version, please update the program."))?;
+                f.write_str(gettext(
+                    "The pd file is newer version, please update the program.",
+                ))?;
             }
             Self::Utf8Error(e) => {
                 f.write_str(gettext("Failed to decode UTF-8: "))?;

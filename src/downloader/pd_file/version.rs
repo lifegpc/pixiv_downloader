@@ -27,7 +27,7 @@ impl PdFileVersion {
     /// Create a new instance of the [PdFileVersion] from bytes.
     /// * `bytes` - The data
     /// * `offset` - The offset of the needed data
-    /// 
+    ///
     /// Returns a new instance if succeed otherwise a Error because the data is less than 2 bytes.
     pub fn from_bytes<T: AsRef<[u8]> + ?Sized>(bytes: &T, offset: usize) -> Result<Self, ()> {
         let value = bytes.as_ref();
@@ -53,7 +53,7 @@ impl PdFileVersion {
 
     /// Create a new instance of the [PdFileVersion] from reader
     /// * `reader` - The reader which implement the [Read] trait
-    /// 
+    ///
     /// Returns io Error or [PdFileVersion] instance.
     pub fn read_from<R: Read>(reader: &mut R) -> std::io::Result<Self> {
         let mut buf = [0u8; 2];
@@ -63,7 +63,7 @@ impl PdFileVersion {
 
     /// Write version bytes to writer.
     /// * `writer` - The writer which implement the [Write] trait
-    /// 
+    ///
     /// Returns io Result.
     pub fn write_to<W: Write>(&self, writer: &mut W) -> std::io::Result<()> {
         writer.write_all(&self.to_bytes())
@@ -104,8 +104,8 @@ impl PartialOrd for PdFileVersion {
 impl<T: AsRef<[u8]> + ?Sized> PartialEq<T> for PdFileVersion {
     fn eq(&self, other: &T) -> bool {
         match Self::from_bytes(other, 0) {
-            Ok(v) => { v == *self }
-            Err(_) => { false }
+            Ok(v) => v == *self,
+            Err(_) => false,
         }
     }
 }
@@ -115,8 +115,8 @@ impl<T: AsRef<[u8]> + ?Sized> PartialEq<T> for PdFileVersion {
 impl<T: AsRef<[u8]> + ?Sized> PartialOrd<T> for PdFileVersion {
     fn partial_cmp(&self, other: &T) -> Option<Ordering> {
         match Self::from_bytes(other, 0) {
-            Ok(v) => { Some(self.cmp(&v)) }
-            Err(_) => { None }
+            Ok(v) => Some(self.cmp(&v)),
+            Err(_) => None,
         }
     }
 }

@@ -294,8 +294,8 @@ impl SettingStore {
 
     pub fn get_bool(&self, key: &str) -> Option<bool> {
         match self.data.get(key) {
-            Some(obj) => { obj.as_bool() }
-            None => { None }
+            Some(obj) => obj.as_bool(),
+            None => None,
         }
     }
 
@@ -318,14 +318,14 @@ impl SettingStore {
 
     pub fn have_bool(&self, key: &str) -> bool {
         match self.data.get(key) {
-            Some(obj) => { obj.is_boolean() }
-            None => { false }
+            Some(obj) => obj.is_boolean(),
+            None => false,
         }
     }
 
     pub fn have_str(&self, key: &str) -> bool {
         let obj = self.data.get(key);
-        if obj.is_none()  {
+        if obj.is_none() {
             return false;
         }
         let obj = obj.unwrap();

@@ -528,7 +528,11 @@ impl BorrowMut<ExifDataRef> for ExifData {
 impl Deref for ExifData {
     type Target = ExifDataRef;
     fn deref(&self) -> &Self::Target {
-        unsafe { ExifDataRef::from_const_handle(_exif::exif_data_get_ref(self.to_raw_handle()) as *const ExifDataRef) }
+        unsafe {
+            ExifDataRef::from_const_handle(
+                _exif::exif_data_get_ref(self.to_raw_handle()) as *const ExifDataRef
+            )
+        }
     }
 }
 
@@ -717,7 +721,7 @@ impl ExifImage {
     }
 
     /// Write metadata back to the image.
-    /// 
+    ///
     /// All existing metadata sections in the image are either created, replaced, or erased.
     /// If values for a given metadata type have been assigned, a section for that metadata type will either be created or replaced.
     /// If no values have been assigned to a given metadata type, any exists section for that metadata type will be removed from the image.

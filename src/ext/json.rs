@@ -34,8 +34,8 @@ impl<T: ToJson> ToJson for &T {
 impl<T: ToJson> ToJson for Option<T> {
     fn to_json(&self) -> Option<JsonValue> {
         match self {
-            Some(d) => { d.to_json() }
-            None => { None }
+            Some(d) => d.to_json(),
+            None => None,
         }
     }
 }
@@ -52,7 +52,10 @@ impl<T: ToJson> ToJson for RwLockWriteGuard<'_, T> {
     }
 }
 
-pub trait FromJson where Self: Sized {
+pub trait FromJson
+where
+    Self: Sized,
+{
     type Err;
     fn from_json<T: ToJson>(v: T) -> Result<Self, Self::Err>;
 }

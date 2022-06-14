@@ -92,7 +92,7 @@ impl TryInto<u64> for PixivID {
     type Error = ();
     fn try_into(self) -> Result<u64, Self::Error> {
         match self {
-            Self::Artwork(id) => { Ok(id) }
+            Self::Artwork(id) => Ok(id),
         }
     }
 }
@@ -101,7 +101,7 @@ impl TryInto<u64> for &PixivID {
     type Error = ();
     fn try_into(self) -> Result<u64, Self::Error> {
         match *self {
-            PixivID::Artwork(id) => { Ok(id) }
+            PixivID::Artwork(id) => Ok(id),
         }
     }
 }

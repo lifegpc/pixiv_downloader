@@ -23,7 +23,7 @@ pub trait StructRead {
     define_struct_reader_fn!(i128);
     /// Read exact number of bytes.
     /// * `size` - The number of bytes
-    /// 
+    ///
     /// Returns io error or the bytes.
     fn read_bytes(&mut self, size: usize) -> Result<Vec<u8>, Self::Error>;
 }

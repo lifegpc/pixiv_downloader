@@ -22,21 +22,17 @@ impl From<&str> for PixivDownloaderError {
 macro_rules! concat_pixiv_downloader_error {
     ($exp1:expr, $exp2:expr) => {
         $exp1 = match $exp1 {
-            Ok(x) => {
-                match $exp2 {
-                    Ok(_) => { Ok(x) }
-                    Err(e) => { Err(PixivDownloaderError::from(e)) }
+            Ok(x) => match $exp2 {
+                Ok(_) => Ok(x),
+                Err(e) => Err(PixivDownloaderError::from(e)),
+            },
+            Err(e) => match $exp2 {
+                Ok(_) => Err(e),
+                Err(e2) => {
+                    println!("{}", e);
+                    Err(PixivDownloaderError::from(e2))
                 }
-            }
-            Err(e) => {
-                match $exp2 {
-                    Ok(_) => { Err(e) }
-                    Err(e2) => {
-                        println!("{}", e);
-                        Err(PixivDownloaderError::from(e2))
-                    }
-                }
-            }
+            },
         }
-    }
+    };
 }

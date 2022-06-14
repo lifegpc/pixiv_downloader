@@ -1,7 +1,7 @@
-use crate::downloader::pd_file::error::PdFileError;
 use crate::downloader::pd_file::enums::PdFileResult;
 use crate::downloader::pd_file::enums::PdFileStatus;
 use crate::downloader::pd_file::enums::PdFileType;
+use crate::downloader::pd_file::error::PdFileError;
 use crate::downloader::pd_file::part_status::PdFilePartStatus;
 use crate::downloader::pd_file::version::PdFileVersion;
 use crate::ext::atomic::AtomicQuick;
@@ -14,12 +14,12 @@ use crate::ext::try_err::TryErr2;
 use crate::gettext;
 use int_enum::IntEnum;
 use std::convert::AsRef;
-use std::fs::File;
 #[cfg(test)]
 use std::fs::create_dir;
 #[cfg(test)]
 use std::fs::metadata;
 use std::fs::remove_file;
+use std::fs::File;
 use std::io::Read;
 use std::io::Seek;
 use std::io::SeekFrom;
@@ -27,11 +27,11 @@ use std::io::Write;
 use std::ops::Drop;
 use std::path::Path;
 use std::path::PathBuf;
-use std::sync::Arc;
-use std::sync::RwLock;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicU32;
 use std::sync::atomic::AtomicU64;
+use std::sync::Arc;
+use std::sync::RwLock;
 
 lazy_static! {
     #[doc(hidden)]
@@ -40,7 +40,7 @@ lazy_static! {
 
 /// The offset of the status in pd file
 const STATUS_OFFSET: SeekFrom = SeekFrom::Start(10);
-/// The offset of the file_size in pd file 
+/// The offset of the file_size in pd file
 const FILE_SIZE_OFFSET: SeekFrom = SeekFrom::Start(12);
 /// The offset of the downloaded_file_size in pd file
 const DOWNLOADED_FILE_SIZE_OFFSET: SeekFrom = SeekFrom::Start(20);
@@ -137,7 +137,9 @@ impl PdFile {
     pub fn force_close(&self) {
         let mut f = self.file.get_mut();
         match f.as_mut() {
-            Some(_) => { f.take(); }
+            Some(_) => {
+                f.take();
+            }
             None => {}
         }
     }
@@ -167,7 +169,7 @@ impl PdFile {
 
     /// Increase the downloaded file size.
     /// * `size` - The file size want to added.
-    /// 
+    ///
     /// Returns the downloaded file size
     pub fn inc(&self, size: u64) -> Result<u64, PdFileError> {
         let mut downloaded_size = self.downloaded_file_size.qload();
@@ -219,7 +221,10 @@ impl PdFile {
     pub fn open<P: AsRef<Path> + ?Sized>(path: &P) -> Result<PdFileResult, PdFileError> {
         let p = path.as_ref();
         let mut pb = PathBuf::from(p);
-        let mut file_name = pb.file_name().try_err(gettext("Path need have a file name."))?.to_owned();
+        let mut file_name = pb
+            .file_name()
+            .try_err(gettext("Path need have a file name."))?
+            .to_owned();
         file_name.push(".pd");
         pb.set_file_name(&file_name);
         if p.exists() {
@@ -235,14 +240,19 @@ impl PdFile {
         } else {
             let f = PdFile::new();
             f.open_with_create_file(&pb)?;
-            f.set_file_name(p.file_name().try_err(gettext("Path need have a file name."))?.to_str().unwrap_or("(null)"))?;
+            f.set_file_name(
+                p.file_name()
+                    .try_err(gettext("Path need have a file name."))?
+                    .to_str()
+                    .unwrap_or("(null)"),
+            )?;
             Ok(PdFileResult::Ok(f))
         }
     }
 
     /// Create a new [PdFile] instance from the pd file.
     /// * `path` - The path to the pd file.
-    /// 
+    ///
     /// Returns errors or a new instance.
     pub fn read_from_file<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Self, PdFileError> {
         let p = path.as_ref();
@@ -291,7 +301,10 @@ impl PdFile {
     /// Create a new file and prepare to write data to it.
     /// If file alreay exists, will remove it first.
     /// * `path` - The path to the pd file.
-    pub fn open_with_create_file<P: AsRef<Path> + ?Sized>(&self, path: &P) -> Result<(), PdFileError> {
+    pub fn open_with_create_file<P: AsRef<Path> + ?Sized>(
+        &self,
+        path: &P,
+    ) -> Result<(), PdFileError> {
         let p = path.as_ref();
         if p.exists() {
             remove_file(p)?;
@@ -313,7 +326,7 @@ impl PdFile {
                 }
                 Ok(())
             }
-            None => { Ok(()) }
+            None => Ok(()),
         }
     }
 
@@ -371,7 +384,7 @@ impl PdFile {
 
     /// Set the target size of the file. If unknown, set this to 0.
     /// * `file_size` - The target size of the file.
-    /// 
+    ///
     /// This will also set the status to downloading.
     pub fn set_file_size(&self, file_size: u64) -> Result<(), PdFileError> {
         self.file_size.qstore(file_size);
@@ -402,7 +415,10 @@ impl PdFile {
         f.seek(SeekFrom::Start(0))?;
         f.write_all(&MAGIC_WORDS)?;
         self.version.write_to(&mut f)?;
-        let file_name = self.file_name.get_ref().try_err2(gettext("File name is not set."))?;
+        let file_name = self
+            .file_name
+            .get_ref()
+            .try_err2(gettext("File name is not set."))?;
         let file_name = file_name.as_bytes();
         f.write_le_u32(file_name.len() as u32)?;
         f.write_le_u8(self.status.get_ref().int_value())?;

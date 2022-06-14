@@ -26,7 +26,7 @@ macro_rules! impl_atomic_quick_with_atomic {
                 self.store(value, Ordering::SeqCst)
             }
         }
-    }
+    };
 }
 
 impl_atomic_quick_with_atomic!(std::sync::atomic::AtomicBool, bool);

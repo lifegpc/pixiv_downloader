@@ -4,9 +4,9 @@ use crate::ext::replace::ReplaceWith2;
 use crate::ext::rw_lock::GetRwLock;
 use crate::ext::use_or_not::ToBool;
 use crate::ext::use_or_not::UseOrNot;
+use crate::list::NonTailList;
 use crate::opt::use_progress_bar::UseProgressBar;
 use crate::opts::CommandOpts;
-use crate::list::NonTailList;
 use crate::retry_interval::parse_retry_interval_from_json;
 use crate::settings::SettingStore;
 use std::sync::Arc;
@@ -58,15 +58,20 @@ impl OptHelper {
 
     pub fn update(&self, opt: CommandOpts, settings: SettingStore) {
         if settings.have("author-name-filters") {
-            self._author_name_filters.replace_with2(AuthorNameFilter::from_json(settings.get("author-name-filters").unwrap()).unwrap());
+            self._author_name_filters.replace_with2(
+                AuthorNameFilter::from_json(settings.get("author-name-filters").unwrap()).unwrap(),
+            );
         }
-        self._use_progress_bar.replace_with2(if opt.use_progress_bar.is_some() {
-            Some(UseProgressBar::from(opt.use_progress_bar.unwrap()))
-        } else if settings.have("use-progress-bar") {
-            Some(UseProgressBar::from(UseOrNot::from_json(settings.get("use-progress-bar").unwrap()).unwrap()))
-        } else {
-            None
-        });
+        self._use_progress_bar
+            .replace_with2(if opt.use_progress_bar.is_some() {
+                Some(UseProgressBar::from(opt.use_progress_bar.unwrap()))
+            } else if settings.have("use-progress-bar") {
+                Some(UseProgressBar::from(
+                    UseOrNot::from_json(settings.get("use-progress-bar").unwrap()).unwrap(),
+                ))
+            } else {
+                None
+            });
         self.opt.replace_with2(opt);
         self.settings.replace_with2(settings);
     }
@@ -138,7 +143,11 @@ impl OptHelper {
     /// Return progress bar's template
     pub fn progress_bar_template(&self) -> String {
         if self.settings.get_ref().have("progress-bar-template") {
-            return self.settings.get_ref().get_str("progress-bar-template").unwrap()
+            return self
+                .settings
+                .get_ref()
+                .get_str("progress-bar-template")
+                .unwrap();
         }
         String::from("[{elapsed_precise}] [{wide_bar:.green/yellow}] {bytes}/{total_bytes} ({bytes_per_sec}, {eta}) {msg:40}")
     }
@@ -146,11 +155,21 @@ impl OptHelper {
     /// Return whether to download multiple images at the same time.
     pub fn download_multiple_images(&self) -> bool {
         match self.opt.get_ref().download_multiple_images {
-            Some(r) => { return r; }
+            Some(r) => {
+                return r;
+            }
             None => {}
         }
-        if self.settings.get_ref().have_bool("download-multiple-images") {
-            return self.settings.get_ref().get_bool("download-multiple-images").unwrap();
+        if self
+            .settings
+            .get_ref()
+            .have_bool("download-multiple-images")
+        {
+            return self
+                .settings
+                .get_ref()
+                .get_bool("download-multiple-images")
+                .unwrap();
         }
         false
     }
@@ -170,7 +189,7 @@ impl Default for OptHelper {
     }
 }
 
-lazy_static!{
+lazy_static! {
     #[doc(hidden)]
     pub static ref HELPER: Arc<OptHelper> = Arc::new(OptHelper::default());
 }

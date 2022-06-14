@@ -97,9 +97,9 @@ impl PdFilePartStatus {
 impl Display for PdFilePartStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Waited => { f.write_str("PdFilePartStatus::Waited") }
-            Self::Downloading => { f.write_str("PdFilePartStatus::Downloading") }
-            Self::Downloaded => { f.write_str("PdFilePartStatus::Downloaded") }
+            Self::Waited => f.write_str("PdFilePartStatus::Waited"),
+            Self::Downloading => f.write_str("PdFilePartStatus::Downloading"),
+            Self::Downloaded => f.write_str("PdFilePartStatus::Downloaded"),
         }
     }
 }

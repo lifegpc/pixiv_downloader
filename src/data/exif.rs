@@ -80,7 +80,11 @@ fn add_image_page(data: &mut ExifData, page: u16) -> Result<(), ()> {
     Ok(())
 }
 
-pub fn add_exifdata_to_image<S: AsRef<OsStr> + ?Sized>(file_name: &S, data: &PixivData, page: u16) -> Result<(), ()> {
+pub fn add_exifdata_to_image<S: AsRef<OsStr> + ?Sized>(
+    file_name: &S,
+    data: &PixivData,
+    page: u16,
+) -> Result<(), ()> {
     let mut f = ExifImage::new(file_name)?;
     let mut d = ExifData::new()?;
     add_image_id(&mut d, data)?;

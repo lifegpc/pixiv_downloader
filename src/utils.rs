@@ -56,7 +56,11 @@ pub fn get_file_name_from_url<U: IntoUrl>(url: U) -> Option<String> {
     let path = Path::new(u.path());
     let re = path.file_name();
     if re.is_none() {
-        println!("{} {}", gettext("Failed to get file name from path:"), u.path());
+        println!(
+            "{} {}",
+            gettext("Failed to get file name from path:"),
+            u.path()
+        );
         return None;
     }
     let r = re.unwrap().to_str();

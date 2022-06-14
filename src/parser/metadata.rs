@@ -65,8 +65,8 @@ impl MetaDataParser {
                     false
                 }
             }
-            Node::Comment(_) => { false }
-            Node::Text(_) => { false }
+            Node::Comment(_) => false,
+            Node::Text(_) => false,
         }
     }
 

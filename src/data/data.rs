@@ -1,8 +1,8 @@
 use crate::author_name_filter::AuthorFiler;
 use crate::gettext;
 use crate::opthelper::get_helper;
-use crate::pixiv_link::ToPixivID;
 use crate::pixiv_link::PixivID;
+use crate::pixiv_link::ToPixivID;
 use json::JsonValue;
 use std::convert::TryInto;
 use xml::unescape;
@@ -58,8 +58,10 @@ impl PixivData {
             if author.is_some() {
                 let au = author.unwrap();
                 match get_helper().author_name_filters() {
-                    Some(l) => { self.author = Some(l.filter(au)) }
-                    None => { self.author = Some(String::from(author.unwrap())); }
+                    Some(l) => self.author = Some(l.filter(au)),
+                    None => {
+                        self.author = Some(String::from(author.unwrap()));
+                    }
                 }
             }
         }
@@ -71,7 +73,9 @@ impl PixivData {
             if description.is_some() {
                 let re = unescape(description.unwrap());
                 match re {
-                    Ok(s) => { self.description = Some(s); }
+                    Ok(s) => {
+                        self.description = Some(s);
+                    }
                     Err(s) => {
                         println!("{} {}", gettext("Failed to unescape string:"), s.as_str());
                     }
