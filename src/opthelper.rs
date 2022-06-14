@@ -85,13 +85,13 @@ impl OptHelper {
     }
 
     /// Return retry count
-    pub fn retry(&self) -> Option<u64> {
+    pub fn retry(&self) -> Option<i64> {
         if self.opt.get_ref().retry.is_some() {
             return Some(self.opt.get_ref().retry.unwrap());
         }
         let re = self.settings.get_ref().get("retry");
         if re.is_some() {
-            return Some(re.unwrap().as_u64().unwrap());
+            return Some(re.unwrap().as_i64().unwrap());
         }
         None
     }

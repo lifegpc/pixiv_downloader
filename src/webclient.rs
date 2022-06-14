@@ -22,7 +22,7 @@ use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 use std::sync::atomic::AtomicBool;
-use std::sync::atomic::AtomicU64;
+use std::sync::atomic::AtomicI64;
 use std::sync::Arc;
 use std::sync::RwLock;
 use std::sync::RwLockReadGuard;
@@ -94,8 +94,8 @@ pub struct WebClient {
     cookies: RwLock<CookieJar>,
     /// Verbose logging
     verbose: Arc<AtomicBool>,
-    /// Retry times, 0 means disable
-    retry: Arc<AtomicU64>,
+    /// Retry times, 0 means disable, < 0 means always retry
+    retry: Arc<AtomicI64>,
     /// Retry interval
     retry_interval: RwLock<Option<NonTailList<Duration>>>,
 }
@@ -110,7 +110,7 @@ impl WebClient {
             headers: RwLock::new(HashMap::new()),
             cookies: RwLock::new(CookieJar::new()),
             verbose: Arc::new(AtomicBool::new(false)),
-            retry: Arc::new(AtomicU64::new(3)),
+            retry: Arc::new(AtomicI64::new(3)),
             retry_interval: RwLock::new(None),
         }
     }
@@ -186,7 +186,7 @@ impl WebClient {
     }
 
     /// return retry times, 0 means disable
-    pub fn get_retry(&self) -> u64 {
+    pub fn get_retry(&self) -> i64 {
         self.retry.qload()
     }
 
@@ -295,7 +295,7 @@ impl WebClient {
     }
 
     /// Set retry times, 0 means disable
-    pub fn set_retry(&self, retry: u64) {
+    pub fn set_retry(&self, retry: i64) {
         self.retry.qstore(retry)
     }
 
@@ -391,15 +391,15 @@ impl WebClient {
         url: U,
         headers: H,
     ) -> Option<Response> {
-        let mut count = 0u64;
+        let mut count = 0i64;
         let retry = self.get_retry();
-        while count <= retry {
+        while retry < 0 || count <= retry {
             let r = self._aget2(url.clone(), headers.clone()).await;
             if r.is_some() {
                 return r;
             }
             count += 1;
-            if count <= retry {
+            if retry < 0 || count <= retry {
                 let t =
                     self.get_retry_interval().as_ref().unwrap()[(count - 1).try_into().unwrap()];
                 if !t.is_zero() {

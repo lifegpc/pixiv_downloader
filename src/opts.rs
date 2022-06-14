@@ -59,7 +59,7 @@ pub struct CommandOpts {
     /// Whether to overwrite file
     pub overwrite: Option<bool>,
     /// Max retry count.
-    pub retry: Option<u64>,
+    pub retry: Option<i64>,
     /// Retry interval
     pub retry_interval: Option<NonTailList<Duration>>,
     /// Use data from webpage first
@@ -335,7 +335,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
     if result.opt_present("retry") {
         let s = result.opt_str("retry").unwrap();
         let s = s.trim();
-        let c = s.parse::<u64>();
+        let c = s.parse::<i64>();
         if c.is_err() {
             println!(
                 "{} {}",

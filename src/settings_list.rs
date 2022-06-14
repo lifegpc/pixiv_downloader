@@ -12,7 +12,7 @@ pub fn get_settings_list() -> Vec<SettingDes> {
         SettingDes::new("refresh_tokens", gettext("Pixiv's refresh tokens. Used to login."), JsonValueType::Str, None).unwrap(),
         SettingDes::new("cookies", gettext("The location of cookies file. Used for web API."), JsonValueType::Str, None).unwrap(),
         SettingDes::new("language", gettext("The language of translated tags."), JsonValueType::Str, None).unwrap(),
-        SettingDes::new("retry", gettext("Max retry count if request failed."), JsonValueType::Number, Some(check_u64)).unwrap(),
+        SettingDes::new("retry", gettext("Max retry count if request failed."), JsonValueType::Number, Some(check_i64)).unwrap(),
         SettingDes::new("retry-interval", gettext("The interval (in seconds) between two retries."), JsonValueType::Multiple, Some(check_retry_interval)).unwrap(),
         SettingDes::new("use-webpage", gettext("Use data from webpage first."), JsonValueType::Boolean, None).unwrap(),
         SettingDes::new("author-name-filters", gettext("Remove the part which after these parttens."), JsonValueType::Array, Some(check_author_name_filters)).unwrap(),
@@ -24,8 +24,8 @@ pub fn get_settings_list() -> Vec<SettingDes> {
     ]
 }
 
-fn check_u64(obj: &JsonValue) -> bool {
-    let r = obj.as_u64();
+fn check_i64(obj: &JsonValue) -> bool {
+    let r = obj.as_i64();
     r.is_some()
 }
 

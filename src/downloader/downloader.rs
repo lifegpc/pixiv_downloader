@@ -507,7 +507,7 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + 'static> Do
             self.disable_progress_bar();
         }
         match helper.retry() {
-            Some(u) => self.set_max_retry_count(u as i64),
+            Some(u) => self.set_max_retry_count(u),
             None => {}
         }
         self.set_retry_interval(helper.retry_interval());
@@ -593,11 +593,13 @@ async fn test_failed_downloader() {
         .aget_retry_interval_as_mut()
         .await
         .replace(retry_interval.clone());
+    client.set_retry(1);
     let downloader =
         Downloader::<LocalFile>::new2(client, url, None, Some(&pb), Some(true)).unwrap();
     match downloader {
         DownloaderResult::Ok(v) => {
             v.set_retry_interval(retry_interval);
+            v.set_max_retry_count(1);
             assert_eq!(v.is_created(), true);
             v.disable_progress_bar();
             v.download();
