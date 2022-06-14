@@ -7,7 +7,6 @@ use crate::data::json::JSONDataFile;
 #[cfg(feature = "ugoira")]
 use crate::data::video::get_video_metadata;
 use crate::downloader::Downloader;
-use crate::downloader::DownloaderError;
 use crate::downloader::DownloaderResult;
 use crate::downloader::LocalFile;
 use crate::error::PixivDownloaderError;
@@ -72,7 +71,7 @@ impl Main {
     /// * `progress_bars` - Multiple progress bars
     /// * `datas` - The artwork's data
     /// * `base` - The directory of the target
-    pub async fn download_artwork_link<L: IntoUrl + Clone>(link: L, np: u16, progress_bars: Option<Arc<MultiProgress>>, datas: Arc<PixivData>, base: Arc<PathBuf>) -> Result<(), DownloaderError> {
+    pub async fn download_artwork_link<L: IntoUrl + Clone>(link: L, np: u16, progress_bars: Option<Arc<MultiProgress>>, datas: Arc<PixivData>, base: Arc<PathBuf>) -> Result<(), PixivDownloaderError> {
         let file_name = get_file_name_from_url(link.clone()).try_err(format!("{} {}", gettext("Failed to get file name from url:"), link.as_str()))?;
         let file_name = base.join(file_name);
         let helper = get_helper();
@@ -239,14 +238,7 @@ impl Main {
             for task in tasks {
                 let r = spin_on(task);
                 let r = match r {
-                    Ok(r) => {
-                        match r {
-                            Ok(o) => { Ok(o) }
-                            Err(e) => {
-                                Err(PixivDownloaderError::from(e))
-                            }
-                        }
-                    }
+                    Ok(r) => { r }
                     Err(e) => {
                         Err(PixivDownloaderError::from(e))
                     }

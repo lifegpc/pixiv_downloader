@@ -246,6 +246,8 @@ impl PartialEq for UgoiraZipError2 {
     }
 }
 
+unsafe impl Send for UgoiraZipError2 {}
+
 impl ToRawHandle<_ugoira::zip_error_t> for UgoiraZipError2 {
     unsafe fn to_raw_handle(&self) -> *mut _ugoira::zip_error_t {
         self.err
@@ -360,6 +362,22 @@ pub fn convert_ugoira_to_mp4<S: AsRef<OsStr> + ?Sized, D: AsRef<OsStr> + ?Sized,
         Err(re)?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+async fn get_ugoira_zip_error2() -> UgoiraZipError2 {
+    let ugo = unsafe { _ugoira::new_ugoira_error() };
+    if ugo.is_null() {
+        panic!("Out of memory.");
+    }
+    UgoiraZipError2 { err: ugo }
+}
+
+#[tokio::test]
+async fn test_ugoira_zip_error2() {
+    let task = tokio::spawn(get_ugoira_zip_error2());
+    let re = task.await.unwrap();
+    assert!(re.to_str().is_ok())
 }
 
 #[test]

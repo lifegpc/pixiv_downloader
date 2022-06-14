@@ -41,6 +41,7 @@ void free_ugoira_frames(UgoiraFrame* frames);
 UgoiraError convert_ugoira_to_mp4(const char* src, const char* dest, const UgoiraFrame* frames, float max_fps, const AVDictionary* opts, const AVDictionary* metadata);
 char* ugoira_get_zip_err_msg(int code);
 void ugoira_mfree(void* data);
+zip_error_t* new_ugoira_error();
 void free_ugoira_error(zip_error_t* zip_err);
 char* ugoira_get_zip_err2_msg(zip_error_t* zip_err2);
 #endif

@@ -489,6 +489,16 @@ void ugoira_mfree(void* data) {
     if (data) free(data);
 }
 
+zip_error_t* new_ugoira_error() {
+    zip_error_t* err = malloc(sizeof(zip_error_t));
+    if (!err) {
+        return NULL;
+    }
+    memset(err, 0, sizeof(zip_error_t));
+    zip_error_init(err);
+    return err;
+}
+
 void free_ugoira_error(zip_error_t* zip_err) {
     if (!zip_err) return;
     zip_error_fini(zip_err);
