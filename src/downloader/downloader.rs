@@ -10,6 +10,7 @@ use crate::ext::io::ClearFile;
 use crate::ext::replace::ReplaceWith2;
 use crate::ext::rw_lock::GetRwLock;
 use crate::gettext;
+use crate::opthelper::OptHelper;
 use crate::utils::ask_need_overwrite;
 use crate::utils::get_file_name_from_url;
 use crate::webclient::WebClient;
@@ -369,16 +370,34 @@ impl <T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + 'static> D
         Ok(())
     }
 
+    #[inline]
     /// Disable progress bar
     pub fn disable_progress_bar(&self) {
         self.downloader.disable_progress_bar()
     }
 
+    #[inline]
     /// Enable the progress bar
     /// * `style` - The style of the progress bar
     /// * `mults` - The instance of [MultiProgress] if multiple progress bars are needed.
     pub fn enable_progress_bar(&self, style: ProgressStyle, mults: Option<&MultiProgress>) {
         self.downloader.enable_progress_bar(style, mults)
+    }
+
+    /// Handle options
+    /// * `mults` - The instance of [MultiProgress] if multiple progress bars are needed.
+    pub fn handle_options(&self, helper: &OptHelper, mults: Option<Arc<MultiProgress>>) {
+        if helper.use_progress_bar() {
+            let style = ProgressStyle::default_bar()
+                .template(helper.progress_bar_template().as_ref()).unwrap()
+                .progress_chars("#>-");
+            match mults {
+                Some(v) => { self.enable_progress_bar(style, Some(&v)); }
+                None => { self.enable_progress_bar(style, None); }
+            }
+        } else {
+            self.disable_progress_bar();
+        }
     }
     define_downloader_fn!(is_created, bool, "Returns true if the downloader is created just now.");
     define_downloader_fn!(is_downloading, bool, "Returns true if the downloader is downloading now.");

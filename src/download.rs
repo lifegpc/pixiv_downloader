@@ -23,7 +23,6 @@ use crate::utils::get_file_name_from_url;
 use crate::webclient::WebClient;
 use crate::Main;
 use indicatif::MultiProgress;
-use indicatif::ProgressStyle;
 use json::JsonValue;
 use reqwest::IntoUrl;
 use std::path::PathBuf;
@@ -77,30 +76,18 @@ impl Main {
         let downloader = Downloader::<LocalFile>::new(link, json::object!{"referer": "https://www.pixiv.net/"}, Some(&file_name), helper.overwrite())?;
         match downloader {
             DownloaderResult::Ok(d) => {
-                if helper.use_progress_bar() {
-                    let style = ProgressStyle::default_bar()
-                        .template(helper.progress_bar_template().as_ref()).unwrap()
-                        .progress_chars("#>-");
-                    match progress_bars {
-                        Some(b) => {
-                            d.enable_progress_bar(style, Some(&b));
-                        }
-                        None => {
-                            d.enable_progress_bar(style, None);
-                        }
-                    }
-                    d.download();
-                    d.join().await?;
-                    if d.is_downloaded() {
-                        #[cfg(feature = "exif")]
-                        {
-                            if add_exifdata_to_image(&file_name, &datas, np).is_err() {
-                                println!(
-                                    "{} {}",
-                                    gettext("Failed to add exif data to image:"),
-                                    file_name.to_str().unwrap_or("(null)")
-                                );
-                            }
+                d.handle_options(&helper, progress_bars);
+                d.download();
+                d.join().await?;
+                if d.is_downloaded() {
+                    #[cfg(feature = "exif")]
+                    {
+                        if add_exifdata_to_image(&file_name, &datas, np).is_err() {
+                            println!(
+                                "{} {}",
+                                gettext("Failed to add exif data to image:"),
+                                file_name.to_str().unwrap_or("(null)")
+                            );
                         }
                     }
                 }
