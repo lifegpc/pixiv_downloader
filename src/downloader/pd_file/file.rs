@@ -229,11 +229,26 @@ impl PdFile {
         pb.set_file_name(&file_name);
         if p.exists() {
             if pb.exists() {
-                let f = Self::read_from_file(p)?;
-                if f.is_completed() {
-                    return Ok(PdFileResult::TargetExisted);
+                match Self::read_from_file(p) {
+                    Ok(f) => {
+                        if f.is_completed() {
+                            return Ok(PdFileResult::TargetExisted);
+                        }
+                        Ok(PdFileResult::ExistedOk(f))
+                    }
+                    Err(_) => {
+                        remove_file(p)?;
+                        let f = PdFile::new();
+                        f.open_with_create_file(&pb)?;
+                        f.set_file_name(
+                            p.file_name()
+                                .try_err(gettext("Path need have a file name."))?
+                                .to_str()
+                                .unwrap_or("(null)"),
+                        )?;
+                        Ok(PdFileResult::Ok(f))
+                    }
                 }
-                Ok(PdFileResult::ExistedOk(f))
             } else {
                 Ok(PdFileResult::TargetExisted)
             }

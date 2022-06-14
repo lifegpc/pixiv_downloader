@@ -556,6 +556,17 @@ async fn test_downloader() {
     }
     let url = "https://i.pximg.net/img-original/img/2022/06/12/23/49/43/99014872_p0.png";
     let pb = p.join("99014872_p0.png");
+    {
+        let mut file_name = pb.file_name().unwrap().to_owned();
+        file_name.push(".pd");
+        let mut pdf = pb.clone();
+        pdf.set_file_name(file_name);
+        if pdf.exists() {
+            remove_file(&pdf).unwrap();
+        }
+        LocalFile::create(&pdf).unwrap();
+        assert!(pdf.exists());
+    }
     let downloader = Downloader::<LocalFile>::new(
         url,
         json::object! {"referer": "https://www.pixiv.net/"},
