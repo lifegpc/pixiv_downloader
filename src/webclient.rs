@@ -7,20 +7,12 @@ use crate::ext::json::ToJson;
 use crate::gettext;
 use crate::list::NonTailList;
 use crate::opthelper::get_helper;
-use futures_util::StreamExt;
-use indicatif::ProgressBar;
-use indicatif::ProgressStyle;
 use json::JsonValue;
 use reqwest::{Client, IntoUrl, RequestBuilder, Response};
 use spin_on::spin_on;
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::default::Default;
-use std::ffi::OsStr;
-use std::fs::remove_file;
-use std::fs::File;
-use std::io::Write;
-use std::path::Path;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicI64;
 use std::sync::Arc;
@@ -463,78 +455,6 @@ impl WebClient {
             r = r.header("Cookie", c.as_str());
         }
         r
-    }
-
-    /// Download a stream
-    /// * `file_name` - File name
-    /// * `r` - Response
-    /// * `opt` - Options
-    ///
-    /// Note: If file already exists, will remove existing file first.
-    pub fn download_stream<S: AsRef<OsStr> + ?Sized>(file_name: &S, r: Response) -> Result<(), ()> {
-        let content_length = r.content_length();
-        let opt = get_helper();
-        let use_progress_bar = match &content_length {
-            Some(_) => opt.use_progress_bar(),
-            None => false,
-        };
-        let mut bar = if use_progress_bar {
-            Some(ProgressBar::new(content_length.unwrap()))
-        } else {
-            None
-        };
-        if bar.is_some() {
-            bar.as_mut().unwrap().set_style(
-                ProgressStyle::default_bar()
-                    .template(opt.progress_bar_template().as_ref())
-                    .unwrap()
-                    .progress_chars("#>-"),
-            );
-        }
-        let mut downloaded = 0usize;
-        let p = Path::new(file_name);
-        if p.exists() {
-            let re = remove_file(p);
-            if re.is_err() {
-                println!("{} {}", gettext("Failed to remove file:"), re.unwrap_err());
-                return Err(());
-            }
-        }
-        if bar.is_some() {
-            let tmp = p.file_name().unwrap_or(p.as_os_str());
-            bar.as_mut().unwrap().set_message(
-                gettext("Downloading \"<loc>\".")
-                    .replace("<loc>", tmp.to_str().unwrap_or("<NULL>")),
-            );
-        }
-        let f = File::create(p);
-        if f.is_err() {
-            println!("{} {}", gettext("Failed to create file:"), f.unwrap_err());
-            return Err(());
-        }
-        let mut f = f.unwrap();
-        let mut stream = r.bytes_stream();
-        while let Some(data) = spin_on(stream.next()) {
-            if data.is_err() {
-                println!(
-                    "{} {}",
-                    gettext("Error when downloading file:"),
-                    data.unwrap_err()
-                );
-                return Err(());
-            }
-            let data = data.unwrap();
-            downloaded += data.len();
-            if bar.is_some() {
-                bar.as_mut().unwrap().set_position(downloaded as u64);
-            }
-            let r = f.write(&data);
-            if r.is_err() {
-                println!("{} {}", gettext("Failed to write file:"), r.unwrap_err());
-                return Err(());
-            }
-        }
-        Ok(())
     }
 }
 

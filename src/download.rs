@@ -18,9 +18,7 @@ use crate::pixiv_link::PixivID;
 use crate::pixiv_web::PixivWebClient;
 #[cfg(feature = "ugoira")]
 use crate::ugoira::{convert_ugoira_to_mp4, UgoiraFrames};
-use crate::utils::ask_need_overwrite;
 use crate::utils::get_file_name_from_url;
-use crate::webclient::WebClient;
 use crate::Main;
 use indicatif::MultiProgress;
 use json::JsonValue;
