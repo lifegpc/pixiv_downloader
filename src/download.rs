@@ -206,31 +206,25 @@ impl Main {
                         src
                     ))?;
                     let file_name = base.join(file_name);
-                    let dw = if file_name.exists() {
-                        match helper.overwrite() {
-                            Some(overwrite) => overwrite,
-                            None => ask_need_overwrite(file_name.to_str().unwrap()),
+                    let downloader = Downloader::new(
+                        src,
+                        json::object! { "referer": "https://www.pixiv.net/" },
+                        Some(&file_name),
+                        helper.overwrite(),
+                    )?;
+                    match downloader {
+                        DownloaderResult::Ok(d) => {
+                            d.handle_options(&helper, None);
+                            d.download();
+                            d.join().await?;
+                            if d.is_panic() {
+                                return Err(PixivDownloaderError::from(
+                                    d.get_panic()
+                                        .try_err(gettext("Failed to get error message."))?,
+                                ));
+                            }
                         }
-                    } else {
-                        true
-                    };
-                    if dw {
-                        let r = pw.download_image(src).await.try_err(format!(
-                            "{} {}",
-                            gettext("Failed to download ugoira:"),
-                            src
-                        ))?;
-                        WebClient::download_stream(&file_name, r).try_err(format!(
-                            "{} {}",
-                            gettext("Failed to download ugoira:"),
-                            src
-                        ))?;
-                        println!(
-                            "{} {} -> {}",
-                            gettext("Downloaded ugoira:"),
-                            src,
-                            file_name.to_str().unwrap_or("(null)")
-                        );
+                        DownloaderResult::Canceled => {}
                     }
                     #[cfg(feature = "ugoira")]
                     {
@@ -312,73 +306,21 @@ impl Main {
             }
             return re;
         } else if pages_data.is_some() {
-            #[cfg(feature = "exif")]
             let mut np = 0u16;
             let pages_data = pages_data.as_ref().unwrap();
             for page in pages_data.members() {
                 let link = page["urls"]["original"]
                     .as_str()
                     .try_err(gettext("Failed to get original picture's link."))?;
-                let file_name = get_file_name_from_url(link).try_err(format!(
-                    "{} {}",
-                    gettext("Failed to get file name from url:"),
-                    link
-                ))?;
-                let file_name = base.join(file_name);
-                if file_name.exists() {
-                    match helper.overwrite() {
-                        Some(overwrite) => {
-                            if !overwrite {
-                                #[cfg(feature = "exif")]
-                                {
-                                    if helper.update_exif() {
-                                        if add_exifdata_to_image(&file_name, &datas, np).is_err() {
-                                            println!(
-                                                "{} {}",
-                                                gettext("Failed to add exif data to image:"),
-                                                file_name.to_str().unwrap_or("(null)")
-                                            );
-                                        }
-                                    }
-                                    np += 1;
-                                }
-                                continue;
-                            }
-                        }
-                        None => {
-                            if !ask_need_overwrite(file_name.to_str().unwrap()) {
-                                continue;
-                            }
-                        }
-                    }
-                }
-                let r = pw.download_image(link).await.try_err(format!(
-                    "{} {}",
-                    gettext("Failed to download image:"),
-                    link
-                ))?;
-                WebClient::download_stream(&file_name, r).try_err(format!(
-                    "{} {}",
-                    gettext("Failed to download image:"),
-                    link
-                ))?;
-                println!(
-                    "{} {} -> {}",
-                    gettext("Downloaded image:"),
-                    link,
-                    file_name.to_str().unwrap_or("(null)")
-                );
-                #[cfg(feature = "exif")]
-                {
-                    if add_exifdata_to_image(&file_name, &datas, np).is_err() {
-                        println!(
-                            "{} {}",
-                            gettext("Failed to add exif data to image:"),
-                            file_name.to_str().unwrap_or("(null)")
-                        );
-                    }
-                    np += 1;
-                }
+                Self::download_artwork_link(
+                    link.to_owned(),
+                    np,
+                    None,
+                    Arc::clone(&datas),
+                    Arc::clone(&base),
+                )
+                .await?;
+                np += 1;
             }
         } else {
             let link = if ajax_ver {
@@ -387,57 +329,14 @@ impl Main {
                 (&re["illust"][format!("{}", id)]["urls"]["original"]).as_str()
             }
             .try_err(gettext("Failed to get original picture's link."))?;
-            let file_name = get_file_name_from_url(link).try_err(format!(
-                "{} {}",
-                gettext("Failed to get file name from url:"),
-                link
-            ))?;
-            let file_name = base.join(file_name);
-            if file_name.exists() {
-                let overwrite = match helper.overwrite() {
-                    Some(overwrite) => overwrite,
-                    None => ask_need_overwrite(file_name.to_str().unwrap()),
-                };
-                if !overwrite {
-                    #[cfg(feature = "exif")]
-                    if helper.update_exif() {
-                        if add_exifdata_to_image(&file_name, &datas, 0).is_err() {
-                            println!(
-                                "{} {}",
-                                gettext("Failed to add exif data to image:"),
-                                file_name.to_str().unwrap_or("(null)")
-                            );
-                        }
-                    }
-                    return Ok(());
-                }
-            }
-            let r = pw.download_image(link).await.try_err(format!(
-                "{} {}",
-                gettext("Failed to download image:"),
-                link
-            ))?;
-            WebClient::download_stream(&file_name, r).try_err(format!(
-                "{} {}",
-                gettext("Failed to download image:"),
-                link
-            ))?;
-            println!(
-                "{} {} -> {}",
-                gettext("Downloaded image:"),
-                link,
-                file_name.to_str().unwrap_or("(null)")
-            );
-            #[cfg(feature = "exif")]
-            {
-                if add_exifdata_to_image(&file_name, &datas, 0).is_err() {
-                    println!(
-                        "{} {}",
-                        gettext("Failed to add exif data to image:"),
-                        file_name.to_str().unwrap_or("(null)")
-                    );
-                }
-            }
+            Self::download_artwork_link(
+                link.to_owned(),
+                0,
+                None,
+                Arc::clone(&datas),
+                Arc::clone(&base),
+            )
+            .await?;
         }
         Ok(())
     }
