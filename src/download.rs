@@ -31,13 +31,13 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 impl Main {
-    pub fn download(&mut self) -> i32 {
+    pub async fn download(&mut self) -> i32 {
         let pw = Arc::new(PixivWebClient::new());
         if !pw.init() {
             println!("{}", gettext("Failed to initialize pixiv web api client."));
             return 1;
         }
-        if !pw.check_login() {
+        if !pw.check_login().await {
             return 1;
         }
         if !pw.logined() {
@@ -49,7 +49,7 @@ impl Main {
         for id in self.cmd.as_ref().unwrap().ids.iter() {
             match id {
                 PixivID::Artwork(id) => {
-                    let r = self.download_artwork(Arc::clone(&pw), id.clone());
+                    let r = self.download_artwork(Arc::clone(&pw), id.clone()).await;
                     let r = if r.is_ok() {
                         0
                     } else {
@@ -124,19 +124,19 @@ impl Main {
         Ok(())
     }
 
-    pub fn download_artwork(&self, pw: Arc<PixivWebClient>, id: u64) -> Result<(), PixivDownloaderError> {
+    pub async fn download_artwork(&self, pw: Arc<PixivWebClient>, id: u64) -> Result<(), PixivDownloaderError> {
         let mut re = None;
         let pages;
         let mut ajax_ver = true;
         let helper = get_helper();
         if helper.use_webpage() {
-            re = pw.get_artwork(id);
+            re = pw.get_artwork(id).await;
             if re.is_some() {
                 ajax_ver = false;
             }
         }
         if re.is_none() {
-            re = pw.get_artwork_ajax(id);
+            re = pw.get_artwork_ajax(id).await;
         }
         let re = re.try_err(gettext("Failed to get artwork's data."))?;
         if ajax_ver {
@@ -147,7 +147,7 @@ impl Main {
         let pages = pages.try_err(gettext("Failed to get page count."))?;
         let mut pages_data: Option<JsonValue> = None;
         if pages > 1 {
-            pages_data = pw.get_illust_pages(id);
+            pages_data = pw.get_illust_pages(id).await;
         }
         if pages > 1 && pages_data.is_none() {
             return Err(PixivDownloaderError::from(gettext("Failed to get pages' data.")));
@@ -175,7 +175,7 @@ impl Main {
             match illust_type {
                 0 => { }
                 2 => {
-                    let ugoira_data = pw.get_ugoira(id).try_err(gettext("Failed to get ugoira's data."))?;
+                    let ugoira_data = pw.get_ugoira(id).await.try_err(gettext("Failed to get ugoira's data."))?;
                     let src = (&ugoira_data["originalSrc"]).as_str().try_err(gettext("Can not find source link for ugoira."))?;
                     let file_name = get_file_name_from_url(src).try_err(format!("{} {}", gettext("Failed to get file name from url:"), src))?;
                     let file_name = base.join(file_name);
@@ -188,7 +188,7 @@ impl Main {
                         true
                     };
                     if dw {
-                        let r = pw.download_image(src).try_err(format!("{} {}", gettext("Failed to download ugoira:"), src))?;
+                        let r = pw.download_image(src).await.try_err(format!("{} {}", gettext("Failed to download ugoira:"), src))?;
                         WebClient::download_stream(&file_name, r).try_err(format!("{} {}", gettext("Failed to download ugoira:"), src))?;
                         println!(
                             "{} {} -> {}",
@@ -282,7 +282,7 @@ impl Main {
                         }
                     }
                 }
-                let r = pw.download_image(link).try_err(format!("{} {}", gettext("Failed to download image:"), link))?;
+                let r = pw.download_image(link).await.try_err(format!("{} {}", gettext("Failed to download image:"), link))?;
                 WebClient::download_stream(&file_name, r).try_err(format!("{} {}", gettext("Failed to download image:"), link))?;
                 println!(
                     "{} {} -> {}",
@@ -333,7 +333,7 @@ impl Main {
                     return Ok(());
                 }
             }
-            let r = pw.download_image(link).try_err(format!("{} {}", gettext("Failed to download image:"), link))?;
+            let r = pw.download_image(link).await.try_err(format!("{} {}", gettext("Failed to download image:"), link))?;
             WebClient::download_stream(&file_name, r).try_err(format!("{} {}", gettext("Failed to download image:"), link))?;
             println!(
                 "{} {} -> {}",

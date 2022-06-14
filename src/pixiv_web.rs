@@ -101,9 +101,9 @@ impl PixivWebClient {
         }
     }
 
-    pub fn check_login(&self) -> bool {
+    pub async fn check_login(&self) -> bool {
         self.auto_init();
-        let r = self.client.get_with_param("https://www.pixiv.net/", self.params.get_ref(), None);
+        let r = self.client.get_with_param("https://www.pixiv.net/", self.params.get_ref(), None).await;
         if r.is_none() {
             return false;
         }
@@ -181,9 +181,9 @@ impl PixivWebClient {
         Some(body.clone())
     }
 
-    pub fn download_image<U: IntoUrl + Clone>(&self, url: U) -> Option<Response> {
+    pub async fn download_image<U: IntoUrl + Clone>(&self, url: U) -> Option<Response> {
         self.auto_init();
-        let r = self.client.get(url, json::object!{"referer": "https://www.pixiv.net/"});
+        let r = self.client.get(url, json::object!{"referer": "https://www.pixiv.net/"}).await;
         if r.is_none() {
             return None;
         }
@@ -199,7 +199,7 @@ impl PixivWebClient {
 
     pub async fn adownload_image<U: IntoUrl + Clone>(&self, url: U, pdf: &Option<PdFile>) -> Option<Response> {
         self.auto_init();
-        let r = self.client.aget(url, json::object!{"referer": "https://www.pixiv.net/"}).await;
+        let r = self.client.get(url, json::object!{"referer": "https://www.pixiv.net/"}).await;
         if r.is_none() {
             return None;
         }
@@ -213,9 +213,9 @@ impl PixivWebClient {
         Some(r)
     }
 
-    pub fn get_artwork_ajax(&self, id: u64) -> Option<JsonValue> {
+    pub async fn get_artwork_ajax(&self, id: u64) -> Option<JsonValue> {
         self.auto_init();
-        let r = self.client.get_with_param(format!("https://www.pixiv.net/ajax/illust/{}", id), self.params.get_ref(), None);
+        let r = self.client.get_with_param(format!("https://www.pixiv.net/ajax/illust/{}", id), self.params.get_ref(), None).await;
         if r.is_none() {
             return None;
         }
@@ -227,9 +227,9 @@ impl PixivWebClient {
         v
     }
 
-    pub fn get_artwork(&self, id: u64) -> Option<JsonValue> {
+    pub async fn get_artwork(&self, id: u64) -> Option<JsonValue> {
         self.auto_init();
-        let r = self.client.get_with_param(format!("https://www.pixiv.net/artworks/{}", id), self.params.get_ref(), None);
+        let r = self.client.get_with_param(format!("https://www.pixiv.net/artworks/{}", id), self.params.get_ref(), None).await;
         if r.is_none() {
             return None;
         }
@@ -257,9 +257,9 @@ impl PixivWebClient {
         Some(p.value.unwrap())
     }
 
-    pub fn get_illust_pages(&self, id: u64) -> Option<JsonValue> {
+    pub async fn get_illust_pages(&self, id: u64) -> Option<JsonValue> {
         self.auto_init();
-        let r = self.client.get_with_param(format!("https://www.pixiv.net/ajax/illust/{}/pages", id), self.params.get_ref(), None);
+        let r = self.client.get_with_param(format!("https://www.pixiv.net/ajax/illust/{}/pages", id), self.params.get_ref(), None).await;
         if r.is_none() {
             return None;
         }
@@ -271,9 +271,9 @@ impl PixivWebClient {
         v
     }
 
-    pub fn get_ugoira(&self, id: u64) -> Option<JsonValue> {
+    pub async fn get_ugoira(&self, id: u64) -> Option<JsonValue> {
         self.auto_init();
-        let r = self.client.get_with_param(format!("https://www.pixiv.net/ajax/illust/{}/ugoira_meta", id), self.params.get_ref(), None);
+        let r = self.client.get_with_param(format!("https://www.pixiv.net/ajax/illust/{}/ugoira_meta", id), self.params.get_ref(), None).await;
         if r.is_none() {
             return None;
         }

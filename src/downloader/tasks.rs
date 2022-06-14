@@ -44,10 +44,10 @@ pub async fn create_download_tasks_simple<T: Seek + Write + Send + Sync + ClearF
     if start != 0 {
         headers.insert(String::from("Range"), format!("bytes={}-", start));
     }
-    let mut result = d.client.aget(d.url.deref().clone(), headers).await.try_err(gettext("Failed to get url."))?;
+    let mut result = d.client.get(d.url.deref().clone(), headers).await.try_err(gettext("Failed to get url."))?;
     let mut status = result.status();
     if status == 416 {
-        result = d.client.aget(d.url.deref().clone(), d.headers.deref().clone()).await.try_err(gettext("Failed to get url."))?;
+        result = d.client.get(d.url.deref().clone(), d.headers.deref().clone()).await.try_err(gettext("Failed to get url."))?;
         status = result.status();
     } else if status == 206 {
         let headers = result.headers();
@@ -80,7 +80,7 @@ pub async fn create_download_tasks_simple<T: Seek + Write + Send + Sync + ClearF
         if need_reget {
             d.pd.clear()?;
             d.clear_file()?;
-            result = d.client.get(d.url.deref().clone(), d.headers.deref().clone()).try_err(gettext("Failed to get url."))?;
+            result = d.client.get(d.url.deref().clone(), d.headers.deref().clone()).await.try_err(gettext("Failed to get url."))?;
             status = result.status();
         }
     }

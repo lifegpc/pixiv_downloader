@@ -293,7 +293,7 @@ impl WebClient {
     /// client.get_with_param("https://test.com/a", json::array![["daa", "param1"]], None);
     /// ```
     /// It will GET `https://test.com/a?data=param1`, `https://test.com/a?daa=%7B%22ad%22%3A%22test%22%7D`, `https://test.com/a?daa=param1`
-    pub fn get_with_param<U: IntoUrl + Clone, J: ToJson, H: ToHeaders + Clone>(&self, url: U, param: J, headers: H) -> Option<Response> {
+    pub async fn get_with_param<U: IntoUrl + Clone, J: ToJson, H: ToHeaders + Clone>(&self, url: U, param: J, headers: H) -> Option<Response> {
         let u = url.into_url();
         if u.is_err() {
             println!("{} \"{}\"", gettext("Can not parse URL:"), u.unwrap_err());
@@ -302,7 +302,7 @@ impl WebClient {
         let mut u = u.unwrap();
         let obj = param.to_json();
         if obj.is_none() {
-            return self.get(u, headers);
+            return self.get(u, headers).await;
         }
         let obj = obj.unwrap();
         if !obj.is_object() && !obj.is_array() {
@@ -356,36 +356,11 @@ impl WebClient {
                 }
             }
         }
-        self.get(u.as_str(), headers)
+        self.get(u.as_str(), headers).await
     }
 
     /// Send Get Requests
-    pub fn get<U: IntoUrl + Clone, H: ToHeaders + Clone>(&self, url: U, headers: H) -> Option<Response> {
-        let mut count = 0u64;
-        let retry = self.get_retry();
-        while count <= retry {
-            let r = self._get(url.clone(), headers.clone());
-            if r.is_some() {
-                return r;
-            }
-            count += 1;
-            if count <= retry {
-                let ri = self.get_retry_interval();
-                if ri.is_some() {
-                    let t = ri.as_ref().unwrap()[(count - 1).try_into().unwrap()];
-                    if !t.is_zero() {
-                        println!("{}", gettext("Retry after <num> seconds.").replace("<num>", format!("{}", t.as_secs_f64()).as_str()).as_str());
-                        spin_on(tokio::time::sleep(t));
-                    }
-                }
-                println!("{}", gettext("Retry <count> times now.").replace("<count>", format!("{}", count).as_str()).as_str());
-            }
-        }
-        None
-    }
-
-    /// Send Get Requests
-    pub async fn aget<U: IntoUrl + Clone, H: ToHeaders + Clone>(&self, url: U, headers: H) -> Option<Response> {
+    pub async fn get<U: IntoUrl + Clone, H: ToHeaders + Clone>(&self, url: U, headers: H) -> Option<Response> {
         let mut count = 0u64;
         let retry = self.get_retry();
         while count <= retry {
@@ -404,26 +379,6 @@ impl WebClient {
             println!("{}", gettext("Retry <count> times now.").replace("<count>", format!("{}", count).as_str()).as_str());
         }
         None
-    }
-
-    /// Send GET requests without retry
-    pub fn _get<U: IntoUrl, H: ToHeaders>(&self, url: U, headers: H) -> Option<Response> {
-        let r = self._aget(url, headers);
-        let r = r.send();
-        let r = spin_on(r);
-        match r {
-            Ok(_) => {}
-            Err(e) => {
-                println!("{} {}", gettext("Error when request:"), e);
-                return None;
-            }
-        }
-        let r = r.unwrap();
-        self.handle_set_cookie(&r);
-        if self.get_verbose() {
-            println!("{}", r.status());
-        }
-        Some(r)
     }
 
     /// Send GET requests without retry

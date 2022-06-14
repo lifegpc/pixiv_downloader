@@ -115,7 +115,7 @@ impl Main {
         }
     }
 
-    pub fn run(&mut self) -> i32 {
+    pub async fn run(&mut self) -> i32 {
         self.cmd = opts::parse_cmd();
         if self.cmd.is_none() {
             return 1;
@@ -145,7 +145,7 @@ impl Main {
                 self.deal_config_cmd();
             }
             Command::Download => {
-                return self.download();
+                return self.download().await;
             }
             Command::None => {
                 return 0;
@@ -158,5 +158,5 @@ impl Main {
 #[tokio::main]
 async fn main() {
     let mut m = Main::new();
-    std::process::exit(m.run());
+    std::process::exit(m.run().await);
 }
