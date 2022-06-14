@@ -45,6 +45,40 @@ impl OptHelper {
         }
     }
 
+    /// Return retry count when downloading failed.
+    pub fn download_retry(&self) -> Option<i64> {
+        if self.opt.get_ref().download_retry.is_some() {
+            return Some(self.opt.get_ref().download_retry.unwrap());
+        }
+        let re = self.settings.get_ref().get("download-retry");
+        if re.is_some() {
+            return Some(re.unwrap().as_i64().unwrap());
+        }
+        self.retry()
+    }
+
+    /// Return retry interval when downloading files.
+    pub fn download_retry_interval(&self) -> NonTailList<Duration> {
+        if self.opt.get_ref().download_retry_interval.is_some() {
+            return self
+                .opt
+                .get_ref()
+                .download_retry_interval
+                .as_ref()
+                .unwrap()
+                .clone();
+        }
+        if self.settings.get_ref().have("download-retry-interval") {
+            let v = self
+                .settings
+                .get_ref()
+                .get("download-retry-interval")
+                .unwrap();
+            return parse_retry_interval_from_json(v).unwrap();
+        }
+        self.retry_interval()
+    }
+
     /// return language
     pub fn language(&self) -> Option<String> {
         if self.opt.get_ref().language.is_some() {

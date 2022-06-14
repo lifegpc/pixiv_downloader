@@ -10,6 +10,7 @@ use crate::utils::get_exe_path_else_current;
 use getopts::HasArg;
 use getopts::Options;
 use std::env;
+use std::num::ParseIntError;
 use std::str::FromStr;
 use std::time::Duration;
 
@@ -71,6 +72,10 @@ pub struct CommandOpts {
     pub use_progress_bar: Option<UseOrNot>,
     /// Whether to download multiple images at the same time
     pub download_multiple_images: Option<bool>,
+    /// Max retry count when downloading failed.
+    pub download_retry: Option<i64>,
+    /// Retry interval when downloading files.
+    pub download_retry_interval: Option<NonTailList<Duration>>,
 }
 
 impl CommandOpts {
@@ -91,6 +96,8 @@ impl CommandOpts {
             update_exif: false,
             use_progress_bar: None,
             download_multiple_images: None,
+            download_retry: None,
+            download_retry_interval: None,
         }
     }
 
@@ -136,7 +143,7 @@ pub fn print_usage(prog: &str, opts: &Options) {
     println!("{}", opts.usage(brief.as_str()));
 }
 
-/// Prase bool string
+/// Prase [bool] from string
 pub fn parse_bool<T: AsRef<str>>(s: Option<T>) -> Result<Option<bool>, String> {
     let tmp = match s {
         Some(s) => Some(s.as_ref().to_lowercase()),
@@ -155,6 +162,19 @@ pub fn parse_bool<T: AsRef<str>>(s: Option<T>) -> Result<Option<bool>, String> {
             } else {
                 Err(format!("{} {}", gettext("Invalid boolean value:"), t))
             }
+        }
+        None => Ok(None),
+    }
+}
+
+/// Prase [i64] from string
+pub fn parse_i64<T: AsRef<str>>(s: Option<T>) -> Result<Option<i64>, ParseIntError> {
+    match s {
+        Some(s) => {
+            let s = s.as_ref();
+            let s = s.trim();
+            let c = s.parse::<i64>()?;
+            Ok(Some(c))
         }
         None => Ok(None),
     }
@@ -237,10 +257,28 @@ pub fn parse_cmd() -> Option<CommandOpts> {
     opts.opt(
         "",
         "download-multiple-images",
-        gettext("Download multiple images at the same time."),
+        format!(
+            "{} ({} {})",
+            gettext("Download multiple images at the same time."),
+            gettext("Default:"),
+            "yes"
+        )
+        .as_str(),
         "yes/no",
         HasArg::Maybe,
         getopts::Occur::Optional,
+    );
+    opts.optopt(
+        "",
+        "download-retry",
+        gettext("Max retry count if download failed."),
+        "COUNT",
+    );
+    opts.optopt(
+        "",
+        "download-retry-interval",
+        gettext("The interval (in seconds) between two retries when downloading files."),
+        "LIST",
     );
     let result = match opts.parse(&argv[1..]) {
         Ok(m) => m,
@@ -332,19 +370,14 @@ pub fn parse_cmd() -> Option<CommandOpts> {
     } else {
         None
     };
-    if result.opt_present("retry") {
-        let s = result.opt_str("retry").unwrap();
-        let s = s.trim();
-        let c = s.parse::<i64>();
-        if c.is_err() {
-            println!(
-                "{} {}",
-                gettext("Retry count must be an non-negative integer:"),
-                c.unwrap_err()
-            );
+    match parse_i64(result.opt_str("retry")) {
+        Ok(r) => {
+            re.as_mut().unwrap().retry = r;
+        }
+        Err(e) => {
+            println!("{} {}", gettext("Failed to parse retry count:"), e);
             return None;
         }
-        re.as_mut().unwrap().retry = Some(c.unwrap());
     }
     if result.opt_present("retry-interval") {
         let s = result.opt_str("retry-interval").unwrap();
@@ -391,6 +424,28 @@ pub fn parse_cmd() -> Option<CommandOpts> {
             );
             return None;
         }
+    }
+    match parse_i64(result.opt_str("download-retry")) {
+        Ok(r) => {
+            re.as_mut().unwrap().download_retry = r;
+        }
+        Err(e) => {
+            println!("{} {}", gettext("Failed to parse retry count:"), e);
+            return None;
+        }
+    }
+    if result.opt_present("download-retry-interval") {
+        let s = result.opt_str("download-retry-interval").unwrap();
+        let r = parse_retry_interval_from_str(s.as_str());
+        if r.is_err() {
+            println!(
+                "{} {}",
+                gettext("Failed to parse retry interval:"),
+                r.unwrap_err()
+            );
+            return None;
+        }
+        re.as_mut().unwrap().download_retry_interval = Some(r.unwrap());
     }
     re
 }

@@ -506,11 +506,11 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + 'static> Do
         } else {
             self.disable_progress_bar();
         }
-        match helper.retry() {
+        match helper.download_retry() {
             Some(u) => self.set_max_retry_count(u),
             None => {}
         }
-        self.set_retry_interval(helper.retry_interval());
+        self.set_retry_interval(helper.download_retry_interval());
     }
 
     #[inline]
