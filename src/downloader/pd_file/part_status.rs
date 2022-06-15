@@ -1,5 +1,6 @@
 use crate::downloader::pd_file::enums::PdFilePartStatus as PdFilePartStatus2;
 use crate::downloader::pd_file::error::PdFileError;
+use crate::ext::atomic::AtomicQuick;
 use crate::ext::rw_lock::GetRwLock;
 use crate::gettext;
 use int_enum::IntEnum;
@@ -9,6 +10,7 @@ use std::fmt::Debug;
 use std::fmt::Display;
 use std::io::Read;
 use std::io::Write;
+use std::sync::atomic::AtomicI64;
 use std::sync::RwLock;
 
 /// The data is out of bounds.
@@ -61,7 +63,10 @@ impl Debug for PdFilePartStatusInternal {
 #[derive(Debug)]
 /// The status of the each part in pd file
 pub struct PdFilePartStatus {
+    /// The internal type
     status: RwLock<PdFilePartStatusInternal>,
+    /// Retry count
+    _retry_count: AtomicI64,
 }
 
 impl PdFilePartStatus {
@@ -74,6 +79,7 @@ impl PdFilePartStatus {
         status.set_downloaded_size(0);
         Self {
             status: RwLock::new(status),
+            _retry_count: AtomicI64::new(0),
         }
     }
 
@@ -81,6 +87,12 @@ impl PdFilePartStatus {
     /// Returns the downloaded size of this part
     pub fn downloaded_size(&self) -> u32 {
         self.status.get_ref().downloaded_size()
+    }
+
+    #[inline]
+    /// Returns the current retry count.
+    pub fn retry_count(&self) -> i64 {
+        self._retry_count.qload()
     }
 
     #[inline]
@@ -95,6 +107,12 @@ impl PdFilePartStatus {
             Ok(_) => Ok(()),
             Err(_) => Err(PdFileError::from(OutOfBoundsError::new("u32", new_size))),
         }
+    }
+
+    #[inline]
+    /// Set the new retry count.
+    pub fn set_retry_count(&self, count: i64) {
+        self._retry_count.qstore(count)
     }
 
     /// Set the status of this part
@@ -152,6 +170,7 @@ impl PdFilePartStatus {
         status.set_downloaded_size(ds);
         Ok(Self {
             status: RwLock::new(status),
+            _retry_count: AtomicI64::new(0),
         })
     }
 
@@ -200,4 +219,7 @@ fn test_part_status() {
     status.set_downloaded_size(0x323133).unwrap();
     assert_eq!(status.downloaded_size(), 0x323133);
     assert_eq!(status.to_bytes(), vec![179, 196, 200, 0]);
+    assert_eq!(status.retry_count(), 0);
+    status.set_retry_count(3);
+    assert_eq!(status.retry_count(), 3);
 }

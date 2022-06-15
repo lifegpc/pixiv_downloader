@@ -22,7 +22,9 @@ pub fn get_settings_list() -> Vec<SettingDes> {
         SettingDes::new("use-progress-bar", gettext("Whether to enable progress bar."), JsonValueType::Multiple, Some(check_user_or_not)).unwrap(),
         SettingDes::new("download-multiple-images", gettext("Download multiple images at the same time."), JsonValueType::Boolean, None).unwrap(),
         SettingDes::new("download-retry", gettext("Max retry count if download failed."), JsonValueType::Number, Some(check_i64)).unwrap(),
-        SettingDes::new("download-retry-interval", gettext("The interval (in seconds) between two retries when downloading files."), JsonValueType::Multiple, Some(check_retry_interval)).unwrap()
+        SettingDes::new("download-retry-interval", gettext("The interval (in seconds) between two retries when downloading files."), JsonValueType::Multiple, Some(check_retry_interval)).unwrap(),
+        SettingDes::new("multiple-threads-download", gettext("Whether to enable multiple threads download."), JsonValueType::Boolean, None).unwrap(),
+        SettingDes::new("download-part-retry", gettext("Max retry count of each part when downloading in multiple thread mode."), JsonValueType::Number, Some(check_i64)).unwrap(),
     ]
 }
 

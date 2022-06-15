@@ -40,6 +40,8 @@ lazy_static! {
 
 /// The offset of the status in pd file
 const STATUS_OFFSET: SeekFrom = SeekFrom::Start(10);
+/// The offset of the type of the pd file
+const TYPE_OFFSET: SeekFrom = SeekFrom::Start(11);
 /// The offset of the file_size in pd file
 const FILE_SIZE_OFFSET: SeekFrom = SeekFrom::Start(12);
 /// The offset of the downloaded_file_size in pd file
@@ -129,6 +131,22 @@ impl PdFile {
         if !self.is_mem_only() {
             self.force_close();
             self.remove_pd_file()?;
+        }
+        Ok(())
+    }
+
+    /// Enable multiple thread support
+    pub fn enable_multi(&self) -> Result<(), PdFileError> {
+        if !self.is_downloading() {
+            self.ftype.replace_with2(PdFileType::MultiThread);
+            if !self.is_mem_only() {
+                self.need_saved.qstore(true);
+                let mut f = self.file.get_mut();
+                let f = f.as_mut().unwrap();
+                f.seek(TYPE_OFFSET)?;
+                f.write_le_u8(self.ftype.get_ref().int_value())?;
+                self.need_saved.qstore(false);
+            }
         }
         Ok(())
     }

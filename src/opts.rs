@@ -76,6 +76,10 @@ pub struct CommandOpts {
     pub download_retry: Option<i64>,
     /// Retry interval when downloading files.
     pub download_retry_interval: Option<NonTailList<Duration>>,
+    /// Whether to enable multiple threads download.
+    pub multiple_threads_download: Option<bool>,
+    /// Max retry count of each part when downloading in multiple thread mode.
+    pub download_part_retry: Option<i64>,
 }
 
 impl CommandOpts {
@@ -98,6 +102,8 @@ impl CommandOpts {
             download_multiple_images: None,
             download_retry: None,
             download_retry_interval: None,
+            multiple_threads_download: None,
+            download_part_retry: None,
         }
     }
 
@@ -280,6 +286,26 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         gettext("The interval (in seconds) between two retries when downloading files."),
         "LIST",
     );
+    opts.opt(
+        "",
+        "multiple-threads-download",
+        format!(
+            "{} ({} {})",
+            gettext("Whether to enable multiple threads download."),
+            gettext("Default:"),
+            "yes"
+        )
+        .as_str(),
+        "yes/no",
+        HasArg::Maybe,
+        getopts::Occur::Optional,
+    );
+    opts.optopt(
+        "",
+        "download-part-retry",
+        gettext("Max retry count of each part when downloading in multiple thread mode."),
+        "COUNT",
+    );
     let result = match opts.parse(&argv[1..]) {
         Ok(m) => m,
         Err(err) => {
@@ -446,6 +472,28 @@ pub fn parse_cmd() -> Option<CommandOpts> {
             return None;
         }
         re.as_mut().unwrap().download_retry_interval = Some(r.unwrap());
+    }
+    match parse_i64(result.opt_str("download-part-retry")) {
+        Ok(r) => {
+            re.as_mut().unwrap().download_part_retry = r;
+        }
+        Err(e) => {
+            println!("{} {}", gettext("Failed to parse retry count:"), e);
+            return None;
+        }
+    }
+    match parse_optional_opt(&result, "multiple-threads-download", true, parse_bool) {
+        Ok(b) => re.as_mut().unwrap().multiple_threads_download = b,
+        Err(e) => {
+            println!(
+                "{} {}",
+                gettext("Failed to parse <opt>:")
+                    .replace("<opt>", "multiple-threads-download")
+                    .as_str(),
+                e
+            );
+            return None;
+        }
     }
     re
 }

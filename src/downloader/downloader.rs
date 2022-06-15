@@ -81,6 +81,8 @@ pub struct DownloaderInternal<T: Write + Seek + Send + Sync + ClearFile + GetTar
     retry_interval: RwLock<NonTailList<Duration>>,
     /// Current retry count
     retry_count: AtomicI64,
+    /// The maximum retry count for each part.
+    pub max_part_retry_count: AtomicI64,
 }
 
 impl DownloaderInternal<LocalFile> {
@@ -160,6 +162,7 @@ impl DownloaderInternal<LocalFile> {
             max_retry_count: AtomicI64::new(3),
             retry_interval: RwLock::new(l),
             retry_count: AtomicI64::new(0),
+            max_part_retry_count: AtomicI64::new(3),
         }))
     }
 }
@@ -184,6 +187,24 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName> DownloaderIn
     pub fn disable_progress_bar(&self) {
         self.progress_bar.qstore(false);
         self.progress.get_mut().take();
+    }
+
+    /// Enable multiple download
+    pub fn enable_multiple_download(&self) {
+        self.multi.qstore(true);
+        if !self.is_multi_threads() {
+            println!(
+                "{}",
+                gettext("Warning: This file will still use single thread mode to download.")
+            );
+        } else {
+            match self.pd.enable_multi() {
+                Ok(_) => {}
+                Err(e) => {
+                    println!("{}", e);
+                }
+            }
+        }
     }
 
     /// Enable the progress bar
@@ -475,6 +496,12 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + 'static> Do
     }
 
     #[inline]
+    /// Enable multiple download
+    pub fn enable_multiple_download(&self) {
+        self.downloader.enable_multiple_download()
+    }
+
+    #[inline]
     /// Enable the progress bar
     /// * `style` - The style of the progress bar
     /// * `mults` - The instance of [MultiProgress] if multiple progress bars are needed.
@@ -511,10 +538,25 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + 'static> Do
             None => {}
         }
         self.set_retry_interval(helper.download_retry_interval());
+        match helper.download_part_retry() {
+            Some(u) => self.set_max_part_retry_count(u),
+            None => {}
+        }
+        if helper.multiple_threads_download() {
+            self.enable_multiple_download()
+        }
     }
 
     #[inline]
-    /// Set the maximum retry count. -1 means always.
+    /// Set the maximum retry count for each part. < 0 means always.
+    pub fn set_max_part_retry_count(&self, max_part_retry_count: i64) {
+        self.downloader
+            .max_part_retry_count
+            .qstore(max_part_retry_count)
+    }
+
+    #[inline]
+    /// Set the maximum retry count. < 0 means always.
     pub fn set_max_retry_count(&self, max_retry_count: i64) {
         self.downloader.set_max_retry_count(max_retry_count)
     }
@@ -611,6 +653,7 @@ async fn test_failed_downloader() {
         DownloaderResult::Ok(v) => {
             v.set_retry_interval(retry_interval);
             v.set_max_retry_count(1);
+            v.set_max_part_retry_count(1);
             assert_eq!(v.is_created(), true);
             v.disable_progress_bar();
             v.download();

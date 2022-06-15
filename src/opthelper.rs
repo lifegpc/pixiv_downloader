@@ -45,6 +45,18 @@ impl OptHelper {
         }
     }
 
+    /// Return max retry count of each part when downloading in multiple thread mode.
+    pub fn download_part_retry(&self) -> Option<i64> {
+        if self.opt.get_ref().download_part_retry.is_some() {
+            return Some(self.opt.get_ref().download_part_retry.unwrap());
+        }
+        let re = self.settings.get_ref().get("download-part-retry");
+        if re.is_some() {
+            return Some(re.unwrap().as_i64().unwrap());
+        }
+        None
+    }
+
     /// Return retry count when downloading failed.
     pub fn download_retry(&self) -> Option<i64> {
         if self.opt.get_ref().download_retry.is_some() {
@@ -88,6 +100,28 @@ impl OptHelper {
         } else {
             None
         }
+    }
+
+    /// Return whether to enable multiple threads download.
+    pub fn multiple_threads_download(&self) -> bool {
+        match self.opt.get_ref().multiple_threads_download {
+            Some(r) => {
+                return r;
+            }
+            None => {}
+        }
+        if self
+            .settings
+            .get_ref()
+            .have_bool("multiple-threads-download")
+        {
+            return self
+                .settings
+                .get_ref()
+                .get_bool("multiple-threads-download")
+                .unwrap();
+        }
+        false
     }
 
     pub fn update(&self, opt: CommandOpts, settings: SettingStore) {
