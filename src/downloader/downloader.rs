@@ -30,6 +30,7 @@ use std::io::SeekFrom;
 use std::io::Write;
 use std::ops::Deref;
 use std::ops::DerefMut;
+use std::ops::Drop;
 use std::path::Path;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicI64;
@@ -89,6 +90,8 @@ pub struct DownloaderInternal<T: Write + Seek + Send + Sync + ClearFile + GetTar
     pub max_threads: AtomicU64,
     /// The size of the each part when downloading file.
     part_size: AtomicU32,
+    /// Is outter [Downloader] dropped
+    dropped: AtomicBool,
 }
 
 impl DownloaderInternal<LocalFile> {
@@ -120,7 +123,12 @@ impl DownloaderInternal<LocalFile> {
                                 return Ok(DownloaderResult::Canceled);
                             } else {
                                 remove_file(p)?;
-                                PdFile::new()
+                                match PdFile::open(p)? {
+                                    PdFileResult::Ok(f) => f,
+                                    _ => {
+                                        panic!("This should not happened.");
+                                    }
+                                }
                             }
                         }
                         None => {
@@ -171,6 +179,7 @@ impl DownloaderInternal<LocalFile> {
             max_part_retry_count: AtomicI64::new(3),
             max_threads: AtomicU64::new(8),
             part_size: AtomicU32::new(0x10000),
+            dropped: AtomicBool::new(false),
         }))
     }
 }
@@ -326,6 +335,12 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName> DownloaderIn
     }
 
     #[inline]
+    /// Return true if outter [Downloader] dropped
+    pub fn is_dropped(&self) -> bool {
+        self.dropped.qload()
+    }
+
+    #[inline]
     /// Returns true if the downloader is panic.
     pub fn is_panic(&self) -> bool {
         *self.status.get_ref() == DownloaderStatus::Panic
@@ -360,6 +375,12 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName> DownloaderIn
     /// Set the status to [DownloaderStatus::Downloaded] and returns the current value
     pub fn set_downloaded(&self) -> DownloaderStatus {
         self.status.replace_with2(DownloaderStatus::Downloaded)
+    }
+
+    #[inline]
+    /// Set outter [Downloader] dropped
+    pub fn set_dropped(&self) {
+        self.dropped.qstore(true);
     }
 
     #[inline]
@@ -433,6 +454,9 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName> DownloaderIn
 }
 
 /// A file downloader
+///
+/// When dropping downloader, the downloader need some times to let all threads exited.
+/// This process is handled after [Drop].
 pub struct Downloader<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName> {
     /// internal type
     downloader: Arc<DownloaderInternal<T>>,
@@ -645,6 +669,16 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + 'static> Do
     define_downloader_fn!(is_panic, bool, "Returns true if the downloader is panic.");
 }
 
+impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName> Drop for Downloader<T> {
+    fn drop(&mut self) {
+        self.downloader.set_dropped();
+        #[cfg(test)]
+        {
+            println!("The downloader is dropped.");
+        }
+    }
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn test_downloader() {
     let p = Path::new("./test");
@@ -718,6 +752,59 @@ async fn test_failed_downloader() {
         }
         DownloaderResult::Canceled => {
             panic!("This should not happened.")
+        }
+    }
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn test_downloader_dropped() {
+    let p = Path::new("./test");
+    if !p.exists() {
+        let re = create_dir("./test");
+        assert!(re.is_ok() || p.exists());
+    }
+    let url = "https://i.pximg.net/img-original/img/2022/06/15/14/44/22/99066680_p0.png";
+    let pb = p.join("99066680_p0.png");
+    {
+        let downloader = Downloader::<LocalFile>::new(
+            url,
+            json::object! {"referer": "https://www.pixiv.net/"},
+            Some(&pb),
+            Some(true),
+        )
+        .unwrap();
+        match downloader {
+            DownloaderResult::Ok(v) => {
+                assert_eq!(v.is_created(), true);
+                v.disable_progress_bar();
+                v.download();
+            }
+            DownloaderResult::Canceled => {
+                panic!("This should not happened.")
+            }
+        }
+    }
+    tokio::time::sleep(Duration::new(1, 0)).await;
+    {
+        println!("The new downloader is created.");
+        let downloader = Downloader::<LocalFile>::new(
+            url,
+            json::object! {"referer": "https://www.pixiv.net/"},
+            Some(&pb),
+            Some(false),
+        )
+        .unwrap();
+        match downloader {
+            DownloaderResult::Ok(v) => {
+                assert_eq!(v.is_created(), true);
+                v.disable_progress_bar();
+                v.download();
+                v.join().await.unwrap();
+                assert_eq!(v.is_downloaded(), true);
+            }
+            DownloaderResult::Canceled => {
+                println!("The file is already downloaded. (Too fast network. QaQ)");
+            }
         }
     }
 }

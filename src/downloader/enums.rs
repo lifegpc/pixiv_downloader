@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 #[derive(Debug)]
 /// The result when try create a new [super::Downloader] interface
 pub enum DownloaderResult<T> {
@@ -18,4 +20,15 @@ pub enum DownloaderStatus {
     Downloaded,
     /// The downloader is stoped
     Panic,
+}
+
+impl Display for DownloaderStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Self::Created => "Created",
+            Self::Downloading => "Downloading",
+            Self::Downloaded => "Downloaded",
+            Self::Panic => "Panic",
+        })
+    }
 }

@@ -16,6 +16,27 @@ use std::ops::Deref;
 use std::sync::Arc;
 use std::time::Duration;
 
+/// Return [Ok(())] if the [super::Downloader] is dropped.
+macro_rules! check_dropped {
+    ($d:expr) => {
+        if $d.is_dropped() {
+            #[cfg(test)]
+            {
+                println!("The downloader status: {}", $d.get_status());
+                if $d.is_downloading() {
+                    println!(
+                        "The downloader size: {} / {}",
+                        $d.pd.get_downloaded_file_size(),
+                        $d.pd.get_file_size()
+                    );
+                }
+                println!("The downloader is already dropped. Exit download.");
+            }
+            return Ok(());
+        }
+    };
+}
+
 /// Create a download tasks in simple thread mode.
 pub async fn create_download_tasks_simple<
     T: Seek + Write + Send + Sync + ClearFile + GetTargetFileName,
@@ -129,6 +150,7 @@ pub async fn handle_download<T: Seek + Write + Send + Sync + ClearFile + GetTarg
     let is_multi = d.is_multi_threads();
     loop {
         let mut n = stream.next();
+        check_dropped!(d);
         let re = tokio::time::timeout(std::time::Duration::from_secs(10), &mut n).await;
         match re {
             Ok(s) => match s {
@@ -203,6 +225,7 @@ pub async fn check_tasks<
         d.add_task(task);
     }
     loop {
+        check_dropped!(d);
         tokio::time::sleep(Duration::new(0, 10_000_000)).await;
         let mut need_break = false;
         let mut dur = None;

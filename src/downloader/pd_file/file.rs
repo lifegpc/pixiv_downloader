@@ -505,13 +505,25 @@ impl PdFile {
 
 impl Drop for PdFile {
     fn drop(&mut self) {
+        #[cfg(test)]
+        {
+            println!("Is memory only: {}", self.is_mem_only());
+        }
         if self.is_mem_only() {
             return;
+        }
+        #[cfg(test)]
+        {
+            println!("Is completed: {}", self.is_completed());
         }
         if self.is_completed() {
             self.force_close();
             self.remove_pd_file_with_err_msg();
             return;
+        }
+        #[cfg(test)]
+        {
+            println!("Is need saved: {}", self.is_need_saved());
         }
         if self.is_need_saved() {
             match self.write() {
