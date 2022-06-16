@@ -46,6 +46,8 @@ const TYPE_OFFSET: SeekFrom = SeekFrom::Start(11);
 const FILE_SIZE_OFFSET: SeekFrom = SeekFrom::Start(12);
 /// The offset of the downloaded_file_size in pd file
 const DOWNLOADED_FILE_SIZE_OFFSET: SeekFrom = SeekFrom::Start(20);
+/// The offset of the part_size in pd file
+const PART_SIZE_OFFSET: SeekFrom = SeekFrom::Start(28);
 
 #[derive(Debug)]
 /// The pd file
@@ -183,6 +185,12 @@ impl PdFile {
         } else {
             None
         }
+    }
+
+    #[inline]
+    /// Return the size of the each part.
+    pub fn get_part_size(&self) -> u32 {
+        self.part_size.qload()
     }
 
     /// Increase the downloaded file size.
@@ -436,6 +444,20 @@ impl PdFile {
             let f = f.as_mut().unwrap();
             f.seek(STATUS_OFFSET)?;
             f.write_le_u8(self.status.get_ref().int_value())?;
+            self.need_saved.qstore(false);
+        }
+        Ok(())
+    }
+
+    /// Set the size of the each part. Ignored in single thread mode.
+    pub fn set_part_size(&self, part_size: u32) -> Result<(), PdFileError> {
+        self.part_size.qstore(part_size);
+        if !self.is_mem_only() {
+            self.need_saved.qstore(true);
+            let mut f = self.file.get_mut();
+            let f = f.as_mut().unwrap();
+            f.seek(PART_SIZE_OFFSET)?;
+            f.write_le_u32(part_size)?;
             self.need_saved.qstore(false);
         }
         Ok(())

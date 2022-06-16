@@ -5,6 +5,7 @@ use crate::ext::rw_lock::GetRwLock;
 use crate::ext::use_or_not::ToBool;
 use crate::ext::use_or_not::UseOrNot;
 use crate::list::NonTailList;
+use crate::opt::size::parse_u32_size;
 use crate::opt::use_progress_bar::UseProgressBar;
 use crate::opts::CommandOpts;
 use crate::retry_interval::parse_retry_interval_from_json;
@@ -137,6 +138,21 @@ impl OptHelper {
                 .unwrap();
         }
         false
+    }
+
+    /// Return the size of the each part when downloading file.
+    pub fn part_size(&self) -> u32 {
+        match self.opt.get_ref().part_size {
+            Some(r) => {
+                return r;
+            }
+            None => {}
+        }
+        let re = self.settings.get_ref().get("part-size");
+        if re.is_some() {
+            return parse_u32_size(re.as_ref().unwrap()).unwrap();
+        }
+        65536
     }
 
     pub fn update(&self, opt: CommandOpts, settings: SettingStore) {

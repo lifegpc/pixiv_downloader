@@ -17,6 +17,7 @@ extern crate lazy_static;
 #[cfg(all(feature = "link-cplusplus", target_env = "gnu"))]
 extern crate link_cplusplus;
 extern crate modular_bitfield;
+extern crate parse_size;
 extern crate proc_macros;
 extern crate regex;
 extern crate reqwest;

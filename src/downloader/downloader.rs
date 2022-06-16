@@ -33,6 +33,7 @@ use std::ops::DerefMut;
 use std::path::Path;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicI64;
+use std::sync::atomic::AtomicU32;
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 use std::sync::RwLock;
@@ -86,6 +87,8 @@ pub struct DownloaderInternal<T: Write + Seek + Send + Sync + ClearFile + GetTar
     pub max_part_retry_count: AtomicI64,
     /// The maximun threads to download file.
     pub max_threads: AtomicU64,
+    /// The size of the each part when downloading file.
+    part_size: AtomicU32,
 }
 
 impl DownloaderInternal<LocalFile> {
@@ -167,6 +170,7 @@ impl DownloaderInternal<LocalFile> {
             retry_count: AtomicI64::new(0),
             max_part_retry_count: AtomicI64::new(3),
             max_threads: AtomicU64::new(8),
+            part_size: AtomicU32::new(0x10000),
         }))
     }
 }
@@ -253,6 +257,16 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName> DownloaderIn
     /// Get panic error
     pub fn get_panic(&self) -> Option<DownloaderError> {
         self.error.get_mut().take()
+    }
+
+    #[inline]
+    /// Return the size of the each part
+    pub fn get_part_size(&self) -> u32 {
+        if self.pd.is_downloading() {
+            self.pd.get_part_size()
+        } else {
+            self.part_size.qload()
+        }
     }
 
     /// Increase the retry count and return the duration should waited.
@@ -354,6 +368,12 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName> DownloaderIn
     pub fn set_panic(&self, err: DownloaderError) {
         self.status.replace_with2(DownloaderStatus::Panic);
         self.error.get_mut().replace(err);
+    }
+
+    #[inline]
+    /// Set the size of the each part when downloading file
+    pub fn set_part_size(&self, part_size: u32) {
+        self.part_size.qsave(part_size)
     }
 
     #[inline]
@@ -483,6 +503,18 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + 'static> Do
         if !self.is_created() {
             return self.downloader.get_status();
         }
+        if !self.downloader.is_downloading() && self.is_multi_threads() {
+            match self
+                .downloader
+                .pd
+                .set_part_size(self.downloader.get_part_size())
+            {
+                Ok(_) => {}
+                Err(e) => {
+                    println!("{}", e);
+                }
+            }
+        }
         self.downloader.set_downloading();
         tokio::spawn(check_tasks(Arc::clone(&self.downloader)));
         self.downloader.get_status()
@@ -556,6 +588,7 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + 'static> Do
             self.enable_multiple_download()
         }
         self.set_max_threads(helper.max_threads());
+        self.set_part_size(helper.part_size());
     }
 
     #[inline]
@@ -576,6 +609,12 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + 'static> Do
     /// Set the maximun threads to download file.
     pub fn set_max_threads(&self, max_threads: u64) {
         self.downloader.set_max_threads(max_threads)
+    }
+
+    #[inline]
+    /// Set the size of the each part when downloading file
+    pub fn set_part_size(&self, part_size: u32) {
+        self.downloader.set_part_size(part_size)
     }
 
     #[inline]

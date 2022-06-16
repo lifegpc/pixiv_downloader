@@ -9,8 +9,10 @@ use crate::utils::check_file_exists;
 use crate::utils::get_exe_path_else_current;
 use getopts::HasArg;
 use getopts::Options;
+use std::convert::TryFrom;
 use std::env;
 use std::num::ParseIntError;
+use std::num::TryFromIntError;
 use std::str::FromStr;
 use std::time::Duration;
 
@@ -82,6 +84,8 @@ pub struct CommandOpts {
     pub download_part_retry: Option<i64>,
     /// The maximun threads when downloading file.
     pub max_threads: Option<u64>,
+    /// The size of the each part when downloading file.
+    pub part_size: Option<u32>,
 }
 
 impl CommandOpts {
@@ -107,6 +111,7 @@ impl CommandOpts {
             multiple_threads_download: None,
             download_part_retry: None,
             max_threads: None,
+            part_size: None,
         }
     }
 
@@ -152,6 +157,15 @@ pub fn print_usage(prog: &str, opts: &Options) {
     println!("{}", opts.usage(brief.as_str()));
 }
 
+/// Error when parsing size
+#[derive(Debug, derive_more::Display, derive_more::From)]
+pub enum ParseSizeError {
+    /// Failed to parse size.
+    ParseSize(parse_size::Error),
+    /// The size is too big.
+    Overflow(TryFromIntError),
+}
+
 /// Prase [bool] from string
 pub fn parse_bool<T: AsRef<str>>(s: Option<T>) -> Result<Option<bool>, String> {
     let tmp = match s {
@@ -184,6 +198,17 @@ pub fn parse_i64<T: AsRef<str>>(s: Option<T>) -> Result<Option<i64>, ParseIntErr
             let s = s.trim();
             let c = s.parse::<i64>()?;
             Ok(Some(c))
+        }
+        None => Ok(None),
+    }
+}
+
+/// Prase size as [u32] from string
+pub fn parse_u32_size<T: AsRef<str>>(s: Option<T>) -> Result<Option<u32>, ParseSizeError> {
+    match s {
+        Some(s) => {
+            let s = parse_size::parse_size(s.as_ref())?;
+            Ok(Some(u32::try_from(s)?))
         }
         None => Ok(None),
     }
@@ -327,6 +352,12 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         "max-threads",
         gettext("The maximun threads when downloading file."),
         "COUNT",
+    );
+    opts.optopt(
+        "k",
+        "part-size",
+        gettext("The size of the each part when downloading file."),
+        "SIZE",
     );
     let result = match opts.parse(&argv[1..]) {
         Ok(m) => m,
@@ -523,6 +554,15 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         }
         Err(e) => {
             println!("{} {}", gettext("Failed to parse max threads:"), e);
+            return None;
+        }
+    }
+    match parse_u32_size(result.opt_str("part-size")) {
+        Ok(r) => {
+            re.as_mut().unwrap().part_size = r;
+        }
+        Err(e) => {
+            println!("{} {}", gettext("Failed to parse part size:"), e);
             return None;
         }
     }

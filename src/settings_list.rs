@@ -5,6 +5,7 @@ use crate::gettext;
 use crate::retry_interval::check_retry_interval;
 use crate::settings::SettingDes;
 use crate::settings::JsonValueType;
+use crate::opt::size::parse_u32_size;
 use json::JsonValue;
 
 pub fn get_settings_list() -> Vec<SettingDes> {
@@ -26,6 +27,7 @@ pub fn get_settings_list() -> Vec<SettingDes> {
         SettingDes::new("multiple-threads-download", gettext("Whether to enable multiple threads download."), JsonValueType::Boolean, None).unwrap(),
         SettingDes::new("download-part-retry", gettext("Max retry count of each part when downloading in multiple thread mode."), JsonValueType::Number, Some(check_i64)).unwrap(),
         SettingDes::new("max-threads", gettext("The maximun threads when downloading file."), JsonValueType::Number, Some(check_u64)).unwrap(),
+        SettingDes::new("part-size", gettext("The size of the each part when downloading file."), JsonValueType::Number, Some(check_parse_size_u32)).unwrap(),
     ]
 }
 
@@ -37,6 +39,11 @@ fn check_i64(obj: &JsonValue) -> bool {
 fn check_u64(obj: &JsonValue) -> bool {
     let r = obj.as_u64();
     r.is_some()
+}
+
+#[inline]
+fn check_parse_size_u32(obj: &JsonValue) -> bool {
+    parse_u32_size(obj).is_some()
 }
 
 fn check_nonempty_str(obj: &JsonValue) -> bool {
