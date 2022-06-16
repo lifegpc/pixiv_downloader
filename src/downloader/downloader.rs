@@ -33,6 +33,7 @@ use std::ops::DerefMut;
 use std::path::Path;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicI64;
+use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 use std::sync::RwLock;
 use std::time::Duration;
@@ -83,6 +84,8 @@ pub struct DownloaderInternal<T: Write + Seek + Send + Sync + ClearFile + GetTar
     retry_count: AtomicI64,
     /// The maximum retry count for each part.
     pub max_part_retry_count: AtomicI64,
+    /// The maximun threads to download file.
+    pub max_threads: AtomicU64,
 }
 
 impl DownloaderInternal<LocalFile> {
@@ -163,6 +166,7 @@ impl DownloaderInternal<LocalFile> {
             retry_interval: RwLock::new(l),
             retry_count: AtomicI64::new(0),
             max_part_retry_count: AtomicI64::new(3),
+            max_threads: AtomicU64::new(8),
         }))
     }
 }
@@ -386,6 +390,12 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName> DownloaderIn
     }
 
     #[inline]
+    /// Set the maximun threads to download file.
+    pub fn set_max_threads(&self, max_threads: u64) {
+        self.max_threads.qstore(max_threads)
+    }
+
+    #[inline]
     /// Set the retry interval.
     pub fn set_retry_interval(&self, retry_interval: NonTailList<Duration>) {
         self.retry_interval.replace_with2(retry_interval);
@@ -545,6 +555,7 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + 'static> Do
         if helper.multiple_threads_download() {
             self.enable_multiple_download()
         }
+        self.set_max_threads(helper.max_threads());
     }
 
     #[inline]
@@ -559,6 +570,12 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + 'static> Do
     /// Set the maximum retry count. < 0 means always.
     pub fn set_max_retry_count(&self, max_retry_count: i64) {
         self.downloader.set_max_retry_count(max_retry_count)
+    }
+
+    #[inline]
+    /// Set the maximun threads to download file.
+    pub fn set_max_threads(&self, max_threads: u64) {
+        self.downloader.set_max_threads(max_threads)
     }
 
     #[inline]

@@ -102,6 +102,21 @@ impl OptHelper {
         }
     }
 
+    /// Return the maximun threads when downloading file.
+    pub fn max_threads(&self) -> u64 {
+        match self.opt.get_ref().max_threads {
+            Some(r) => {
+                return r;
+            }
+            None => {}
+        }
+        let re = self.settings.get_ref().get("max-threads");
+        if re.is_some() {
+            return re.unwrap().as_u64().unwrap();
+        }
+        8
+    }
+
     /// Return whether to enable multiple threads download.
     pub fn multiple_threads_download(&self) -> bool {
         match self.opt.get_ref().multiple_threads_download {

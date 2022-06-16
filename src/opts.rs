@@ -80,6 +80,8 @@ pub struct CommandOpts {
     pub multiple_threads_download: Option<bool>,
     /// Max retry count of each part when downloading in multiple thread mode.
     pub download_part_retry: Option<i64>,
+    /// The maximun threads when downloading file.
+    pub max_threads: Option<u64>,
 }
 
 impl CommandOpts {
@@ -104,6 +106,7 @@ impl CommandOpts {
             download_retry_interval: None,
             multiple_threads_download: None,
             download_part_retry: None,
+            max_threads: None,
         }
     }
 
@@ -180,6 +183,19 @@ pub fn parse_i64<T: AsRef<str>>(s: Option<T>) -> Result<Option<i64>, ParseIntErr
             let s = s.as_ref();
             let s = s.trim();
             let c = s.parse::<i64>()?;
+            Ok(Some(c))
+        }
+        None => Ok(None),
+    }
+}
+
+/// Prase [u64] from string
+pub fn parse_u64<T: AsRef<str>>(s: Option<T>) -> Result<Option<u64>, ParseIntError> {
+    match s {
+        Some(s) => {
+            let s = s.as_ref();
+            let s = s.trim();
+            let c = s.parse::<u64>()?;
             Ok(Some(c))
         }
         None => Ok(None),
@@ -304,6 +320,12 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         "",
         "download-part-retry",
         gettext("Max retry count of each part when downloading in multiple thread mode."),
+        "COUNT",
+    );
+    opts.optopt(
+        "m",
+        "max-threads",
+        gettext("The maximun threads when downloading file."),
         "COUNT",
     );
     let result = match opts.parse(&argv[1..]) {
@@ -492,6 +514,15 @@ pub fn parse_cmd() -> Option<CommandOpts> {
                     .as_str(),
                 e
             );
+            return None;
+        }
+    }
+    match parse_u64(result.opt_str("max-threads")) {
+        Ok(r) => {
+            re.as_mut().unwrap().max_threads = r;
+        }
+        Err(e) => {
+            println!("{} {}", gettext("Failed to parse max threads:"), e);
             return None;
         }
     }

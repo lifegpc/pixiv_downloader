@@ -25,11 +25,17 @@ pub fn get_settings_list() -> Vec<SettingDes> {
         SettingDes::new("download-retry-interval", gettext("The interval (in seconds) between two retries when downloading files."), JsonValueType::Multiple, Some(check_retry_interval)).unwrap(),
         SettingDes::new("multiple-threads-download", gettext("Whether to enable multiple threads download."), JsonValueType::Boolean, None).unwrap(),
         SettingDes::new("download-part-retry", gettext("Max retry count of each part when downloading in multiple thread mode."), JsonValueType::Number, Some(check_i64)).unwrap(),
+        SettingDes::new("max-threads", gettext("The maximun threads when downloading file."), JsonValueType::Number, Some(check_u64)).unwrap(),
     ]
 }
 
 fn check_i64(obj: &JsonValue) -> bool {
     let r = obj.as_i64();
+    r.is_some()
+}
+
+fn check_u64(obj: &JsonValue) -> bool {
+    let r = obj.as_u64();
     r.is_some()
 }
 
