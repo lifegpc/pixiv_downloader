@@ -11,5 +11,6 @@ path = "proc_macros.rs"
 proc-macro = true
 
 [dependencies]
+parse_duration = "2"
 quote = "1"
-syn = "1"
+syn = { version = "1", features = ["full"] }
