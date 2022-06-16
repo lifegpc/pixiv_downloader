@@ -8,7 +8,6 @@ use syn::parse_macro_input;
 use syn::Ident;
 use syn::ItemFn;
 use syn::LitInt;
-use syn::LitStr;
 
 #[proc_macro]
 pub fn define_struct_reader_fn(item: TokenStream) -> TokenStream {
@@ -92,8 +91,7 @@ pub fn async_timeout_test(attr: TokenStream, item: TokenStream) -> TokenStream {
         sig,
         block,
     } = parse_macro_input!(item as ItemFn);
-    let meta = parse_macro_input!(attr as LitStr);
-    let dura = parse_duration::parse(meta.value().as_str()).unwrap();
+    let dura = parse_duration::parse(attr.to_string().as_str()).unwrap();
     let secs = LitInt::new(format!("{}", dura.as_secs()).as_str(), sig.ident.span());
     let nanos = LitInt::new(
         format!("{}", dura.subsec_nanos()).as_str(),

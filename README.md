@@ -7,6 +7,7 @@ A pixiv downloader written in Rust.
 - [ ] Add support for multiple threads download.
 - [ ] Batch download.
 - [ ] Fanbox support.
+### TODO - CVE
 - [ ] Remove parse_duration dependency which used in unittest.
 ## Rust features flags
 ### all
