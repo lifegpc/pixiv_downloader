@@ -680,7 +680,7 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName> Drop for Dow
 }
 
 #[proc_macros::async_timeout_test(120s)]
-#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[tokio::test(flavor = "multi_thread")]
 async fn test_downloader() {
     let p = Path::new("./test");
     if !p.exists() {
@@ -722,7 +722,7 @@ async fn test_downloader() {
 }
 
 #[proc_macros::async_timeout_test(120s)]
-#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[tokio::test(flavor = "multi_thread")]
 async fn test_failed_downloader() {
     let p = Path::new("./test");
     if !p.exists() {
@@ -758,7 +758,7 @@ async fn test_failed_downloader() {
 }
 
 #[proc_macros::async_timeout_test(120s)]
-#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[tokio::test(flavor = "multi_thread")]
 async fn test_downloader_dropped() {
     let p = Path::new("./test");
     if !p.exists() {
