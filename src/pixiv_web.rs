@@ -7,13 +7,9 @@ use crate::webclient::WebClient;
 use json::JsonValue;
 use reqwest::IntoUrl;
 use reqwest::Response;
-use spin_on::spin_on;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::sync::RwLock;
-use std::sync::RwLockReadGuard;
-use std::sync::RwLockWriteGuard;
-use std::time::Duration;
 
 /// A client which use Pixiv's web API
 pub struct PixivWebClient {
@@ -34,40 +30,6 @@ impl PixivWebClient {
             data: RwLock::new(None),
             params: RwLock::new(None),
         }
-    }
-
-    async fn aget_data_as_mut<'a>(&'a self) -> RwLockWriteGuard<'a, Option<JsonValue>> {
-        loop {
-            match self.data.try_write() {
-                Ok(f) => {
-                    return f;
-                }
-                Err(_) => {
-                    tokio::time::sleep(Duration::new(0, 1_000_000)).await;
-                }
-            }
-        }
-    }
-
-    fn get_data_as_mut<'a>(&'a self) -> RwLockWriteGuard<'a, Option<JsonValue>> {
-        spin_on(self.aget_data_as_mut())
-    }
-
-    async fn aget_data<'a>(&'a self) -> RwLockReadGuard<'a, Option<JsonValue>> {
-        loop {
-            match self.data.try_read() {
-                Ok(f) => {
-                    return f;
-                }
-                Err(_) => {
-                    tokio::time::sleep(Duration::new(0, 1_000_000)).await;
-                }
-            }
-        }
-    }
-
-    fn get_data<'a>(&'a self) -> RwLockReadGuard<'a, Option<JsonValue>> {
-        spin_on(self.aget_data())
     }
 
     pub fn is_inited(&self) -> bool {
@@ -147,7 +109,7 @@ impl PixivWebClient {
                 p.value.as_ref().unwrap().pretty(2).as_str()
             );
         }
-        self.get_data_as_mut().replace(p.value.unwrap());
+        self.data.get_mut().replace(p.value.unwrap());
         true
     }
 
@@ -340,7 +302,7 @@ impl PixivWebClient {
     }
 
     pub fn logined(&self) -> bool {
-        let data = self.get_data();
+        let data = self.data.get_ref();
         if data.is_none() {
             return false;
         }

@@ -1,7 +1,7 @@
-use spin_on::spin_on;
 use std::sync::RwLock;
 use std::sync::RwLockReadGuard;
 use std::sync::RwLockWriteGuard;
+use std::thread::sleep;
 use std::time::Duration;
 
 pub trait GetRwLock {
@@ -19,7 +19,7 @@ impl<T: Sized> GetRwLock for RwLock<T> {
                     return f;
                 }
                 Err(_) => {
-                    spin_on(tokio::time::sleep(Duration::new(0, 1_000_000)));
+                    sleep(Duration::new(0, 1_000_000));
                 }
             }
         }
@@ -31,7 +31,7 @@ impl<T: Sized> GetRwLock for RwLock<T> {
                     return f;
                 }
                 Err(_) => {
-                    spin_on(tokio::time::sleep(Duration::new(0, 1_000_000)));
+                    sleep(Duration::new(0, 1_000_000));
                 }
             }
         }

@@ -735,8 +735,7 @@ async fn test_failed_downloader() {
     let mut retry_interval = NonTailList::<Duration>::default();
     retry_interval += Duration::new(0, 0);
     client
-        .aget_retry_interval_as_mut()
-        .await
+        .get_retry_interval_as_mut()
         .replace(retry_interval.clone());
     client.set_retry(1);
     let downloader =

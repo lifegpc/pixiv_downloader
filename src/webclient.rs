@@ -1,15 +1,13 @@
-extern crate spin_on;
-
 use crate::cookies::Cookie;
 use crate::cookies::CookieJar;
 use crate::ext::atomic::AtomicQuick;
 use crate::ext::json::ToJson;
+use crate::ext::rw_lock::GetRwLock;
 use crate::gettext;
 use crate::list::NonTailList;
 use crate::opthelper::get_helper;
 use json::JsonValue;
 use reqwest::{Client, IntoUrl, RequestBuilder, Response};
-use spin_on::spin_on;
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::default::Default;
@@ -107,74 +105,20 @@ impl WebClient {
         }
     }
 
-    pub async fn aget_cookies_as_mut<'a>(&'a self) -> RwLockWriteGuard<'a, CookieJar> {
-        loop {
-            match self.cookies.try_write() {
-                Ok(f) => {
-                    return f;
-                }
-                Err(_) => {
-                    tokio::time::sleep(Duration::new(0, 1_000_000)).await;
-                }
-            }
-        }
-    }
-
     pub fn get_cookies_as_mut<'a>(&'a self) -> RwLockWriteGuard<'a, CookieJar> {
-        spin_on(self.aget_cookies_as_mut())
-    }
-
-    pub async fn aget_cookies<'a>(&'a self) -> RwLockReadGuard<'a, CookieJar> {
-        loop {
-            match self.cookies.try_read() {
-                Ok(f) => {
-                    return f;
-                }
-                Err(_) => {
-                    tokio::time::sleep(Duration::new(0, 1_000_000)).await;
-                }
-            }
-        }
+        self.cookies.get_mut()
     }
 
     pub fn get_cookies<'a>(&'a self) -> RwLockReadGuard<'a, CookieJar> {
-        spin_on(self.aget_cookies())
-    }
-
-    pub async fn aget_headers_as_mut<'a>(
-        &'a self,
-    ) -> RwLockWriteGuard<'a, HashMap<String, String>> {
-        loop {
-            match self.headers.try_write() {
-                Ok(f) => {
-                    return f;
-                }
-                Err(_) => {
-                    tokio::time::sleep(Duration::new(0, 1_000_000)).await;
-                }
-            }
-        }
+        self.cookies.get_ref()
     }
 
     pub fn get_headers_as_mut<'a>(&'a self) -> RwLockWriteGuard<'a, HashMap<String, String>> {
-        spin_on(self.aget_headers_as_mut())
-    }
-
-    pub async fn aget_headers<'a>(&'a self) -> RwLockReadGuard<'a, HashMap<String, String>> {
-        loop {
-            match self.headers.try_read() {
-                Ok(f) => {
-                    return f;
-                }
-                Err(_) => {
-                    tokio::time::sleep(Duration::new(0, 1_000_000)).await;
-                }
-            }
-        }
+        self.headers.get_mut()
     }
 
     pub fn get_headers<'a>(&'a self) -> RwLockReadGuard<'a, HashMap<String, String>> {
-        spin_on(self.aget_headers())
+        self.headers.get_ref()
     }
 
     /// return retry times, 0 means disable
@@ -182,44 +126,14 @@ impl WebClient {
         self.retry.qload()
     }
 
-    pub async fn aget_retry_interval_as_mut<'a>(
-        &'a self,
-    ) -> RwLockWriteGuard<'a, Option<NonTailList<Duration>>> {
-        loop {
-            match self.retry_interval.try_write() {
-                Ok(f) => {
-                    return f;
-                }
-                Err(_) => {
-                    tokio::time::sleep(Duration::new(0, 1_000_000)).await;
-                }
-            }
-        }
-    }
-
     pub fn get_retry_interval_as_mut<'a>(
         &'a self,
     ) -> RwLockWriteGuard<'a, Option<NonTailList<Duration>>> {
-        spin_on(self.aget_retry_interval_as_mut())
-    }
-
-    pub async fn aget_retry_interval<'a>(
-        &'a self,
-    ) -> RwLockReadGuard<'a, Option<NonTailList<Duration>>> {
-        loop {
-            match self.retry_interval.try_read() {
-                Ok(f) => {
-                    return f;
-                }
-                Err(_) => {
-                    tokio::time::sleep(Duration::new(0, 1_000_000)).await;
-                }
-            }
-        }
+        self.retry_interval.get_mut()
     }
 
     pub fn get_retry_interval<'a>(&'a self) -> RwLockReadGuard<'a, Option<NonTailList<Duration>>> {
-        spin_on(self.aget_retry_interval())
+        self.retry_interval.get_ref()
     }
 
     pub fn get_verbose(&self) -> bool {
