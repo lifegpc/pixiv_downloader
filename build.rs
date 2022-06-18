@@ -1,8 +1,3 @@
-#[cfg(feature = "bindgen")]
-extern crate bindgen;
-#[cfg(feature = "cmake")]
-extern crate cmake;
-
 #[cfg(any(feature = "avdict", feature = "exif", feature = "ugoira"))]
 use std::env;
 #[cfg(any(feature = "avdict", feature = "exif", feature = "ugoira"))]

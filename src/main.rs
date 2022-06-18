@@ -1,33 +1,5 @@
-extern crate atty;
-#[cfg(feature = "c_fixed_string")]
-extern crate c_fixed_string;
-extern crate chrono;
-extern crate dateparser;
-extern crate derive_more;
-#[cfg(feature = "flagset")]
-extern crate flagset;
-extern crate futures_util;
-extern crate http;
-extern crate http_content_range;
-extern crate indicatif;
-extern crate int_enum;
-extern crate itertools;
-extern crate json;
 #[macro_use]
 extern crate lazy_static;
-#[cfg(all(feature = "link-cplusplus", target_env = "gnu"))]
-extern crate link_cplusplus;
-extern crate modular_bitfield;
-extern crate parse_size;
-extern crate proc_macros;
-extern crate regex;
-extern crate reqwest;
-extern crate tokio;
-extern crate url;
-extern crate urlparse;
-#[cfg(feature = "utf16string")]
-extern crate utf16string;
-extern crate xml;
 
 #[cfg(feature = "avdict")]
 mod _avdict;
