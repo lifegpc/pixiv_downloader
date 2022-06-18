@@ -2,13 +2,14 @@ use super::downloader::DownloaderInternal;
 use super::downloader::GetTargetFileName;
 use super::error::DownloaderError;
 use crate::ext::io::ClearFile;
+use crate::ext::replace::ReplaceWith2;
 use crate::ext::rw_lock::GetRwLock;
 use crate::ext::try_err::TryErr;
 use crate::gettext;
 use futures_util::StreamExt;
 use http_content_range::ContentRange;
+use itertools::partition;
 use reqwest::Response;
-use spin_on::spin_on;
 use std::io::Seek;
 use std::io::SeekFrom;
 use std::io::Write;
@@ -230,35 +231,34 @@ pub async fn check_tasks<
         let mut need_break = false;
         let mut dur = None;
         {
-            let mut tasks = d.tasks.get_mut();
-            tasks.retain_mut(|task| {
-                if task.is_finished() {
-                    let re = spin_on(task).unwrap();
-                    match re {
-                        Ok(_) => {
-                            if !d.is_multi_threads() {
-                                d.set_downloaded();
-                                need_break = true;
-                            }
+            let mut tasks = d.tasks.replace_with2(Vec::new());
+            let mut index = partition(&mut tasks, |s| s.is_finished());
+            while index > 0 {
+                let task = tasks.remove(0);
+                let re = task.await.unwrap();
+                match re {
+                    Ok(_) => {
+                        if !d.is_multi_threads() {
+                            d.set_downloaded();
+                            need_break = true;
                         }
-                        Err(e) => {
-                            println!("{}", e);
-                            if !d.is_multi_threads() {
-                                match d.get_retry_duration() {
-                                    Some(d) => dur = Some(d),
-                                    None => {
-                                        d.set_panic(e);
-                                        need_break = true;
-                                    }
+                    }
+                    Err(e) => {
+                        println!("{}", e);
+                        if !d.is_multi_threads() {
+                            match d.get_retry_duration() {
+                                Some(d) => dur = Some(d),
+                                None => {
+                                    d.set_panic(e);
+                                    need_break = true;
                                 }
                             }
                         }
                     }
-                    false
-                } else {
-                    true
                 }
-            });
+                index -= 1;
+            }
+            d.tasks.replace_with2(tasks);
         }
         if !d.is_multi_threads() && dur.is_some() {
             let dur = dur.unwrap();

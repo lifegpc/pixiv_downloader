@@ -11,6 +11,7 @@ extern crate http;
 extern crate http_content_range;
 extern crate indicatif;
 extern crate int_enum;
+extern crate itertools;
 extern crate json;
 #[macro_use]
 extern crate lazy_static;
