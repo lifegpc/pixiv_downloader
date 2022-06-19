@@ -127,6 +127,14 @@ impl PdFilePartStatus {
     }
 
     #[inline]
+    /// Increase the size of the part
+    /// * `size` - The size to increase
+    pub fn inc(&self, size: u32) -> Result<(), PdFileError> {
+        let s = self.downloaded_size() + size;
+        self.set_downloaded_size(s)
+    }
+
+    #[inline]
     /// Returns true if the download is waited
     pub fn is_waited(&self) -> bool {
         self.status().is_waited()

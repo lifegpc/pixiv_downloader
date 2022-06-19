@@ -77,6 +77,8 @@ pub struct PdFile {
     mem_only: AtomicBool,
     /// The status of the each part.
     part_datas: RwLock<Vec<Arc<PdFilePartStatus>>>,
+    /// The offset of the first part data
+    part_data_offset: AtomicU64,
 }
 
 impl PdFile {
@@ -95,6 +97,7 @@ impl PdFile {
             part_size: AtomicU32::new(0),
             mem_only: AtomicBool::new(true),
             part_datas: RwLock::new(Vec::new()),
+            part_data_offset: AtomicU64::new(32),
         }
     }
 
@@ -403,6 +406,7 @@ impl PdFile {
             part_size: AtomicU32::new(part_size),
             mem_only: AtomicBool::new(false),
             part_datas: RwLock::new(part_datas),
+            part_data_offset: AtomicU64::new(32 + (file_name_len as u64)),
         })
     }
 
@@ -480,6 +484,7 @@ impl PdFile {
             Err(gettext("File name should not be empty."))?
         } else {
             self.file_name.get_mut().replace(String::from(fname));
+            self.part_data_offset.qstore(32 + (fname.len() as u64));
             if !self.is_mem_only() {
                 self.need_saved.qstore(true);
                 self.reopen()?;
@@ -525,6 +530,27 @@ impl PdFile {
             let f = f.as_mut().unwrap();
             f.seek(PART_SIZE_OFFSET)?;
             f.write_le_u32(part_size)?;
+            self.need_saved.qstore(false);
+        }
+        Ok(())
+    }
+
+    /// Update part data in file
+    /// * `index` - The index of the part data.
+    pub fn update_part_data(&self, index: usize) -> Result<(), PdFileError> {
+        let part_datas = self.part_datas.get_ref();
+        if index >= part_datas.len() {
+            return Ok(());
+        }
+        let part = &part_datas[index];
+        if !self.is_mem_only() {
+            self.need_saved.qstore(true);
+            let mut f = self.file.get_mut();
+            let mut f = f.as_mut().unwrap();
+            f.seek(SeekFrom::Start(
+                self.part_data_offset.qload() + 2 * (index as u64),
+            ))?;
+            part.write_to(&mut f)?;
             self.need_saved.qstore(false);
         }
         Ok(())

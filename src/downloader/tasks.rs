@@ -141,7 +141,7 @@ pub async fn create_download_tasks_simple<
             gettext("Downloading \"<loc>\".").replace("<loc>", d.get_file_name().as_str()),
         );
     }
-    handle_download(d, result, None).await
+    handle_download(d, result, None, None).await
 }
 
 /// Do first job when download in multiple mode.
@@ -212,7 +212,7 @@ pub async fn create_download_tasks_multi<
     if status.as_u16() != 206 {
         return Err(DownloaderError::from(status));
     }
-    handle_download(d, result, Some(pd)).await
+    handle_download(d, result, Some(pd), Some(index)).await
 }
 
 /// Handle download process
@@ -220,6 +220,7 @@ pub async fn handle_download<T: Seek + Write + Send + Sync + ClearFile + GetTarg
     d: Arc<DownloaderInternal<T>>,
     re: Response,
     pd: Option<Arc<PdFilePartStatus>>,
+    index: Option<usize>,
 ) -> Result<(), DownloaderError> {
     let mut stream = re.bytes_stream();
     let is_multi = d.is_multi_threads();
@@ -237,12 +238,16 @@ pub async fn handle_download<T: Seek + Write + Send + Sync + ClearFile + GetTarg
                             if d.enabled_progress_bar() {
                                 d.inc_progress_bar(len);
                             }
+                            d.write(&data)?;
                         } else {
                             if !d.is_multi_threads() {
                                 return Ok(());
                             }
+                            let len = data.len() as u32;
+                            pd.as_ref().unwrap().inc(len)?;
+                            d.pd.inc(len as u64)?;
+                            d.pd.update_part_data(index.unwrap())?;
                         }
-                        d.write(&data)?;
                     }
                     Err(e) => {
                         if !is_multi {
