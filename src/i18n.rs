@@ -1,6 +1,3 @@
-#[cfg(windows)]
-extern crate winapi;
-
 use crate::utils::get_exe_path_else_current;
 use gettext::Catalog;
 use std::fs::File;

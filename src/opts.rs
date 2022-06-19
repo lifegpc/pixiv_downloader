@@ -1,5 +1,3 @@
-extern crate getopts;
-
 use crate::ext::use_or_not::UseOrNot;
 use crate::gettext;
 use crate::list::NonTailList;
