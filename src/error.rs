@@ -36,3 +36,22 @@ macro_rules! concat_pixiv_downloader_error {
         }
     };
 }
+
+#[macro_export]
+macro_rules! concat_error {
+    ($exp1:expr, $exp2:expr, $typ:ty) => {
+        $exp1 = match $exp1 {
+            Ok(x) => match $exp2 {
+                Ok(_) => Ok(x),
+                Err(e) => Err(<$typ>::from(e)),
+            },
+            Err(e) => match $exp2 {
+                Ok(_) => Err(e),
+                Err(e2) => {
+                    println!("{}", e);
+                    Err(<$typ>::from(e2))
+                }
+            },
+        }
+    };
+}

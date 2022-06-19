@@ -1,3 +1,4 @@
+use crate::concat_error;
 use crate::downloader::pd_file::enums::PdFileResult;
 use crate::downloader::pd_file::enums::PdFileStatus;
 use crate::downloader::pd_file::enums::PdFileType;
@@ -133,6 +134,26 @@ impl PdFile {
         if !self.is_mem_only() {
             self.force_close();
             self.remove_pd_file()?;
+        }
+        Ok(())
+    }
+
+    /// Disable multiple thread support
+    pub fn disable_multi(&self) -> Result<(), PdFileError> {
+        if !self.is_downloading() {
+            self.ftype.replace_with2(PdFileType::SingleThread);
+            if !self.is_mem_only() {
+                self.need_saved.qstore(true);
+                let mut f = self.file.get_mut();
+                let f = f.as_mut().unwrap();
+                f.seek(TYPE_OFFSET)?;
+                f.write_le_u8(self.ftype.get_ref().int_value())?;
+                self.need_saved.qstore(false);
+            }
+        } else {
+            let mut err = self.clear();
+            concat_error!(err, self.disable_multi(), PdFileError);
+            return err;
         }
         Ok(())
     }

@@ -157,7 +157,20 @@ pub async fn create_download_tasks_multi_first<
     if status.as_u16() >= 400 {
         return Err(DownloaderError::from(status));
     }
-    // # TODO
+    match result.content_length() {
+        Some(len) => match d.pd.set_file_size(len) {
+            Ok(_) => {}
+            Err(e) => {
+                println!("{}", e)
+            }
+        },
+        None => {
+            d.fallback_to_simp();
+            return Err(DownloaderError::from(gettext(
+                "Warning: no content-length, fallback to single thread download.",
+            )));
+        }
+    }
     Ok(())
 }
 

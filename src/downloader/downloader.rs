@@ -245,6 +245,17 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName> DownloaderIn
         self.progress_bar.qload()
     }
 
+    /// Fallback to simple thread mode.
+    pub fn fallback_to_simp(&self) {
+        self.multi.qstore(false);
+        match self.pd.disable_multi() {
+            Ok(_) => {}
+            Err(e) => {
+                println!("{}", e);
+            }
+        };
+    }
+
     #[inline]
     /// Finishes the progress bar and sets a message
     pub fn finish_progress_bar_with_message(&self, msg: impl Into<Cow<'static, str>>) {
