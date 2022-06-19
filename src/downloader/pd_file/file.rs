@@ -197,6 +197,25 @@ impl PdFile {
         self.file_size.qload()
     }
 
+    /// Get the next waited part data
+    /// * `data` - The part data if found
+    ///
+    /// Returns the index of the part data
+    pub fn get_next_waited_part_data(
+        &self,
+        data: &mut Option<Arc<PdFilePartStatus>>,
+    ) -> Option<usize> {
+        let datas = self.part_datas.get_ref();
+        let index = 0;
+        for d in datas.iter() {
+            if d.is_waited() {
+                data.replace(Arc::clone(d));
+                return Some(index);
+            }
+        }
+        None
+    }
+
     /// Return status data of a part
     /// * `index` - The part index
     pub fn get_part_data(&self, index: usize) -> Option<Arc<PdFilePartStatus>> {
@@ -231,6 +250,27 @@ impl PdFile {
             self.need_saved.qstore(false);
         }
         Ok(downloaded_size)
+    }
+
+    /// Initialize all part datas
+    pub fn initialize_part_datas(&self) -> Result<(), PdFileError> {
+        if self.is_multi_threads() && self.is_downloading() {
+            let file_size = self.file_size.qload();
+            let part_size = self.part_size.qload();
+            let mut part_counts = (file_size + (part_size as u64) - 1) / (part_size as u64);
+            let mut parts = Vec::new();
+            while part_counts > 0 {
+                parts.push(Arc::new(PdFilePartStatus::new()));
+                part_counts -= 1;
+            }
+            self.part_datas.replace_with2(parts);
+            if !self.is_mem_only() {
+                self.need_saved.qstore(true);
+                self.write()?;
+                self.need_saved.qstore(false);
+            }
+        }
+        Ok(())
     }
 
     #[inline]

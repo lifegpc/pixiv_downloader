@@ -1,6 +1,8 @@
 use super::downloader::DownloaderInternal;
 use super::downloader::GetTargetFileName;
 use super::error::DownloaderError;
+use super::pd_file::PdFilePartStatus;
+use crate::ext::atomic::AtomicQuick;
 use crate::ext::io::ClearFile;
 use crate::ext::replace::ReplaceWith2;
 use crate::ext::rw_lock::GetRwLock;
@@ -139,7 +141,7 @@ pub async fn create_download_tasks_simple<
             gettext("Downloading \"<loc>\".").replace("<loc>", d.get_file_name().as_str()),
         );
     }
-    handle_download(d, result).await
+    handle_download(d, result, None).await
 }
 
 /// Do first job when download in multiple mode.
@@ -171,13 +173,53 @@ pub async fn create_download_tasks_multi_first<
             )));
         }
     }
+    match d.pd.initialize_part_datas() {
+        Ok(_) => {}
+        Err(e) => {
+            println!("{}", e);
+        }
+    }
     Ok(())
+}
+
+/// Create a new download task in multiple thread mode.
+pub async fn create_download_tasks_multi<
+    T: Seek + Write + Send + Sync + ClearFile + GetTargetFileName,
+>(
+    d: Arc<DownloaderInternal<T>>,
+    pd: Arc<PdFilePartStatus>,
+    index: usize,
+) -> Result<(), DownloaderError> {
+    let part_size = d.get_part_size() as u64;
+    let file_size = d.pd.get_file_size();
+    let start = part_size * (index as u64);
+    let end = std::cmp::min(start + part_size - 1, file_size);
+    let mut headers = d.headers.deref().clone();
+    headers.insert(String::from("Range"), format!("{}-{}", start, end));
+    let result = d
+        .client
+        .get(d.url.deref().clone(), headers)
+        .await
+        .try_err(gettext("Failed to get url."))?;
+    let status = result.status();
+    if status == 200 || status == 416 {
+        d.fallback_to_simp();
+        d.tasks.replace_with2(Vec::new());
+        return Err(DownloaderError::from(gettext(
+            "Warning: The server seems does not support range.",
+        )));
+    }
+    if status.as_u16() != 206 {
+        return Err(DownloaderError::from(status));
+    }
+    handle_download(d, result, Some(pd)).await
 }
 
 /// Handle download process
 pub async fn handle_download<T: Seek + Write + Send + Sync + ClearFile + GetTargetFileName>(
     d: Arc<DownloaderInternal<T>>,
     re: Response,
+    pd: Option<Arc<PdFilePartStatus>>,
 ) -> Result<(), DownloaderError> {
     let mut stream = re.bytes_stream();
     let is_multi = d.is_multi_threads();
@@ -195,6 +237,10 @@ pub async fn handle_download<T: Seek + Write + Send + Sync + ClearFile + GetTarg
                             if d.enabled_progress_bar() {
                                 d.inc_progress_bar(len);
                             }
+                        } else {
+                            if !d.is_multi_threads() {
+                                return Ok(());
+                            }
                         }
                         d.write(&data)?;
                     }
@@ -208,6 +254,10 @@ pub async fn handle_download<T: Seek + Write + Send + Sync + ClearFile + GetTarg
                                     gettext("Error when downloading file:"),
                                     e
                                 ));
+                            }
+                        } else {
+                            if !d.is_multi_threads() {
+                                return Ok(());
                             }
                         }
                         return Err(DownloaderError::from(e));
@@ -224,6 +274,10 @@ pub async fn handle_download<T: Seek + Write + Send + Sync + ClearFile + GetTarg
                                     .unwrap_or(String::from("(unknown)"))
                             ));
                         }
+                    } else {
+                        if !d.is_multi_threads() {
+                            return Ok(());
+                        }
                     }
                     break;
                 }
@@ -239,10 +293,42 @@ pub async fn handle_download<T: Seek + Write + Send + Sync + ClearFile + GetTarg
                             e
                         ));
                     }
+                } else {
+                    if !d.is_multi_threads() {
+                        return Ok(());
+                    }
                 }
                 return Err(DownloaderError::from(e));
             }
         }
+    }
+    Ok(())
+}
+
+pub async fn add_new_multi_tasks<
+    T: Seek + Write + Send + Sync + ClearFile + GetTargetFileName + 'static,
+>(
+    d: &Arc<DownloaderInternal<T>>,
+) -> Result<(), DownloaderError> {
+    let mut needed_size = (d.max_threads.qload() as usize) - d.tasks.get_ref().len();
+    while needed_size > 0 {
+        check_dropped!(d);
+        let mut data = None;
+        let index = d.pd.get_next_waited_part_data(&mut data);
+        match index {
+            Some(index) => {
+                let task = tokio::spawn(create_download_tasks_multi(
+                    Arc::clone(d),
+                    data.unwrap(),
+                    index,
+                ));
+                d.add_task(task);
+            }
+            None => {
+                return Ok(());
+            }
+        }
+        needed_size -= 1;
     }
     Ok(())
 }
@@ -260,6 +346,8 @@ pub async fn check_tasks<
         if d.pd.is_started() {
             let task = tokio::spawn(create_download_tasks_multi_first(Arc::clone(&d)));
             d.add_task(task);
+        } else {
+            add_new_multi_tasks(&d).await?;
         }
     }
     loop {
@@ -326,6 +414,10 @@ pub async fn check_tasks<
                 }
                 let task = tokio::spawn(create_download_tasks_multi_first(Arc::clone(&d)));
                 d.add_task(task);
+            } else {
+                if d.tasks.get_ref().len() < (d.max_threads.qload() as usize) {
+                    add_new_multi_tasks(&d).await?;
+                }
             }
         }
         if need_break {
