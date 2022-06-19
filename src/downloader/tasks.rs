@@ -142,6 +142,25 @@ pub async fn create_download_tasks_simple<
     handle_download(d, result).await
 }
 
+/// Do first job when download in multiple mode.
+pub async fn create_download_tasks_multi_first<
+    T: Seek + Write + Send + Sync + ClearFile + GetTargetFileName,
+>(
+    d: Arc<DownloaderInternal<T>>,
+) -> Result<(), DownloaderError> {
+    let result = d
+        .client
+        .get(d.url.deref().clone(), d.headers.as_ref().clone())
+        .await
+        .try_err(gettext("Failed to get url."))?;
+    let status = result.status();
+    if status.as_u16() >= 400 {
+        return Err(DownloaderError::from(status));
+    }
+    // # TODO
+    Ok(())
+}
+
 /// Handle download process
 pub async fn handle_download<T: Seek + Write + Send + Sync + ClearFile + GetTargetFileName>(
     d: Arc<DownloaderInternal<T>>,
@@ -224,6 +243,11 @@ pub async fn check_tasks<
     if !d.is_multi_threads() {
         let task = tokio::spawn(create_download_tasks_simple(Arc::clone(&d)));
         d.add_task(task);
+    } else {
+        if d.pd.is_started() {
+            let task = tokio::spawn(create_download_tasks_multi_first(Arc::clone(&d)));
+            d.add_task(task);
+        }
     }
     loop {
         check_dropped!(d);

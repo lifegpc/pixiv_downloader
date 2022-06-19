@@ -225,6 +225,12 @@ impl PdFile {
     }
 
     #[inline]
+    /// Returns true if the download is started.
+    pub fn is_started(&self) -> bool {
+        self.status.get_ref().is_started()
+    }
+
+    #[inline]
     /// Returns true if stored in memory only.
     fn is_mem_only(&self) -> bool {
         self.mem_only.qload()

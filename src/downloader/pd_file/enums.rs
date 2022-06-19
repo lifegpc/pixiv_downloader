@@ -27,6 +27,12 @@ impl PdFileStatus {
     pub fn is_downloading(&self) -> bool {
         *self == PdFileStatus::Downloading
     }
+
+    #[inline]
+    /// Returns true if the download is started.
+    pub fn is_started(&self) -> bool {
+        *self == PdFileStatus::Started
+    }
 }
 
 /// The type of the downloader.
