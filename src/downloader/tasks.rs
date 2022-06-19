@@ -290,6 +290,16 @@ pub async fn check_tasks<
                                     need_break = true;
                                 }
                             }
+                        } else {
+                            if d.pd.is_started() {
+                                match d.get_retry_duration() {
+                                    Some(d) => dur = Some(d),
+                                    None => {
+                                        d.set_panic(e);
+                                        need_break = true;
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -304,6 +314,19 @@ pub async fn check_tasks<
             }
             let task = tokio::spawn(create_download_tasks_simple(Arc::clone(&d)));
             d.add_task(task);
+        } else if d.is_multi_threads() {
+            if d.pd.is_started() {
+                match dur {
+                    Some(dur) => {
+                        if !dur.is_zero() {
+                            tokio::time::sleep(dur).await;
+                        }
+                    }
+                    None => {}
+                }
+                let task = tokio::spawn(create_download_tasks_multi_first(Arc::clone(&d)));
+                d.add_task(task);
+            }
         }
         if need_break {
             break;

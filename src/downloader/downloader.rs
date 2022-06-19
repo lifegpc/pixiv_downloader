@@ -821,3 +821,40 @@ async fn test_downloader_dropped() {
         }
     }
 }
+
+#[proc_macros::async_timeout_test(120s)]
+#[tokio::test(flavor = "multi_thread")]
+async fn test_failed_multi_downloader() {
+    let p = Path::new("./test");
+    if !p.exists() {
+        let re = create_dir("./test");
+        assert!(re.is_ok() || p.exists());
+    }
+    let url = "https://a.com/ssdassaodasdas";
+    let pb = p.join("addds");
+    let client = Arc::new(WebClient::default());
+    let mut retry_interval = NonTailList::<Duration>::default();
+    retry_interval += Duration::new(0, 0);
+    client
+        .get_retry_interval_as_mut()
+        .replace(retry_interval.clone());
+    client.set_retry(1);
+    let downloader =
+        Downloader::<LocalFile>::new2(client, url, None, Some(&pb), Some(true)).unwrap();
+    match downloader {
+        DownloaderResult::Ok(v) => {
+            v.set_retry_interval(retry_interval);
+            v.set_max_retry_count(1);
+            v.set_max_part_retry_count(1);
+            v.enable_multiple_download();
+            assert_eq!(v.is_created(), true);
+            v.disable_progress_bar();
+            v.download();
+            v.join().await.unwrap();
+            assert_eq!(v.is_panic(), true);
+        }
+        DownloaderResult::Canceled => {
+            panic!("This should not happened.")
+        }
+    }
+}
