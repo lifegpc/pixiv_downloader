@@ -276,6 +276,16 @@ impl PdFile {
         Ok(())
     }
 
+    /// Returns true if all parts are downloaded.
+    pub fn is_all_part_downloaded(&self) -> bool {
+        for part in self.part_datas.get_ref().iter() {
+            if !part.is_downloaded() {
+                return false;
+            }
+        }
+        return true;
+    }
+
     #[inline]
     /// Returns true if the download is completed.
     pub fn is_completed(&self) -> bool {

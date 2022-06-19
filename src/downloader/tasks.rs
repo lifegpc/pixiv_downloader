@@ -150,18 +150,32 @@ pub async fn create_download_tasks_multi_first<
 >(
     d: Arc<DownloaderInternal<T>>,
 ) -> Result<(), DownloaderError> {
+    #[cfg(test)]
+    {
+        println!("Created first download task in multiple thread mode.");
+    }
     let result = d
         .client
         .get(d.url.deref().clone(), d.headers.as_ref().clone())
         .await
         .try_err(gettext("Failed to get url."))?;
     let status = result.status();
+    #[cfg(test)]
+    {
+        println!("HTTP status: {}", status);
+    }
     if status.as_u16() >= 400 {
         return Err(DownloaderError::from(status));
     }
     match result.content_length() {
         Some(len) => match d.pd.set_file_size(len) {
-            Ok(_) => {}
+            Ok(_) => {
+                #[cfg(test)]
+                {
+                    println!("Set the file size to {}", len);
+                    println!("Is downloading: {}", d.pd.is_downloading());
+                }
+            }
             Err(e) => {
                 println!("{}", e)
             }
@@ -212,7 +226,11 @@ pub async fn create_download_tasks_multi<
     if status.as_u16() != 206 {
         return Err(DownloaderError::from(status));
     }
-    handle_download(d, result, Some(pd), Some(index)).await
+    let re = handle_download(d, result, Some(pd), Some(index)).await;
+    if re.is_err() {
+        // #TODO
+    }
+    re
 }
 
 /// Handle download process
@@ -244,6 +262,7 @@ pub async fn handle_download<T: Seek + Write + Send + Sync + ClearFile + GetTarg
                                 return Ok(());
                             }
                             let len = data.len() as u32;
+                            d.write_part(&data, pd.as_ref().unwrap(), index.unwrap())?;
                             pd.as_ref().unwrap().inc(len)?;
                             d.pd.inc(len as u64)?;
                             d.pd.update_part_data(index.unwrap())?;
@@ -409,19 +428,24 @@ pub async fn check_tasks<
             d.add_task(task);
         } else if d.is_multi_threads() {
             if d.pd.is_started() {
-                match dur {
-                    Some(dur) => {
-                        if !dur.is_zero() {
-                            tokio::time::sleep(dur).await;
+                if d.tasks.get_ref().len() == 0 {
+                    match dur {
+                        Some(dur) => {
+                            if !dur.is_zero() {
+                                tokio::time::sleep(dur).await;
+                            }
                         }
+                        None => {}
                     }
-                    None => {}
+                    let task = tokio::spawn(create_download_tasks_multi_first(Arc::clone(&d)));
+                    d.add_task(task);
                 }
-                let task = tokio::spawn(create_download_tasks_multi_first(Arc::clone(&d)));
-                d.add_task(task);
             } else {
                 if d.tasks.get_ref().len() < (d.max_threads.qload() as usize) {
                     add_new_multi_tasks(&d).await?;
+                }
+                if d.pd.is_all_part_downloaded() {
+                    need_break = true;
                 }
             }
         }

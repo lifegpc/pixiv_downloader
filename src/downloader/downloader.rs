@@ -3,6 +3,7 @@ use super::enums::DownloaderStatus;
 use super::error::DownloaderError;
 use super::local_file::LocalFile;
 use super::pd_file::PdFile;
+use super::pd_file::PdFilePartStatus;
 use super::pd_file::PdFileResult;
 use super::tasks::check_tasks;
 use crate::ext::atomic::AtomicQuick;
@@ -458,6 +459,28 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName> DownloaderIn
     pub fn write(&self, data: &[u8]) -> Result<(), DownloaderError> {
         match self.file.get_mut().deref_mut() {
             Some(f) => f.write_all(data)?,
+            None => {}
+        }
+        Ok(())
+    }
+
+    /// Write datas to the file.
+    /// * `data` - Data
+    /// * `pd` - The status of the writed part
+    /// *
+    pub fn write_part(
+        &self,
+        data: &[u8],
+        pd: &Arc<PdFilePartStatus>,
+        index: usize,
+    ) -> Result<(), DownloaderError> {
+        match self.file.get_mut().deref_mut() {
+            Some(f) => {
+                let offset =
+                    (self.get_part_size() as u64) * (index as u64) + (pd.downloaded_size() as u64);
+                f.seek(SeekFrom::Start(offset))?;
+                f.write_all(data)?;
+            }
             None => {}
         }
         Ok(())
