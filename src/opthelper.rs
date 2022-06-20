@@ -5,11 +5,14 @@ use crate::ext::rw_lock::GetRwLock;
 use crate::ext::use_or_not::ToBool;
 use crate::ext::use_or_not::UseOrNot;
 use crate::list::NonTailList;
+use crate::opt::proxy::ProxyChain;
 use crate::opt::size::parse_u32_size;
 use crate::opt::use_progress_bar::UseProgressBar;
 use crate::opts::CommandOpts;
 use crate::retry_interval::parse_retry_interval_from_json;
 use crate::settings::SettingStore;
+use std::convert::TryFrom;
+use std::ops::Deref;
 use std::sync::Arc;
 use std::sync::RwLock;
 use std::sync::RwLockReadGuard;
@@ -25,6 +28,8 @@ pub struct OptHelper {
     default_retry_interval: NonTailList<Duration>,
     _author_name_filters: RwLock<Vec<AuthorNameFilter>>,
     _use_progress_bar: RwLock<Option<UseProgressBar>>,
+    /// Proxy settings
+    _proxy_chain: RwLock<ProxyChain>,
 }
 
 impl OptHelper {
@@ -171,12 +176,21 @@ impl OptHelper {
             } else {
                 None
             });
+        if settings.have("proxy") {
+            self._proxy_chain
+                .replace_with2(ProxyChain::try_from(settings.get("proxy").unwrap()).unwrap());
+        }
         self.opt.replace_with2(opt);
         self.settings.replace_with2(settings);
     }
 
     pub fn overwrite(&self) -> Option<bool> {
         self.opt.get_ref().overwrite
+    }
+
+    /// The proxy chain
+    pub fn proxy_chain(&self) -> ProxyChain {
+        self._proxy_chain.get_ref().deref().clone()
     }
 
     pub fn verbose(&self) -> bool {
@@ -284,6 +298,7 @@ impl Default for OptHelper {
             default_retry_interval: l,
             _author_name_filters: RwLock::new(Vec::new()),
             _use_progress_bar: RwLock::new(None),
+            _proxy_chain: RwLock::new(ProxyChain::default()),
         }
     }
 }

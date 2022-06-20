@@ -5,6 +5,7 @@ use crate::gettext;
 use crate::retry_interval::check_retry_interval;
 use crate::settings::SettingDes;
 use crate::settings::JsonValueType;
+use crate::opt::proxy::check_proxy;
 use crate::opt::size::parse_u32_size;
 use json::JsonValue;
 
@@ -28,6 +29,7 @@ pub fn get_settings_list() -> Vec<SettingDes> {
         SettingDes::new("download-part-retry", gettext("Max retry count of each part when downloading in multiple thread mode."), JsonValueType::Number, Some(check_i64)).unwrap(),
         SettingDes::new("max-threads", gettext("The maximun threads when downloading file."), JsonValueType::Number, Some(check_u64)).unwrap(),
         SettingDes::new("part-size", gettext("The size of the each part when downloading file."), JsonValueType::Number, Some(check_parse_size_u32)).unwrap(),
+        SettingDes::new("proxy", gettext("Proxy settings."), JsonValueType::Array, Some(check_proxy)).unwrap(),
     ]
 }
 

@@ -7,7 +7,7 @@ use crate::gettext;
 use crate::list::NonTailList;
 use crate::opthelper::get_helper;
 use json::JsonValue;
-use reqwest::{Client, IntoUrl, RequestBuilder, Response};
+use reqwest::{Client, ClientBuilder, IntoUrl, RequestBuilder, Response};
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::default::Default;
@@ -94,9 +94,9 @@ impl WebClient {
     /// Create a new instance of client
     ///
     /// This function will not handle any basic options, please use [Self::default()] instead.
-    pub fn new() -> Self {
+    pub fn new(client: Client) -> Self {
         Self {
-            client: Client::new(),
+            client,
             headers: RwLock::new(HashMap::new()),
             cookies: RwLock::new(CookieJar::new()),
             verbose: Arc::new(AtomicBool::new(false)),
@@ -374,8 +374,14 @@ impl WebClient {
 
 impl Default for WebClient {
     fn default() -> Self {
-        let c = Self::new();
         let opt = get_helper();
+        let mut c = ClientBuilder::new();
+        let chain = opt.proxy_chain();
+        if !chain.is_empty() {
+            c = c.proxy(reqwest::Proxy::custom(move |url| chain.r#match(url)));
+        }
+        let c = c.build().unwrap();
+        let c = Self::new(c);
         c.set_verbose(opt.verbose());
         match opt.retry() {
             Some(retry) => c.set_retry(retry),
