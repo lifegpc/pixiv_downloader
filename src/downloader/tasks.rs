@@ -199,6 +199,11 @@ pub async fn create_download_tasks_multi_first<
             println!("{}", e);
         }
     }
+    if d.enabled_progress_bar() {
+        d.set_progress_bar_message(
+            gettext("Downloading \"<loc>\".").replace("<loc>", d.get_file_name().as_str()),
+        );
+    }
     Ok(())
 }
 
@@ -483,6 +488,14 @@ pub async fn check_tasks<
                         Ok(_) => {
                             need_break = true;
                             d.set_downloaded();
+                            if d.enabled_progress_bar() {
+                                d.finish_progress_bar_with_message(format!(
+                                    "{} {}",
+                                    gettext("Downloaded file:"),
+                                    d.get_target_file_name()
+                                        .unwrap_or(String::from("(unknown)"))
+                                ));
+                            }
                         }
                         Err(e) => {
                             println!("{}", e);
