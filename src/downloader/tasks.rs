@@ -2,6 +2,7 @@ use super::downloader::DownloaderInternal;
 use super::downloader::GetTargetFileName;
 use super::error::DownloaderError;
 use super::pd_file::PdFilePartStatus;
+use crate::concat_error;
 use crate::ext::atomic::AtomicQuick;
 use crate::ext::io::ClearFile;
 use crate::ext::replace::ReplaceWith2;
@@ -204,18 +205,37 @@ pub async fn create_download_tasks_multi<
     pd: Arc<PdFilePartStatus>,
     index: usize,
 ) -> Result<(), DownloaderError> {
+    let mut re = create_download_tasks_multi_internal(d, Arc::clone(&pd), index).await;
+    if re.is_err() {
+        concat_error!(re, pd.set_waited(), DownloaderError);
+    }
+    re
+}
+
+/// Create a new download task in multiple thread mode.
+pub async fn create_download_tasks_multi_internal<
+    T: Seek + Write + Send + Sync + ClearFile + GetTargetFileName,
+>(
+    d: Arc<DownloaderInternal<T>>,
+    pd: Arc<PdFilePartStatus>,
+    index: usize,
+) -> Result<(), DownloaderError> {
     let part_size = d.get_part_size() as u64;
     let file_size = d.pd.get_file_size();
     let start = part_size * (index as u64);
     let end = std::cmp::min(start + part_size - 1, file_size);
     let mut headers = d.headers.deref().clone();
-    headers.insert(String::from("Range"), format!("{}-{}", start, end));
+    headers.insert(String::from("Range"), format!("bytes={}-{}", start, end));
     let result = d
         .client
         .get(d.url.deref().clone(), headers)
         .await
         .try_err(gettext("Failed to get url."))?;
     let status = result.status();
+    #[cfg(test)]
+    {
+        println!("Index {}: HTTP Status {}", index, status);
+    }
     if status == 200 || status == 416 {
         d.fallback_to_simp();
         d.tasks.replace_with2(Vec::new());
@@ -226,11 +246,7 @@ pub async fn create_download_tasks_multi<
     if status.as_u16() != 206 {
         return Err(DownloaderError::from(status));
     }
-    let re = handle_download(d, result, Some(pd), Some(index)).await;
-    if re.is_err() {
-        // #TODO
-    }
-    re
+    handle_download(d, result, Some(pd), Some(index)).await
 }
 
 /// Handle download process
@@ -266,6 +282,10 @@ pub async fn handle_download<T: Seek + Write + Send + Sync + ClearFile + GetTarg
                             pd.as_ref().unwrap().inc(len)?;
                             d.pd.inc(len as u64)?;
                             d.pd.update_part_data(index.unwrap())?;
+                            #[cfg(test)]
+                            {
+                                println!("Index {}: Writed data {} bytes", index.unwrap(), len);
+                            }
                         }
                     }
                     Err(e) => {
@@ -302,6 +322,11 @@ pub async fn handle_download<T: Seek + Write + Send + Sync + ClearFile + GetTarg
                         if !d.is_multi_threads() {
                             return Ok(());
                         }
+                        #[cfg(test)]
+                        {
+                            println!("Index {} set to downloaded.", index.unwrap());
+                        }
+                        pd.as_ref().unwrap().set_downloaded()?;
                     }
                     break;
                 }
@@ -341,6 +366,7 @@ pub async fn add_new_multi_tasks<
         let index = d.pd.get_next_waited_part_data(&mut data);
         match index {
             Some(index) => {
+                data.as_ref().unwrap().set_downloading().unwrap();
                 let task = tokio::spawn(create_download_tasks_multi(
                     Arc::clone(d),
                     data.unwrap(),
@@ -445,7 +471,15 @@ pub async fn check_tasks<
                     add_new_multi_tasks(&d).await?;
                 }
                 if d.pd.is_all_part_downloaded() {
-                    need_break = true;
+                    match d.pd.complete() {
+                        Ok(_) => {
+                            need_break = true;
+                            d.set_downloaded();
+                        }
+                        Err(e) => {
+                            println!("{}", e);
+                        }
+                    }
                 }
             }
         }

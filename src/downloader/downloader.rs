@@ -847,6 +847,49 @@ async fn test_downloader_dropped() {
 
 #[proc_macros::async_timeout_test(120s)]
 #[tokio::test(flavor = "multi_thread")]
+async fn test_multi_downloader() {
+    let p = Path::new("./test");
+    if !p.exists() {
+        let re = create_dir("./test");
+        assert!(re.is_ok() || p.exists());
+    }
+    let url = "https://i.pximg.net/img-original/img/2022/06/18/08/19/18/99124570_p0.jpg";
+    let pb = p.join("99124570_p0.jpg");
+    {
+        let mut file_name = pb.file_name().unwrap().to_owned();
+        file_name.push(".pd");
+        let mut pdf = pb.clone();
+        pdf.set_file_name(file_name);
+        if pdf.exists() {
+            remove_file(&pdf).unwrap();
+        }
+        LocalFile::create(&pdf).unwrap();
+        assert!(pdf.exists());
+    }
+    let downloader = Downloader::<LocalFile>::new(
+        url,
+        json::object! {"referer": "https://www.pixiv.net/"},
+        Some(&pb),
+        Some(true),
+    )
+    .unwrap();
+    match downloader {
+        DownloaderResult::Ok(v) => {
+            assert_eq!(v.is_created(), true);
+            v.disable_progress_bar();
+            v.enable_multiple_download();
+            v.download();
+            v.join().await.unwrap();
+            assert_eq!(v.is_downloaded(), true);
+        }
+        DownloaderResult::Canceled => {
+            panic!("This should not happened.")
+        }
+    }
+}
+
+#[proc_macros::async_timeout_test(120s)]
+#[tokio::test(flavor = "multi_thread")]
 async fn test_failed_multi_downloader() {
     let p = Path::new("./test");
     if !p.exists() {

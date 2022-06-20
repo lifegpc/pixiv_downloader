@@ -209,12 +209,13 @@ impl PdFile {
         data: &mut Option<Arc<PdFilePartStatus>>,
     ) -> Option<usize> {
         let datas = self.part_datas.get_ref();
-        let index = 0;
+        let mut index = 0;
         for d in datas.iter() {
             if d.is_waited() {
                 data.replace(Arc::clone(d));
                 return Some(index);
             }
+            index += 1;
         }
         None
     }
@@ -278,10 +279,24 @@ impl PdFile {
 
     /// Returns true if all parts are downloaded.
     pub fn is_all_part_downloaded(&self) -> bool {
+        #[cfg(test)]
+        let mut index = 0u64;
         for part in self.part_datas.get_ref().iter() {
             if !part.is_downloaded() {
+                #[cfg(test)]
+                {
+                    println!("Index {} is not downloaded: {}", index, part.status());
+                }
                 return false;
             }
+            #[cfg(test)]
+            {
+                index += 1;
+            }
+        }
+        #[cfg(test)]
+        {
+            println!("All parts downloaded.");
         }
         return true;
     }

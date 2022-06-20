@@ -127,6 +127,24 @@ impl PdFilePartStatus {
     }
 
     #[inline]
+    /// Set the status to waited.
+    pub fn set_waited(&self) -> Result<(), PdFileError> {
+        self.set_status(PdFilePartStatus2::Waited)
+    }
+
+    #[inline]
+    /// Set the status to downloading.
+    pub fn set_downloading(&self) -> Result<(), PdFileError> {
+        self.set_status(PdFilePartStatus2::Downloading)
+    }
+
+    #[inline]
+    /// Set the status to downloaded.
+    pub fn set_downloaded(&self) -> Result<(), PdFileError> {
+        self.set_status(PdFilePartStatus2::Downloaded)
+    }
+
+    #[inline]
     /// Increase the size of the part
     /// * `size` - The size to increase
     pub fn inc(&self, size: u32) -> Result<(), PdFileError> {
