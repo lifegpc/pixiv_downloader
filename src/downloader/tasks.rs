@@ -169,18 +169,23 @@ pub async fn create_download_tasks_multi_first<
         return Err(DownloaderError::from(status));
     }
     match result.content_length() {
-        Some(len) => match d.pd.set_file_size(len) {
-            Ok(_) => {
-                #[cfg(test)]
-                {
-                    println!("Set the file size to {}", len);
-                    println!("Is downloading: {}", d.pd.is_downloading());
+        Some(len) => {
+            match d.pd.set_file_size(len) {
+                Ok(_) => {
+                    #[cfg(test)]
+                    {
+                        println!("Set the file size to {}", len);
+                        println!("Is downloading: {}", d.pd.is_downloading());
+                    }
+                }
+                Err(e) => {
+                    println!("{}", e)
                 }
             }
-            Err(e) => {
-                println!("{}", e)
+            if d.enabled_progress_bar() {
+                d.set_progress_bar_length(len);
             }
-        },
+        }
         None => {
             d.fallback_to_simp();
             return Err(DownloaderError::from(gettext(
@@ -467,6 +472,9 @@ pub async fn check_tasks<
                     d.add_task(task);
                 }
             } else {
+                if d.enabled_progress_bar() {
+                    d.set_progress_bar_position(d.pd.get_downloaded_file_size());
+                }
                 if d.tasks.get_ref().len() < (d.max_threads.qload() as usize) {
                     add_new_multi_tasks(&d).await?;
                 }

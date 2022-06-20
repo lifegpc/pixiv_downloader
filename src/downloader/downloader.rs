@@ -467,7 +467,7 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName> DownloaderIn
     /// Write datas to the file.
     /// * `data` - Data
     /// * `pd` - The status of the writed part
-    /// *
+    /// * `index` - The index of the writed part
     pub fn write_part(
         &self,
         data: &[u8],
