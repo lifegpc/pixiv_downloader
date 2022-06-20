@@ -54,9 +54,20 @@ pub trait GetTargetFileName {
     }
 }
 
+/// Truncates or extends the underlying file, updating the size of this file.
+pub trait SetLen {
+    /// Truncates or extends the underlying file, updating the size of this file to become `size`.
+    ///
+    /// If the `size` is less than the current file’s size, then the file will be shrunk.
+    /// If it is greater than the current file’s size, then the file will be extended to `size` and have all of the intermediate data filled in with 0s.
+    fn set_len(&mut self, size: u64) -> Result<(), DownloaderError>;
+}
+
 #[derive(Debug)]
 /// A file downloader
-pub struct DownloaderInternal<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName> {
+pub struct DownloaderInternal<
+    T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + SetLen,
+> {
     /// The webclient
     pub client: Arc<WebClient>,
     /// The download status
@@ -185,7 +196,7 @@ impl DownloaderInternal<LocalFile> {
     }
 }
 
-impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName> DownloaderInternal<T> {
+impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + SetLen> DownloaderInternal<T> {
     /// Add a new task to tasks
     /// * `task` - Task
     pub fn add_task(&self, task: JoinHandle<Result<(), DownloaderError>>) {
@@ -396,6 +407,19 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName> DownloaderIn
     }
 
     #[inline]
+    /// Truncates or extends the underlying file, updating the size of this file to become `size`.
+    ///
+    /// If the `size` is less than the current file’s size, then the file will be shrunk.
+    /// If it is greater than the current file’s size, then the file will be extended to `size` and have all of the intermediate data filled in with 0s.
+    pub fn set_len(&self, size: u64) -> Result<(), DownloaderError> {
+        match self.file.get_mut().deref_mut() {
+            Some(f) => f.set_len(size)?,
+            None => {}
+        }
+        Ok(())
+    }
+
+    #[inline]
     /// Set the downloader is panic and set the error.
     /// * `err` - Error
     pub fn set_panic(&self, err: DownloaderError) {
@@ -491,7 +515,7 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName> DownloaderIn
 ///
 /// When dropping downloader, the downloader need some times to let all threads exited.
 /// This process is handled after [Drop].
-pub struct Downloader<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName> {
+pub struct Downloader<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + SetLen> {
     /// internal type
     downloader: Arc<DownloaderInternal<T>>,
 }
@@ -553,7 +577,9 @@ macro_rules! define_downloader_fn {
     }
 }
 
-impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + 'static> Downloader<T> {
+impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + SetLen + 'static>
+    Downloader<T>
+{
     /// Start download if download not started.
     ///
     /// Returns the status of the Downloader
@@ -703,7 +729,9 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + 'static> Do
     define_downloader_fn!(is_panic, bool, "Returns true if the downloader is panic.");
 }
 
-impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName> Drop for Downloader<T> {
+impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + SetLen> Drop
+    for Downloader<T>
+{
     fn drop(&mut self) {
         self.downloader.set_dropped();
         #[cfg(test)]

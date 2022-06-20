@@ -1,5 +1,6 @@
 use super::downloader::DownloaderInternal;
 use super::downloader::GetTargetFileName;
+use super::downloader::SetLen;
 use super::error::DownloaderError;
 use super::pd_file::PdFilePartStatus;
 use crate::concat_error;
@@ -43,7 +44,7 @@ macro_rules! check_dropped {
 
 /// Create a download tasks in simple thread mode.
 pub async fn create_download_tasks_simple<
-    T: Seek + Write + Send + Sync + ClearFile + GetTargetFileName,
+    T: Seek + Write + Send + Sync + ClearFile + GetTargetFileName + SetLen,
 >(
     d: Arc<DownloaderInternal<T>>,
 ) -> Result<(), DownloaderError> {
@@ -133,6 +134,7 @@ pub async fn create_download_tasks_simple<
                 if d.enabled_progress_bar() {
                     d.set_progress_bar_length(len);
                 }
+                d.set_len(len)?;
             }
             None => {}
         }
@@ -147,7 +149,7 @@ pub async fn create_download_tasks_simple<
 
 /// Do first job when download in multiple mode.
 pub async fn create_download_tasks_multi_first<
-    T: Seek + Write + Send + Sync + ClearFile + GetTargetFileName,
+    T: Seek + Write + Send + Sync + ClearFile + GetTargetFileName + SetLen,
 >(
     d: Arc<DownloaderInternal<T>>,
 ) -> Result<(), DownloaderError> {
@@ -185,6 +187,7 @@ pub async fn create_download_tasks_multi_first<
             if d.enabled_progress_bar() {
                 d.set_progress_bar_length(len);
             }
+            d.set_len(len)?;
         }
         None => {
             d.fallback_to_simp();
@@ -209,7 +212,7 @@ pub async fn create_download_tasks_multi_first<
 
 /// Create a new download task in multiple thread mode.
 pub async fn create_download_tasks_multi<
-    T: Seek + Write + Send + Sync + ClearFile + GetTargetFileName,
+    T: Seek + Write + Send + Sync + ClearFile + GetTargetFileName + SetLen,
 >(
     d: Arc<DownloaderInternal<T>>,
     pd: Arc<PdFilePartStatus>,
@@ -224,7 +227,7 @@ pub async fn create_download_tasks_multi<
 
 /// Create a new download task in multiple thread mode.
 pub async fn create_download_tasks_multi_internal<
-    T: Seek + Write + Send + Sync + ClearFile + GetTargetFileName,
+    T: Seek + Write + Send + Sync + ClearFile + GetTargetFileName + SetLen,
 >(
     d: Arc<DownloaderInternal<T>>,
     pd: Arc<PdFilePartStatus>,
@@ -260,7 +263,9 @@ pub async fn create_download_tasks_multi_internal<
 }
 
 /// Handle download process
-pub async fn handle_download<T: Seek + Write + Send + Sync + ClearFile + GetTargetFileName>(
+pub async fn handle_download<
+    T: Seek + Write + Send + Sync + ClearFile + GetTargetFileName + SetLen,
+>(
     d: Arc<DownloaderInternal<T>>,
     re: Response,
     pd: Option<Arc<PdFilePartStatus>>,
@@ -365,7 +370,7 @@ pub async fn handle_download<T: Seek + Write + Send + Sync + ClearFile + GetTarg
 }
 
 pub async fn add_new_multi_tasks<
-    T: Seek + Write + Send + Sync + ClearFile + GetTargetFileName + 'static,
+    T: Seek + Write + Send + Sync + ClearFile + GetTargetFileName + SetLen + 'static,
 >(
     d: &Arc<DownloaderInternal<T>>,
 ) -> Result<(), DownloaderError> {
@@ -395,7 +400,7 @@ pub async fn add_new_multi_tasks<
 
 /// Check tasks are completed or not. And create new tasks if needed.
 pub async fn check_tasks<
-    T: Seek + Write + Send + Sync + ClearFile + GetTargetFileName + 'static,
+    T: Seek + Write + Send + Sync + ClearFile + GetTargetFileName + SetLen + 'static,
 >(
     d: Arc<DownloaderInternal<T>>,
 ) -> Result<(), DownloaderError> {

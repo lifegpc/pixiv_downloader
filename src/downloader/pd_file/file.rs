@@ -21,6 +21,7 @@ use std::fs::create_dir;
 use std::fs::metadata;
 use std::fs::remove_file;
 use std::fs::File;
+use std::fs::OpenOptions;
 use std::io::Read;
 use std::io::Seek;
 use std::io::SeekFrom;
@@ -392,7 +393,11 @@ impl PdFile {
     /// Returns errors or a new instance.
     pub fn read_from_file<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Self, PdFileError> {
         let p = path.as_ref();
-        let mut f = File::open(p)?;
+        let mut f = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .truncate(true)
+            .open(p)?;
         f.seek(SeekFrom::Start(0))?;
         let mut buf = [0u8, 0, 0, 0];
         f.read_exact(&mut buf)?;
@@ -446,7 +451,12 @@ impl PdFile {
         if p.exists() {
             remove_file(p)?;
         }
-        let f = File::create(p)?;
+        let f = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .truncate(true)
+            .create(true)
+            .open(p)?;
         self.file.get_mut().replace(f);
         self.file_path.get_mut().replace(PathBuf::from(p));
         self.mem_only.qstore(false);
@@ -485,7 +495,14 @@ impl PdFile {
         }
         remove_file(self.file_path.get_ref().as_ref().unwrap())?;
         f.take();
-        f.replace(File::create(self.file_path.get_ref().as_ref().unwrap())?);
+        f.replace(
+            OpenOptions::new()
+                .read(true)
+                .write(true)
+                .truncate(true)
+                .create(true)
+                .open(self.file_path.get_ref().as_ref().unwrap())?,
+        );
         Ok(())
     }
 

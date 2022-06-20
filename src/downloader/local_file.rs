@@ -1,7 +1,9 @@
 use super::downloader::GetTargetFileName;
+use super::downloader::SetLen;
 use crate::ext::io::ClearFile;
 use std::fs::remove_file;
 use std::fs::File;
+use std::fs::OpenOptions;
 use std::io::Seek;
 use std::io::Write;
 use std::ops::Deref;
@@ -22,7 +24,12 @@ impl LocalFile {
     /// This function will create a file if it does not exist, and will truncate it if it does.
     pub fn create<P: AsRef<Path>>(path: P) -> std::io::Result<Self> {
         let p = path.as_ref().to_owned();
-        let f = File::create(&p)?;
+        let f = OpenOptions::new()
+            .create(true)
+            .read(true)
+            .write(true)
+            .truncate(true)
+            .open(&p)?;
         Ok(Self {
             file: Some(f),
             path: p,
@@ -32,7 +39,11 @@ impl LocalFile {
     /// Attempts to open a file in read-only mode.
     pub fn open<P: AsRef<Path>>(path: P) -> std::io::Result<Self> {
         let p = path.as_ref().to_owned();
-        let f = File::open(&p)?;
+        let f = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .truncate(true)
+            .open(&p)?;
         Ok(Self {
             file: Some(f),
             path: p,
@@ -69,6 +80,13 @@ impl GetTargetFileName for LocalFile {
 impl Seek for LocalFile {
     fn seek(&mut self, pos: std::io::SeekFrom) -> std::io::Result<u64> {
         self.file.as_ref().unwrap().seek(pos)
+    }
+}
+
+impl SetLen for LocalFile {
+    fn set_len(&mut self, size: u64) -> Result<(), super::DownloaderError> {
+        self.file.as_ref().unwrap().set_len(size)?;
+        Ok(())
     }
 }
 
