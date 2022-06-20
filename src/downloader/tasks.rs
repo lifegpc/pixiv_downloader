@@ -221,6 +221,7 @@ pub async fn create_download_tasks_multi<
     let mut re = create_download_tasks_multi_internal(d, Arc::clone(&pd), index).await;
     if re.is_err() {
         concat_error!(re, pd.set_waited(), DownloaderError);
+        concat_error!(re, pd.set_downloaded_size(0), DownloaderError);
     }
     re
 }
@@ -475,11 +476,12 @@ pub async fn check_tasks<
                             if !dur.is_zero() {
                                 tokio::time::sleep(dur).await;
                             }
+                            let task =
+                                tokio::spawn(create_download_tasks_multi_first(Arc::clone(&d)));
+                            d.add_task(task);
                         }
                         None => {}
                     }
-                    let task = tokio::spawn(create_download_tasks_multi_first(Arc::clone(&d)));
-                    d.add_task(task);
                 }
             } else {
                 if d.enabled_progress_bar() {
