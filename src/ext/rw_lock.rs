@@ -14,6 +14,9 @@ impl<T: Sized> GetRwLock for RwLock<T> {
     type Target = T;
     fn get_ref<'a>(&'a self) -> RwLockReadGuard<'a, Self::Target> {
         loop {
+            if self.is_poisoned() {
+                panic!("Target is poisoned.");
+            }
             match self.try_read() {
                 Ok(f) => {
                     return f;
@@ -26,6 +29,9 @@ impl<T: Sized> GetRwLock for RwLock<T> {
     }
     fn get_mut<'a>(&'a self) -> RwLockWriteGuard<'a, Self::Target> {
         loop {
+            if self.is_poisoned() {
+                panic!("Target is poisoned.");
+            }
             match self.try_write() {
                 Ok(f) => {
                     return f;
