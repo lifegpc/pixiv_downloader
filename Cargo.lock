@@ -1279,6 +1279,7 @@ dependencies = [
  "modular-bitfield",
  "parse-size",
  "proc_macros",
+ "regex",
  "reqwest",
  "tokio",
  "url",
