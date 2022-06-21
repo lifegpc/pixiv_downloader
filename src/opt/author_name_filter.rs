@@ -172,4 +172,9 @@ fn test_author_name_filter() {
     );
     assert_eq!(l.filter("sss@ss@お仕事募集中"), "sss@ss");
     assert_eq!(l.filter("sss🌸ss🌸お仕事募集中"), "sss🌸ss");
+    let l = AuthorNameFilter::from_json(
+        json::array![{"type": "regex", "rule": "(?<=^桃豆こまもち).*"}],
+    )
+    .unwrap();
+    assert_eq!(l.filter("桃豆こまもち🍡日曜西ま11a"), "桃豆こまもち");
 }
