@@ -1,6 +1,6 @@
 use crate::ext::json::ToJson;
+use fancy_regex::Regex;
 use json::JsonValue;
-use regex::Regex;
 use reqwest::IntoUrl;
 use std::convert::TryInto;
 
@@ -28,6 +28,10 @@ impl PixivID {
             return Some(PixivID::Artwork(num.unwrap()));
         }
         let re = RE.captures(s);
+        if re.is_err() {
+            return None;
+        }
+        let re = re.unwrap();
         if re.is_some() {
             let r = re.unwrap().name("id");
             if r.is_some() {

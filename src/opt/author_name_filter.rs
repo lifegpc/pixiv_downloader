@@ -1,17 +1,17 @@
 use crate::ext::json::ToJson;
 use crate::ext::try_err::TryErr;
 use crate::gettext;
+use fancy_regex::Regex;
 use json::JsonValue;
-use regex::Regex;
 use std::cmp::PartialEq;
 use std::convert::From;
 use std::convert::TryFrom;
 use std::fmt::Display;
 
-#[derive(Debug, derive_more::From, PartialEq)]
+#[derive(Debug, derive_more::From)]
 pub enum AuthorNameFilterError {
     String(String),
-    Regex(regex::Error),
+    Regex(fancy_regex::Error),
 }
 
 impl Display for AuthorNameFilterError {

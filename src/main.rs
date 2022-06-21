@@ -9,7 +9,6 @@ mod _avdict;
 mod _exif;
 #[cfg(feature = "ugoira")]
 mod _ugoira;
-mod author_name_filter;
 #[cfg(feature = "avdict")]
 /// A rust wrapper for [FFMPEG](https://ffmpeg.org/)'s [AVDictionary](https://ffmpeg.org/doxygen/trunk/group__lavu__dict.html)
 mod avdict;

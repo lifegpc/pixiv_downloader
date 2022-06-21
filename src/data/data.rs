@@ -1,5 +1,5 @@
-use crate::author_name_filter::AuthorFiler;
 use crate::gettext;
+use crate::opt::author_name_filter::AuthorFiler;
 use crate::opthelper::get_helper;
 use crate::pixiv_link::PixivID;
 use crate::pixiv_link::ToPixivID;

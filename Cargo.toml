@@ -11,6 +11,7 @@ c_fixed_string = { version = "0.2", optional = true }
 chrono = "0.4"
 dateparser = "0.1.6"
 derive_more = "0.99"
+fancy-regex = "0.10"
 flagset = { version = "0.4", optional = true }
 futures-util = "0.3"
 getopts = "0.2"
@@ -26,7 +27,6 @@ lazy_static = "1.4"
 modular-bitfield = "0.11"
 parse-size = "1"
 proc_macros = { path = "proc_macros" }
-regex = "1"
 reqwest = { version = "0.11", features = ["brotli", "deflate", "gzip", "rustls-tls", "socks", "stream"] }
 RustyXML = "0.3"
 tokio = { version = "1.19", features = ["rt", "macros", "rt-multi-thread", "time"] }

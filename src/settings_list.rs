@@ -1,10 +1,10 @@
-use crate::author_name_filter::check_author_name_filters;
 use crate::ext::json::FromJson;
 use crate::ext::use_or_not::UseOrNot;
 use crate::gettext;
 use crate::retry_interval::check_retry_interval;
 use crate::settings::SettingDes;
 use crate::settings::JsonValueType;
+use crate::opt::author_name_filter::check_author_name_filters;
 use crate::opt::proxy::check_proxy;
 use crate::opt::size::parse_u32_size;
 use json::JsonValue;

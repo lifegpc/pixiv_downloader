@@ -1,10 +1,10 @@
-use crate::author_name_filter::AuthorNameFilter;
 use crate::ext::json::FromJson;
 use crate::ext::replace::ReplaceWith2;
 use crate::ext::rw_lock::GetRwLock;
 use crate::ext::use_or_not::ToBool;
 use crate::ext::use_or_not::UseOrNot;
 use crate::list::NonTailList;
+use crate::opt::author_name_filter::AuthorNameFilter;
 use crate::opt::proxy::ProxyChain;
 use crate::opt::size::parse_u32_size;
 use crate::opt::use_progress_bar::UseProgressBar;
