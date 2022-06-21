@@ -251,8 +251,9 @@ pub async fn create_download_tasks_multi_internal<
         println!("Index {}: HTTP Status {}", index, status);
     }
     if status == 200 || status == 416 {
-        d.fallback_to_simp();
-        d.tasks.replace_with2(Vec::new());
+        // FIX ME: FALLBACK will cause download not completed.
+        // d.fallback_to_simp();
+        // d.tasks.replace_with2(Vec::new());
         return Err(DownloaderError::from(gettext(
             "Warning: The server seems does not support range.",
         )));
