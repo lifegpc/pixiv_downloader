@@ -189,7 +189,8 @@ impl Main {
         if illust_type.is_some() {
             let illust_type = illust_type.unwrap();
             match illust_type {
-                0 => {}
+                0 => {} // Normal illust
+                1 => {} // Manga illust
                 2 => {
                     let ugoira_data = pw
                         .get_ugoira(id)
