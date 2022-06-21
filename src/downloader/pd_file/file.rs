@@ -149,10 +149,14 @@ impl PdFile {
             if !self.is_mem_only() {
                 self.need_saved.qstore(true);
                 let mut f = self.file.get_mut();
-                let f = f.as_mut().unwrap();
-                f.seek(TYPE_OFFSET)?;
-                f.write_le_u8(self.ftype.get_ref().int_value())?;
-                self.need_saved.qstore(false);
+                match f.as_mut() {
+                    Some(f) => {
+                        f.seek(TYPE_OFFSET)?;
+                        f.write_le_u8(self.ftype.get_ref().int_value())?;
+                        self.need_saved.qstore(false);
+                    }
+                    None => {}
+                }
             }
         } else {
             let mut err = self.clear();
@@ -169,10 +173,14 @@ impl PdFile {
             if !self.is_mem_only() {
                 self.need_saved.qstore(true);
                 let mut f = self.file.get_mut();
-                let f = f.as_mut().unwrap();
-                f.seek(TYPE_OFFSET)?;
-                f.write_le_u8(self.ftype.get_ref().int_value())?;
-                self.need_saved.qstore(false);
+                match f.as_mut() {
+                    Some(f) => {
+                        f.seek(TYPE_OFFSET)?;
+                        f.write_le_u8(self.ftype.get_ref().int_value())?;
+                        self.need_saved.qstore(false);
+                    }
+                    None => {}
+                }
             }
         }
         Ok(())
@@ -249,10 +257,14 @@ impl PdFile {
         if !self.is_mem_only() {
             self.need_saved.qstore(true);
             let mut f = self.file.get_mut();
-            let f = f.as_mut().unwrap();
-            f.seek(DOWNLOADED_FILE_SIZE_OFFSET)?;
-            f.write_le_u64(downloaded_size)?;
-            self.need_saved.qstore(false);
+            match f.as_mut() {
+                Some(f) => {
+                    f.seek(DOWNLOADED_FILE_SIZE_OFFSET)?;
+                    f.write_le_u64(downloaded_size)?;
+                    self.need_saved.qstore(false);
+                }
+                None => {}
+            }
         }
         Ok(downloaded_size)
     }
@@ -546,19 +558,27 @@ impl PdFile {
         if !self.is_mem_only() {
             self.need_saved.qstore(true);
             let mut f = self.file.get_mut();
-            let f = f.as_mut().unwrap();
-            f.seek(FILE_SIZE_OFFSET)?;
-            f.write_le_u64(file_size)?;
-            self.need_saved.qstore(false);
+            match f.as_mut() {
+                Some(f) => {
+                    f.seek(FILE_SIZE_OFFSET)?;
+                    f.write_le_u64(file_size)?;
+                    self.need_saved.qstore(false);
+                }
+                None => {}
+            }
         }
         self.set_downloading();
         if !self.is_mem_only() {
             self.need_saved.qstore(true);
             let mut f = self.file.get_mut();
-            let f = f.as_mut().unwrap();
-            f.seek(STATUS_OFFSET)?;
-            f.write_le_u8(self.status.get_ref().int_value())?;
-            self.need_saved.qstore(false);
+            match f.as_mut() {
+                Some(f) => {
+                    f.seek(STATUS_OFFSET)?;
+                    f.write_le_u8(self.status.get_ref().int_value())?;
+                    self.need_saved.qstore(false);
+                }
+                None => {}
+            }
         }
         Ok(())
     }
@@ -569,10 +589,14 @@ impl PdFile {
         if !self.is_mem_only() {
             self.need_saved.qstore(true);
             let mut f = self.file.get_mut();
-            let f = f.as_mut().unwrap();
-            f.seek(PART_SIZE_OFFSET)?;
-            f.write_le_u32(part_size)?;
-            self.need_saved.qstore(false);
+            match f.as_mut() {
+                Some(f) => {
+                    f.seek(PART_SIZE_OFFSET)?;
+                    f.write_le_u32(part_size)?;
+                    self.need_saved.qstore(false);
+                }
+                None => {}
+            }
         }
         Ok(())
     }
@@ -588,12 +612,16 @@ impl PdFile {
         if !self.is_mem_only() {
             self.need_saved.qstore(true);
             let mut f = self.file.get_mut();
-            let mut f = f.as_mut().unwrap();
-            f.seek(SeekFrom::Start(
-                self.part_data_offset.qload() + 2 * (index as u64),
-            ))?;
-            part.write_to(&mut f)?;
-            self.need_saved.qstore(false);
+            match f.as_mut() {
+                Some(f) => {
+                    f.seek(SeekFrom::Start(
+                        self.part_data_offset.qload() + 2 * (index as u64),
+                    ))?;
+                    part.write_to(f)?;
+                    self.need_saved.qstore(false);
+                }
+                None => {}
+            }
         }
         Ok(())
     }
