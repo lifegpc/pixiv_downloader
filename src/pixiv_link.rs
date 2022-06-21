@@ -1,6 +1,6 @@
 use crate::ext::json::ToJson;
-use regex::Regex;
 use json::JsonValue;
+use regex::Regex;
 use reqwest::IntoUrl;
 use std::convert::TryInto;
 
