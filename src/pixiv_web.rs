@@ -8,7 +8,6 @@ use json::JsonValue;
 use reqwest::IntoUrl;
 use reqwest::Response;
 use std::sync::atomic::AtomicBool;
-use std::sync::Arc;
 use std::sync::RwLock;
 
 /// A client which use Pixiv's web API
