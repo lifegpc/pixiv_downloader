@@ -15,7 +15,7 @@ use std::sync::RwLock;
 pub struct PixivWebClient {
     client: WebClient,
     /// true if in is initialized
-    inited: Arc<AtomicBool>,
+    inited: AtomicBool,
     /// pixiv global data
     data: RwLock<Option<JsonValue>>,
     /// Get basic params
@@ -26,7 +26,7 @@ impl PixivWebClient {
     pub fn new() -> Self {
         Self {
             client: WebClient::default(),
-            inited: Arc::new(AtomicBool::new(false)),
+            inited: AtomicBool::new(false),
             data: RwLock::new(None),
             params: RwLock::new(None),
         }
