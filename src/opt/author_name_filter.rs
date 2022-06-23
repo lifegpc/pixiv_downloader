@@ -178,7 +178,7 @@ fn test_author_name_filter() {
     .unwrap();
     assert_eq!(l.filter("桃豆こまもち🍡日曜西ま11a"), "桃豆こまもち");
     let l = AuthorNameFilter::from_json(
-        json::array![{"type": "regex", "rule": "(.*(?=桃豆こまもち))?((?<=桃豆こまもち).*)?"}],
+        json::array![{"type": "regex", "rule": "(.+(?=桃豆こまもち)|(?<=桃豆こまもち).+)"}],
     )
     .unwrap();
     assert_eq!(l.filter("桃豆こまもち🍡日曜西ま11a"), "桃豆こまもち");
