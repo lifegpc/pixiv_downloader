@@ -7,6 +7,29 @@ use std::convert::TryInto;
 lazy_static! {
     #[doc(hidden)]
     static ref RE: Regex = Regex::new("^(https?://)?(www\\.)?pixiv\\.net/artworks/(?P<id>\\d+)").unwrap();
+    #[doc(hidden)]
+    static ref RE2: Regex = Regex::new("^(https?://)?(www\\.)?fanbox\\.cc/@(?P<creator>[^/]+)/posts/(?P<id>\\d+)").unwrap();
+}
+
+#[derive(Clone, Debug)]
+/// Fanbox post ID
+pub struct FanboxPostID {
+    /// Creator ID
+    creator_id: String,
+    /// Post ID
+    post_id: u64,
+}
+
+impl FanboxPostID {
+    /// Create a new id.
+    /// * `creator_id` - Creator ID
+    /// * `post_id` - Post ID
+    pub fn new<C: AsRef<str> + ?Sized>(creator_id: &C, post_id: u64) -> Self {
+        Self {
+            creator_id: String::from(creator_id.as_ref()),
+            post_id,
+        }
+    }
 }
 
 /// Repesent an Pixiv ID
@@ -14,6 +37,8 @@ lazy_static! {
 pub enum PixivID {
     /// Artwork Id, include illust and manga
     Artwork(u64),
+    /// Fanbox post
+    FanboxPost(FanboxPostID),
 }
 
 pub trait ToPixivID {
@@ -27,14 +52,30 @@ impl PixivID {
         if num.is_ok() {
             return Some(PixivID::Artwork(num.unwrap()));
         }
-        let re = RE.captures(s);
-        if re.is_some() {
-            let r = re.unwrap().name("id");
-            if r.is_some() {
-                let r = r.unwrap().as_str();
-                let num = r.parse::<u64>();
-                return Some(PixivID::Artwork(num.unwrap()));
-            }
+        match RE.captures(s) {
+            Some(re) => match re.name("id") {
+                Some(r) => match r.as_str().parse::<u64>() {
+                    Ok(r) => return Some(Self::Artwork(r)),
+                    Err(_) => {}
+                },
+                None => {}
+            },
+            None => {}
+        }
+        match RE2.captures(s) {
+            Some(re) => match re.name("creator") {
+                Some(creator) => match re.name("id") {
+                    Some(id) => match id.as_str().parse::<u64>() {
+                        Ok(id) => {
+                            return Some(Self::FanboxPost(FanboxPostID::new(creator.as_str(), id)));
+                        }
+                        Err(_) => {}
+                    },
+                    None => {}
+                },
+                None => {}
+            },
+            None => {}
         }
         None
     }
@@ -44,16 +85,25 @@ impl PixivID {
             Self::Artwork(id) => {
                 format!("https://www.pixiv.net/artworks/{}", id)
             }
+            Self::FanboxPost(id) => {
+                format!(
+                    "https://www.fanbox.cc/@{}/posts/{}",
+                    id.creator_id, id.post_id
+                )
+            }
         }
     }
 }
 
 impl ToJson for PixivID {
     fn to_json(&self) -> Option<JsonValue> {
-        match *self {
-            PixivID::Artwork(id) => {
-                Some(json::value!({"type": "artwork", "id": id, "link": self.to_link()}))
+        match &self {
+            &PixivID::Artwork(id) => {
+                Some(json::value!({"type": "artwork", "id": id.clone(), "link": self.to_link()}))
             }
+            &PixivID::FanboxPost(id) => Some(
+                json::value!({"type": "fanbox_post", "post_id": id.post_id.clone(), "creator_id": id.creator_id.clone(), "link": self.to_link()}),
+            ),
         }
     }
 }
@@ -93,6 +143,7 @@ impl TryInto<u64> for PixivID {
     fn try_into(self) -> Result<u64, Self::Error> {
         match self {
             Self::Artwork(id) => Ok(id),
+            Self::FanboxPost(id) => Ok(id.post_id),
         }
     }
 }
@@ -100,8 +151,9 @@ impl TryInto<u64> for PixivID {
 impl TryInto<u64> for &PixivID {
     type Error = ();
     fn try_into(self) -> Result<u64, Self::Error> {
-        match *self {
-            PixivID::Artwork(id) => Ok(id),
+        match self {
+            PixivID::Artwork(id) => Ok(id.clone()),
+            PixivID::FanboxPost(id) => Ok(id.post_id.clone()),
         }
     }
 }

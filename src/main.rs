@@ -23,6 +23,7 @@ mod error;
 mod exif;
 /// Used to extend some thirdparty library
 mod ext;
+mod fanbox_api;
 mod i18n;
 mod list;
 mod opt;

@@ -38,7 +38,9 @@ impl MetaDataParser {
                         return false;
                     }
                     let mkey = format!("meta-{}", self.key.as_str());
-                    if e.id.as_ref().unwrap() != mkey.as_str() {
+                    if e.id.as_ref().unwrap() != mkey.as_str()
+                        && e.id.as_ref().unwrap() != self.key.as_str()
+                    {
                         return false;
                     }
                     let c = e.attributes.get("content");

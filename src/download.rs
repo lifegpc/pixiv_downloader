@@ -12,6 +12,7 @@ use crate::downloader::DownloaderResult;
 use crate::downloader::LocalFile;
 use crate::error::PixivDownloaderError;
 use crate::ext::try_err::TryErr;
+use crate::fanbox_api::FanboxClient;
 use crate::gettext;
 use crate::opthelper::get_helper;
 use crate::pixiv_link::PixivID;
@@ -29,22 +30,22 @@ use std::sync::Arc;
 impl Main {
     pub async fn download(&mut self) -> i32 {
         let pw = Arc::new(PixivWebClient::new());
-        if !pw.init() {
-            println!("{}", gettext("Failed to initialize pixiv web api client."));
-            return 1;
-        }
-        if !pw.check_login().await {
-            return 1;
-        }
-        if !pw.logined() {
-            println!(
-                "{}",
-                gettext("Warning: Web api client not logined, some future may not work.")
-            );
-        }
+        let fc = Arc::new(FanboxClient::new());
         for id in self.cmd.as_ref().unwrap().ids.iter() {
             match id {
                 PixivID::Artwork(id) => {
+                    if !pw.is_inited() {
+                        if !pw.init() {
+                            println!("{}", gettext("Failed to initialize pixiv web api client."));
+                            return 1;
+                        }
+                        if !pw.check_login().await {
+                            return 1;
+                        }
+                        if !pw.logined() {
+                            println!("{}", gettext("Warning: Web api client not logined, some future may not work."));
+                        }
+                    }
                     let r = self.download_artwork(Arc::clone(&pw), id.clone()).await;
                     let r = if r.is_ok() {
                         0
@@ -58,6 +59,18 @@ impl Main {
                     };
                     if r != 0 {
                         return r;
+                    }
+                }
+                PixivID::FanboxPost(_) => {
+                    if !fc.is_inited() {
+                        if !fc.init() {
+                            println!("{}", gettext("Failed to initialize fanbox api client."));
+                            return 1;
+                        }
+                        if !fc.check_login().await {
+                            return 1;
+                        }
+                        println!("Logined: {}", fc.logined());
                     }
                 }
             }
