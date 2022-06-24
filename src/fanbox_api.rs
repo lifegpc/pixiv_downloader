@@ -106,7 +106,7 @@ impl FanboxClient {
             return false;
         }
         let value = data.as_ref().unwrap();
-        match value["user"]["isLoggedIn"].as_bool() {
+        match value["urlContext"]["user"]["isLoggedIn"].as_bool() {
             Some(b) => b,
             None => false,
         }
