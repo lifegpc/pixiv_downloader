@@ -9,6 +9,8 @@ lazy_static! {
     static ref RE: Regex = Regex::new("^(https?://)?(www\\.)?pixiv\\.net/artworks/(?P<id>\\d+)").unwrap();
     #[doc(hidden)]
     static ref RE2: Regex = Regex::new("^(https?://)?(www\\.)?fanbox\\.cc/@(?P<creator>[^/]+)/posts/(?P<id>\\d+)").unwrap();
+    #[doc(hidden)]
+    static ref RE3: Regex = Regex::new("^(https?://)?(?P<creator>[^./]+)\\.fanbox\\.cc/posts/(?P<id>\\d+)").unwrap();
 }
 
 #[derive(Clone, Debug)]
@@ -63,6 +65,21 @@ impl PixivID {
             None => {}
         }
         match RE2.captures(s) {
+            Some(re) => match re.name("creator") {
+                Some(creator) => match re.name("id") {
+                    Some(id) => match id.as_str().parse::<u64>() {
+                        Ok(id) => {
+                            return Some(Self::FanboxPost(FanboxPostID::new(creator.as_str(), id)));
+                        }
+                        Err(_) => {}
+                    },
+                    None => {}
+                },
+                None => {}
+            },
+            None => {}
+        }
+        match RE3.captures(s) {
             Some(re) => match re.name("creator") {
                 Some(creator) => match re.name("id") {
                     Some(id) => match id.as_str().parse::<u64>() {
