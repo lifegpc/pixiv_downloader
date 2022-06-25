@@ -145,6 +145,21 @@ impl FanboxClient {
         }
     }
 
+    /// Get creator's info
+    /// * `creator_id` - The id of the creator
+    pub async fn get_creator<S: AsRef<str> + ?Sized>(&self, creator_id: &S) -> Option<JsonValue> {
+        self.auto_init();
+        handle_data!(
+            self.client.get_with_param(
+                "https://api.fanbox.cc/creator.get",
+                json::object! {"creatorId": creator_id.as_ref()},
+                None,
+            ),
+            gettext("Failed to get creator's info:"),
+            gettext("Creator's info:")
+        )
+    }
+
     /// List home page's post list. All supported and followed creators' posts are included.
     /// * `limit` - The max count. 10 is used on Fanbox website.
     pub async fn list_home_post(&self, limit: u64) -> Option<JsonValue> {
@@ -279,5 +294,11 @@ quick_test!(
 quick_test!(
     test_list_supporting_plan,
     TEST_CLIENT.list_supporting_plan(),
+    "Failed to list all supporting plans."
+);
+#[cfg(test)]
+quick_test!(
+    test_get_creator,
+    TEST_CLIENT.get_creator("mozukun43"),
     "Failed to list all supporting plans."
 );
