@@ -1,9 +1,14 @@
 use proc_macro::TokenStream;
 use quote::quote;
+use syn::parse::Parse;
 use syn::parse_macro_input;
+use syn::token;
+use syn::Expr;
 use syn::Ident;
 use syn::ItemFn;
+use syn::Lit;
 use syn::LitInt;
+use syn::LitStr;
 
 #[proc_macro]
 pub fn define_struct_reader_fn(item: TokenStream) -> TokenStream {
@@ -101,6 +106,59 @@ pub fn async_timeout_test(attr: TokenStream, item: TokenStream) -> TokenStream {
                 #(#stmts)*
             };
             tokio::time::timeout(dura, f).await.unwrap();
+        }
+    };
+    stream.into()
+}
+
+struct FanboxApiTest {
+    pub name: Ident,
+    pub expr: Expr,
+    pub errmsg: LitStr,
+}
+
+impl Parse for FanboxApiTest {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let name = Ident::parse(input)?;
+        token::Comma::parse(input)?;
+        let expr = Expr::parse(input)?;
+        token::Comma::parse(input)?;
+        let errmsg = Lit::parse(input)?;
+        match errmsg {
+            Lit::Str(errmsg) => Ok(Self { name, expr, errmsg }),
+            _ => Err(syn::Error::new(errmsg.span(), "Failed to parse string.")),
+        }
+    }
+}
+
+#[proc_macro]
+pub fn fanbox_api_quick_test(item: TokenStream) -> TokenStream {
+    let FanboxApiTest { name, expr, errmsg } = parse_macro_input!(item as FanboxApiTest);
+    let stream = quote! {
+        #[proc_macros::async_timeout_test(120s)]
+        #[tokio::test(flavor = "multi_thread")]
+        async fn #name() {
+            match std::env::var("FANBOX_COOKIES_FILE") {
+                Ok(path) => {
+                    let client = FanboxClient::new();
+                    if !client.init(Some(path)) {
+                        panic!("Failed to initiailze the client.");
+                    }
+                    if !client.check_login().await {
+                        println!("The client is not logined. Skip test.");
+                        return;
+                    }
+                    match #expr.await {
+                        Some(_) => {}
+                        None => {
+                            panic!("{}", #errmsg);
+                        }
+                    }
+                }
+                Err(_) => {
+                    println!("No cookies files specified, skip test.")
+                }
+            }
         }
     };
     stream.into()

@@ -1,20 +1,13 @@
 use crate::ext::atomic::AtomicQuick;
-#[cfg(test)]
-use crate::ext::replace::ReplaceWith;
 use crate::ext::replace::ReplaceWith2;
 use crate::ext::rw_lock::GetRwLock;
 use crate::gettext;
 use crate::opthelper::get_helper;
 use crate::parser::metadata::MetaDataParser;
 use crate::webclient::WebClient;
-#[cfg(test)]
-use futures_util::lock::Mutex;
 use json::JsonValue;
-#[cfg(test)]
-use std::ops::Deref;
+use proc_macros::fanbox_api_quick_test;
 use std::sync::atomic::AtomicBool;
-#[cfg(test)]
-use std::sync::Arc;
 use std::sync::RwLock;
 
 /// Fanbox API client
@@ -215,90 +208,23 @@ impl FanboxClient {
     }
 }
 
-#[cfg(test)]
-lazy_static! {
-    #[doc(hidden)]
-    static ref TEST_CLIENT: Arc<FanboxClient> = Arc::new(FanboxClient::new());
-    #[doc(hidden)]
-    /// Used to lock initilize process. The data is set to true after trying check login.
-    static ref LOCK: Mutex<bool> = Mutex::new(false);
-}
-
-#[cfg(test)]
-async fn init_test_client(path: String) -> bool {
-    let _ = LOCK.lock().await;
-    if !TEST_CLIENT.is_inited() {
-        if !TEST_CLIENT.init(Some(path)) {
-            return false;
-        }
-    }
-    true
-}
-
-#[cfg(test)]
-async fn check_login() -> bool {
-    let mut ctx = LOCK.lock().await;
-    if !ctx.deref() {
-        ctx.replace_with(true);
-        if !TEST_CLIENT.check_login().await {
-            return false;
-        }
-    }
-    TEST_CLIENT.logined()
-}
-
-#[cfg(test)]
-macro_rules! quick_test {
-    ($name:ident, $exp:expr, $err:literal) => {
-        #[proc_macros::async_timeout_test(120s)]
-        #[tokio::test(flavor = "multi_thread")]
-        async fn $name() {
-            match std::env::var("FANBOX_COOKIES_FILE") {
-                Ok(path) => {
-                    let re = init_test_client(path).await;
-                    if !re {
-                        panic!("Failed to initiailze the client.");
-                    }
-                    if !check_login().await {
-                        println!("The client is not logined. Skip test.");
-                        return;
-                    }
-                    match $exp.await {
-                        Some(_) => {}
-                        None => {
-                            panic!("{}", $err);
-                        }
-                    }
-                }
-                Err(_) => {
-                    println!("No cookies files specified, skip test.")
-                }
-            }
-        }
-    };
-}
-
-#[cfg(test)]
-quick_test!(
+fanbox_api_quick_test!(
     test_list_home_post,
-    TEST_CLIENT.list_home_post(10),
+    client.list_home_post(10),
     "Failed to list home page's posts."
 );
-#[cfg(test)]
-quick_test!(
+fanbox_api_quick_test!(
     test_list_supporting_post,
-    TEST_CLIENT.list_supporting_post(10),
+    client.list_supporting_post(10),
     "Failed to list supported creators' posts."
 );
-#[cfg(test)]
-quick_test!(
+fanbox_api_quick_test!(
     test_list_supporting_plan,
-    TEST_CLIENT.list_supporting_plan(),
+    client.list_supporting_plan(),
     "Failed to list all supporting plans."
 );
-#[cfg(test)]
-quick_test!(
+fanbox_api_quick_test!(
     test_get_creator,
-    TEST_CLIENT.get_creator("mozukun43"),
+    client.get_creator("mozukun43"),
     "Failed to list all supporting plans."
 );
