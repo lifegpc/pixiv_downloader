@@ -1,4 +1,6 @@
 #[macro_use]
+extern crate cfg_if;
+#[macro_use]
 extern crate lazy_static;
 #[cfg(all(feature = "link-cplusplus", target_env = "gnu"))]
 extern crate link_cplusplus;

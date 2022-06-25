@@ -568,7 +568,17 @@ pub fn parse_cmd() -> Option<CommandOpts> {
 }
 
 impl Default for CommandOpts {
-    fn default() -> Self {
-        Self::new(Command::None)
+    cfg_if! {
+        if #[cfg(test)] {
+            fn default() -> Self {
+                let mut re = Self::new(Command::None);
+                re.verbose = true;
+                re
+            }
+        } else {
+            fn default() -> Self {
+                Self::new(Command::None)
+            }
+        }
     }
 }

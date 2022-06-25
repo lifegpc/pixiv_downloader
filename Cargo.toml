@@ -8,6 +8,7 @@ edition = "2018"
 [dependencies]
 atty = "0.2"
 c_fixed_string = { version = "0.2", optional = true }
+cfg-if = "1"
 chrono = "0.4"
 dateparser = "0.1.6"
 derive_more = "0.99"
