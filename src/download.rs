@@ -63,7 +63,8 @@ impl Main {
                 }
                 PixivID::FanboxPost(_) => {
                     if !fc.is_inited() {
-                        if !fc.init() {
+                        let helper = get_helper();
+                        if !fc.init(helper.cookies()) {
                             println!("{}", gettext("Failed to initialize fanbox api client."));
                             return 1;
                         }

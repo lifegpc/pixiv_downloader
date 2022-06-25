@@ -1,5 +1,6 @@
 use crate::ext::rw_lock::GetRwLock;
 use std::ops::DerefMut;
+use std::sync::MutexGuard;
 use std::sync::RwLock;
 use std::sync::RwLockWriteGuard;
 
@@ -27,6 +28,20 @@ impl<T> ReplaceWith<T> for T {
     #[inline]
     fn replace_with(&mut self, another: T) -> T {
         std::mem::replace(self, another)
+    }
+}
+
+impl<'a, T> ReplaceWith<T> for MutexGuard<'a, T> {
+    #[inline]
+    fn replace_with(&mut self, another: T) -> T {
+        self.deref_mut().replace_with(another)
+    }
+}
+
+impl<'a, T> ReplaceWith<T> for futures_util::lock::MutexGuard<'a, T> {
+    #[inline]
+    fn replace_with(&mut self, another: T) -> T {
+        self.deref_mut().replace_with(another)
     }
 }
 
