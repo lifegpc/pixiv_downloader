@@ -3,6 +3,7 @@ use quote::quote;
 use syn::parse::Parse;
 use syn::parse_macro_input;
 use syn::token;
+use syn::Block;
 use syn::Expr;
 use syn::Ident;
 use syn::ItemFn;
@@ -113,11 +114,54 @@ pub fn async_timeout_test(attr: TokenStream, item: TokenStream) -> TokenStream {
 
 struct FanboxApiTest {
     pub name: Ident,
+    pub block: Block,
+}
+
+impl Parse for FanboxApiTest {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let name = Ident::parse(input)?;
+        token::Comma::parse(input)?;
+        let block = syn::Block::parse(input)?;
+        Ok(Self { name, block })
+    }
+}
+
+#[proc_macro]
+pub fn fanbox_api_test(item: TokenStream) -> TokenStream {
+    let FanboxApiTest { name, block } = parse_macro_input!(item as FanboxApiTest);
+    let stmts = block.stmts;
+    let stream = quote! {
+        #[proc_macros::async_timeout_test(120s)]
+        #[tokio::test(flavor = "multi_thread")]
+        async fn #name() {
+            match std::env::var("FANBOX_COOKIES_FILE") {
+                Ok(path) => {
+                    let client = FanboxClient::new();
+                    if !client.init(Some(path)) {
+                        panic!("Failed to initiailze the client.");
+                    }
+                    if !client.check_login().await {
+                        println!("The client is not logined. Skip test.");
+                        return;
+                    }
+                    #(#stmts)*
+                }
+                Err(_) => {
+                    println!("No cookies files specified, skip test.")
+                }
+            }
+        }
+    };
+    stream.into()
+}
+
+struct FanboxApiQuickTest {
+    pub name: Ident,
     pub expr: Expr,
     pub errmsg: LitStr,
 }
 
-impl Parse for FanboxApiTest {
+impl Parse for FanboxApiQuickTest {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let name = Ident::parse(input)?;
         token::Comma::parse(input)?;
@@ -133,7 +177,7 @@ impl Parse for FanboxApiTest {
 
 #[proc_macro]
 pub fn fanbox_api_quick_test(item: TokenStream) -> TokenStream {
-    let FanboxApiTest { name, expr, errmsg } = parse_macro_input!(item as FanboxApiTest);
+    let FanboxApiQuickTest { name, expr, errmsg } = parse_macro_input!(item as FanboxApiQuickTest);
     let stream = quote! {
         #[proc_macros::async_timeout_test(120s)]
         #[tokio::test(flavor = "multi_thread")]
