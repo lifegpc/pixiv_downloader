@@ -1,3 +1,5 @@
+use super::error::FanboxAPIError;
+use super::item_list::FanboxItemList;
 #[cfg(test)]
 use crate::fanbox_api::FanboxClient;
 use crate::fanbox_api::FanboxClientInternal;
@@ -6,17 +8,6 @@ use json::JsonValue;
 use proc_macros::fanbox_api_test;
 use std::fmt::Debug;
 use std::sync::Arc;
-
-#[derive(Debug, derive_more::From, derive_more::Display)]
-pub enum PaginatedCreatorPostsError {
-    String(String),
-}
-
-impl From<&'static str> for PaginatedCreatorPostsError {
-    fn from(v: &'static str) -> Self {
-        Self::String(v.to_owned())
-    }
-}
 
 /// List creator posts
 pub struct PaginatedCreatorPosts {
@@ -33,10 +24,10 @@ impl PaginatedCreatorPosts {
     pub fn new(
         value: &JsonValue,
         client: Arc<FanboxClientInternal>,
-    ) -> Result<Self, PaginatedCreatorPostsError> {
+    ) -> Result<Self, FanboxAPIError> {
         let body = &value["body"];
         if !body.is_array() {
-            return Err(PaginatedCreatorPostsError::from(gettext(
+            return Err(FanboxAPIError::from(gettext(
                 "Failed to parse paginated data.",
             )));
         }
@@ -47,13 +38,46 @@ impl PaginatedCreatorPosts {
                     pages.push(s.to_owned());
                 }
                 None => {
-                    return Err(PaginatedCreatorPostsError::from(gettext(
+                    return Err(FanboxAPIError::from(gettext(
                         "Failed to parse paginated data.",
                     )));
                 }
             }
         }
         Ok(Self { client, pages })
+    }
+
+    /// Get posts' data in specified page.
+    /// * `index` - The index of the page
+    pub async fn get_page(&self, index: usize) -> Option<FanboxItemList> {
+        if index >= self.pages.len() {
+            None
+        } else {
+            match self
+                .client
+                .get_url(
+                    self.pages[index].as_str(),
+                    gettext("Failed to get posts' data:"),
+                    gettext("Posts' data:"),
+                )
+                .await
+            {
+                Some(d) => match FanboxItemList::new(&d["body"], Arc::clone(&self.client)) {
+                    Ok(d) => Some(d),
+                    Err(e) => {
+                        println!("{} {}", gettext("Failed to parse posts's data:"), e);
+                        None
+                    }
+                },
+                None => None,
+            }
+        }
+    }
+
+    #[inline]
+    /// Returns the total pages
+    pub fn len(&self) -> usize {
+        self.pages.len()
     }
 }
 
@@ -69,7 +93,7 @@ impl Debug for PaginatedCreatorPosts {
                 f.write_fmt(format_args!("{} {}\n", index, page))?;
                 index += 1;
             }
-            f.write_str("}\n")
+            f.write_str("}")
         }
     }
 }
@@ -78,6 +102,14 @@ fanbox_api_test!(test_paginate_creator_posts, {
     match client.paginate_creator_post("mozukun43").await {
         Some(pages) => {
             println!("{:?}", pages);
+            if pages.len() > 0 {
+                match pages.get_page(0).await {
+                    Some(data) => {
+                        println!("{:?}", data)
+                    }
+                    None => {}
+                }
+            }
         }
         None => {
             panic!("Failed to paginate creator's posts.")

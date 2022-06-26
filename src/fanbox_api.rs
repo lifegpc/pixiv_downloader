@@ -8,6 +8,7 @@ use crate::parser::metadata::MetaDataParser;
 use crate::webclient::WebClient;
 use json::JsonValue;
 use proc_macros::fanbox_api_quick_test;
+use reqwest::IntoUrl;
 use std::ops::Deref;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
@@ -154,6 +155,24 @@ impl FanboxClientInternal {
             ),
             gettext("Failed to get creator's info:"),
             gettext("Creator's info:")
+        )
+    }
+
+    /// Send requests to speicfied url.
+    /// * `url` - The url
+    /// * `errmsg` - The error message when error occured.
+    /// * `infomsg` - Verbose output info message.
+    pub async fn get_url<U: IntoUrl + Clone, S: AsRef<str> + ?Sized, I: AsRef<str> + ?Sized>(
+        &self,
+        url: U,
+        errmsg: &S,
+        infomsg: &I,
+    ) -> Option<JsonValue> {
+        self.auto_init();
+        handle_data!(
+            self.client.get(url, None),
+            errmsg.as_ref(),
+            infomsg.as_ref()
         )
     }
 
