@@ -1,6 +1,7 @@
 use crate::ext::atomic::AtomicQuick;
 use crate::ext::replace::ReplaceWith2;
 use crate::ext::rw_lock::GetRwLock;
+use crate::fanbox::item_list::FanboxItemList;
 use crate::fanbox::paginated_creator_posts::PaginatedCreatorPosts;
 use crate::gettext;
 use crate::opthelper::get_helper;
@@ -232,6 +233,25 @@ impl FanboxClientInternal {
             None => false,
         }
     }
+
+    #[allow(dead_code)]
+    /// Paginate creator posts
+    /// * `creator_id` - The id of the creator
+    pub async fn paginate_creator_post<S: AsRef<str> + ?Sized>(
+        &self,
+        creator_id: &S,
+    ) -> Option<JsonValue> {
+        self.auto_init();
+        handle_data!(
+            self.client.get_with_param(
+                "https://api.fanbox.cc/post.paginateCreator",
+                json::object! {"creatorId": creator_id.as_ref()},
+                None,
+            ),
+            gettext("Failed to paginate creator post:"),
+            gettext("Paginated data:")
+        )
+    }
 }
 
 /// Fanbox API Client
@@ -249,22 +269,45 @@ impl FanboxClient {
     }
 
     #[allow(dead_code)]
+    /// List home page's post list. All supported and followed creators' posts are included.
+    /// * `limit` - The max count. 10 is used on Fanbox website.
+    pub async fn list_home_post(&self, limit: u64) -> Option<FanboxItemList> {
+        match self.client.list_home_post(limit).await {
+            Some(s) => match FanboxItemList::new(&s["body"], Arc::clone(&self.client)) {
+                Ok(item) => Some(item),
+                Err(e) => {
+                    println!("{}", e);
+                    None
+                }
+            },
+            None => None,
+        }
+    }
+
+    #[allow(dead_code)]
+    /// List supported creators' posts.
+    /// * `limit` - The max count. 10 is used on Fanbox website.
+    pub async fn list_supporting_post(&self, limit: u64) -> Option<FanboxItemList> {
+        match self.client.list_supporting_post(limit).await {
+            Some(s) => match FanboxItemList::new(&s["body"], Arc::clone(&self.client)) {
+                Ok(item) => Some(item),
+                Err(e) => {
+                    println!("{}", e);
+                    None
+                }
+            },
+            None => None,
+        }
+    }
+
+    #[allow(dead_code)]
     /// Paginate creator posts
     /// * `creator_id` - The id of the creator
     pub async fn paginate_creator_post<S: AsRef<str> + ?Sized>(
         &self,
         creator_id: &S,
     ) -> Option<PaginatedCreatorPosts> {
-        self.auto_init();
-        match handle_data!(
-            self.client.client.get_with_param(
-                "https://api.fanbox.cc/post.paginateCreator",
-                json::object! {"creatorId": creator_id.as_ref()},
-                None,
-            ),
-            gettext("Failed to paginate creator post:"),
-            gettext("Paginated data:")
-        ) {
+        match self.client.paginate_creator_post(creator_id).await {
             Some(s) => match PaginatedCreatorPosts::new(&s, Arc::clone(&self.client)) {
                 Ok(re) => Some(re),
                 Err(e) => {

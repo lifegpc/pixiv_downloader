@@ -193,7 +193,9 @@ pub fn fanbox_api_quick_test(item: TokenStream) -> TokenStream {
                         return;
                     }
                     match #expr.await {
-                        Some(_) => {}
+                        Some(data) => {
+                            println!("{:?}", data);
+                        }
                         None => {
                             panic!("{}", #errmsg);
                         }
