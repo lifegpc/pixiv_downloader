@@ -13,8 +13,59 @@ pub struct FanboxPlan {
 }
 
 impl FanboxPlan {
+    #[inline]
     pub fn id(&self) -> Option<u64> {
         parse_u64(&self.data["id"])
+    }
+
+    #[inline]
+    pub fn cover_image_url(&self) -> Option<&str> {
+        self.data["coverImageUrl"].as_str()
+    }
+
+    #[inline]
+    pub fn creator_id(&self) -> Option<&str> {
+        self.data["creatorId"].as_str()
+    }
+
+    #[inline]
+    pub fn description(&self) -> Option<&str> {
+        self.data["description"].as_str()
+    }
+
+    #[inline]
+    pub fn fee(&self) -> Option<u64> {
+        self.data["fee"].as_u64()
+    }
+
+    #[inline]
+    pub fn has_adult_content(&self) -> Option<bool> {
+        self.data["hasAdultContent"].as_bool()
+    }
+
+    #[inline]
+    pub fn payment_method(&self) -> Option<&str> {
+        self.data["paymentMethod"].as_str()
+    }
+
+    #[inline]
+    pub fn title(&self) -> Option<&str> {
+        self.data["title"].as_str()
+    }
+
+    #[inline]
+    pub fn user_icon_url(&self) -> Option<&str> {
+        self.data["user"]["iconUrl"].as_str()
+    }
+
+    #[inline]
+    pub fn user_id(&self) -> Option<u64> {
+        parse_u64(&self.data["user"]["userId"])
+    }
+
+    #[inline]
+    pub fn user_name(&self) -> Option<&str> {
+        self.data["user"]["name"].as_str()
     }
 }
 
@@ -22,6 +73,16 @@ impl Debug for FanboxPlan {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("FanboxPlan")
             .field("id", &self.id())
+            .field("cover_image_url", &self.cover_image_url())
+            .field("creator_id", &self.creator_id())
+            .field("description", &self.description())
+            .field("fee", &self.fee())
+            .field("has_adult_content", &self.has_adult_content())
+            .field("payment_method", &self.payment_method())
+            .field("title", &self.title())
+            .field("user_icon_url", &self.user_icon_url())
+            .field("user_id", &self.user_id())
+            .field("user_name", &self.user_name())
             .finish_non_exhaustive()
     }
 }
