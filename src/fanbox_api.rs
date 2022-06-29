@@ -3,6 +3,7 @@ use crate::ext::replace::ReplaceWith2;
 use crate::ext::rw_lock::GetRwLock;
 use crate::fanbox::item_list::FanboxItemList;
 use crate::fanbox::paginated_creator_posts::PaginatedCreatorPosts;
+use crate::fanbox::plan::FanboxPlanList;
 use crate::gettext;
 use crate::opthelper::get_helper;
 use crate::parser::metadata::MetaDataParser;
@@ -274,6 +275,21 @@ impl FanboxClient {
     pub async fn list_home_post(&self, limit: u64) -> Option<FanboxItemList> {
         match self.client.list_home_post(limit).await {
             Some(s) => match FanboxItemList::new(&s["body"], Arc::clone(&self.client)) {
+                Ok(item) => Some(item),
+                Err(e) => {
+                    println!("{}", e);
+                    None
+                }
+            },
+            None => None,
+        }
+    }
+
+    #[allow(dead_code)]
+    /// List all supporting plans.
+    pub async fn list_supporting_plan(&self) -> Option<FanboxPlanList> {
+        match self.client.list_supporting_plan().await {
+            Some(s) => match FanboxPlanList::new(&s["body"]) {
                 Ok(item) => Some(item),
                 Err(e) => {
                     println!("{}", e);
