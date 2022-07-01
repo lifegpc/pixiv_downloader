@@ -1,6 +1,7 @@
 use crate::ext::atomic::AtomicQuick;
 use crate::ext::replace::ReplaceWith2;
 use crate::ext::rw_lock::GetRwLock;
+use crate::fanbox::creator::FanboxCreator;
 use crate::fanbox::item_list::FanboxItemList;
 use crate::fanbox::paginated_creator_posts::PaginatedCreatorPosts;
 use crate::fanbox::plan::FanboxPlanList;
@@ -262,6 +263,19 @@ pub struct FanboxClient {
 }
 
 impl FanboxClient {
+    #[allow(dead_code)]
+    /// Get creator's info
+    /// * `creator_id` - The id of the creator
+    pub async fn get_creator<S: AsRef<str> + ?Sized>(
+        &self,
+        creator_id: &S,
+    ) -> Option<FanboxCreator> {
+        match self.client.get_creator(creator_id).await {
+            Some(s) => Some(FanboxCreator::new(&s["body"], Arc::clone(&self.client))),
+            None => None,
+        }
+    }
+
     /// Create an new instance
     pub fn new() -> Self {
         Self {
