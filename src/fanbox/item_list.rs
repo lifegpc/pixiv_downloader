@@ -17,6 +17,33 @@ pub struct FanboxItemList {
 }
 
 impl FanboxItemList {
+    /// Get next page.
+    /// # Note
+    /// If no next page presented, will return a error.
+    pub async fn get_next_page(&self) -> Result<FanboxItemList, FanboxAPIError> {
+        match &self.next_url {
+            Some(url) => {
+                match self.client.get_url(url, gettext("Failed to get next page of the items."), gettext("Items data:")).await {
+                    Some(data) => {
+                        Self::new(&data["body"], Arc::clone(&self.client))
+                    }
+                    None => {
+                        Err(FanboxAPIError::from("Failed to get next page."))
+                    }
+                }
+            }
+            None => {
+                Err(FanboxAPIError::from("No next url, can not get next page."))
+            }
+        }
+    }
+
+    /// Returns true if next page is presented.
+    pub fn has_next_page(&self) -> bool {
+        self.next_url.is_some()
+    }
+
+    /// Create a new instance
     pub fn new(
         value: &JsonValue,
         client: Arc<FanboxClientInternal>,

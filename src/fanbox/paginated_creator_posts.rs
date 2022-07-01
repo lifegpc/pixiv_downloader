@@ -105,7 +105,17 @@ fanbox_api_test!(test_paginate_creator_posts, {
             if pages.len() > 0 {
                 match pages.get_page(0).await {
                     Some(data) => {
-                        println!("{:?}", data)
+                        println!("{:?}", data);
+                        if data.has_next_page() {
+                            match data.get_next_page().await {
+                                Ok(data) => {
+                                    println!("{:?}", data);
+                                }
+                                Err(e) => {
+                                    println!("{}", e);
+                                }
+                            }
+                        }
                     }
                     None => {}
                 }
