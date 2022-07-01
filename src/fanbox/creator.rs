@@ -149,6 +149,31 @@ impl FanboxCreator {
     }
 
     #[inline]
+    pub fn has_booth_shop(&self) -> Option<bool> {
+        self.data["hasBoothShop"].as_bool()
+    }
+
+    #[inline]
+    pub fn is_accepting_request(&self) -> Option<bool> {
+        self.data["isAcceptingRequest"].as_bool()
+    }
+
+    #[inline]
+    pub fn is_followed(&self) -> Option<bool> {
+        self.data["isFollowed"].as_bool()
+    }
+
+    #[inline]
+    pub fn is_stopped(&self) -> Option<bool> {
+        self.data["isStopped"].as_bool()
+    }
+
+    #[inline]
+    pub fn is_supported(&self) -> Option<bool> {
+        self.data["isSupported"].as_bool()
+    }
+
+    #[inline]
     /// Create a new instance
     pub fn new(data: &JsonValue, client: Arc<FanboxClientInternal>) -> Self {
         Self {
@@ -204,6 +229,11 @@ impl Debug for FanboxCreator {
             .field("cover_image_url", &self.cover_image_url())
             .field("description", &self.description())
             .field("has_adult_content", &self.has_adult_content())
+            .field("has_booth_shop", &self.has_booth_shop())
+            .field("is_accepting_request", &self.is_accepting_request())
+            .field("is_followed", &self.is_followed())
+            .field("is_stopped", &self.is_stopped())
+            .field("is_supported", &self.is_supported())
             .field("profile_items", &self.profile_items())
             .field("profile_links", &self.profile_links())
             .field("user_icon_url", &self.user_icon_url())
