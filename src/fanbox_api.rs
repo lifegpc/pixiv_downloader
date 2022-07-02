@@ -5,6 +5,7 @@ use crate::fanbox::creator::FanboxCreator;
 use crate::fanbox::item_list::FanboxItemList;
 use crate::fanbox::paginated_creator_posts::PaginatedCreatorPosts;
 use crate::fanbox::plan::FanboxPlanList;
+use crate::fanbox::post::FanboxPost;
 use crate::gettext;
 use crate::opthelper::get_helper;
 use crate::parser::metadata::MetaDataParser;
@@ -161,6 +162,22 @@ impl FanboxClientInternal {
         )
     }
 
+    #[allow(dead_code)]
+    /// Get post info
+    /// * `post_id` - The id of the post
+    pub async fn get_post_info(&self, post_id: u64) -> Option<JsonValue> {
+        self.auto_init();
+        handle_data!(
+            self.client.get_with_param(
+                "https://api.fanbox.cc/post.info",
+                json::object! { "postId": post_id },
+                None,
+            ),
+            gettext("Failed to get post info:"),
+            gettext("Post info:")
+        )
+    }
+
     /// Send requests to speicfied url.
     /// * `url` - The url
     /// * `errmsg` - The error message when error occured.
@@ -276,6 +293,16 @@ impl FanboxClient {
         }
     }
 
+    #[allow(dead_code)]
+    /// Get post info
+    /// * `post_id` - The id of the post
+    pub async fn get_post_info(&self, post_id: u64) -> Option<FanboxPost> {
+        match self.client.get_post_info(post_id).await {
+            Some(s) => Some(FanboxPost::new(&s["body"], Arc::clone(&self.client))),
+            None => None,
+        }
+    }
+
     /// Create an new instance
     pub fn new() -> Self {
         Self {
@@ -357,6 +384,11 @@ impl Deref for FanboxClient {
     }
 }
 
+fanbox_api_quick_test!(
+    test_get_post_info,
+    client.get_post_info(4070200),
+    "Failed to get the post info(第253話 【壁紙プレゼント】ひんやりレモンころねちゃん🍋)."
+);
 fanbox_api_quick_test!(
     test_list_home_post,
     client.list_home_post(10),
