@@ -78,6 +78,16 @@ impl FanboxPostArticle {
     }
 
     #[inline]
+    pub fn next_post(&self) -> Option<FanboxPostRef> {
+        let obj = &self.data["nextPost"];
+        if obj.is_object() {
+            Some(FanboxPostRef::new(obj, Arc::clone(&self.client)))
+        } else {
+            None
+        }
+    }
+
+    #[inline]
     pub fn published_datetime(&self) -> Option<&str> {
         self.data["publishedDatetime"].as_str()
     }
@@ -122,12 +132,57 @@ impl Debug for FanboxPostArticle {
             .field("is_liked", &self.is_liked())
             .field("is_restricted", &self.is_restricted())
             .field("like_count", &self.like_count())
+            .field("next_post", &self.next_post())
             .field("published_datetime", &self.published_datetime())
             .field("title", &self.title())
             .field("updated_datetime", &self.updated_datetime())
             .field("user_icon_url", &self.user_icon_url())
             .field("user_id", &self.user_id())
             .field("user_name", &self.user_name())
+            .finish_non_exhaustive()
+    }
+}
+
+/// A reference to another post
+pub struct FanboxPostRef {
+    /// Raw data
+    pub data: JsonValue,
+    /// The api client
+    client: Arc<FanboxClientInternal>,
+}
+
+impl FanboxPostRef {
+    #[inline]
+    pub fn id(&self) -> Option<u64> {
+        parse_u64(&self.data["id"])
+    }
+
+    #[inline]
+    /// Create a new instance
+    pub fn new(data: &JsonValue, client: Arc<FanboxClientInternal>) -> Self {
+        Self {
+            data: data.clone(),
+            client,
+        }
+    }
+
+    #[inline]
+    pub fn published_datetime(&self) -> Option<&str> {
+        self.data["publishedDatetime"].as_str()
+    }
+
+    #[inline]
+    pub fn title(&self) -> Option<&str> {
+        self.data["title"].as_str()
+    }
+}
+
+impl Debug for FanboxPostRef {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("FanboxPostRef")
+            .field("id", &self.id())
+            .field("published_datetime", &self.published_datetime())
+            .field("title", &self.title())
             .finish_non_exhaustive()
     }
 }
