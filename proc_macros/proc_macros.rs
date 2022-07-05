@@ -136,7 +136,7 @@ pub fn fanbox_api_test(item: TokenStream) -> TokenStream {
         async fn #name() {
             match std::env::var("FANBOX_COOKIES_FILE") {
                 Ok(path) => {
-                    let client = FanboxClient::new();
+                    let client = crate::fanbox_api::FanboxClient::new();
                     if !client.init(Some(path)) {
                         panic!("Failed to initiailze the client.");
                     }
@@ -184,7 +184,7 @@ pub fn fanbox_api_quick_test(item: TokenStream) -> TokenStream {
         async fn #name() {
             match std::env::var("FANBOX_COOKIES_FILE") {
                 Ok(path) => {
-                    let client = FanboxClient::new();
+                    let client = crate::fanbox_api::FanboxClient::new();
                     if !client.init(Some(path)) {
                         panic!("Failed to initiailze the client.");
                     }

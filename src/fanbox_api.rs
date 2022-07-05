@@ -385,11 +385,6 @@ impl Deref for FanboxClient {
 }
 
 fanbox_api_quick_test!(
-    test_get_post_info,
-    client.get_post_info(4070200),
-    "Failed to get the post info(第253話 【壁紙プレゼント】ひんやりレモンころねちゃん🍋)."
-);
-fanbox_api_quick_test!(
     test_list_home_post,
     client.list_home_post(10),
     "Failed to list home page's posts."

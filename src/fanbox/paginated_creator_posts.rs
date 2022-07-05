@@ -1,7 +1,5 @@
 use super::error::FanboxAPIError;
 use super::item_list::FanboxItemList;
-#[cfg(test)]
-use crate::fanbox_api::FanboxClient;
 use crate::fanbox_api::FanboxClientInternal;
 use crate::gettext;
 use json::JsonValue;

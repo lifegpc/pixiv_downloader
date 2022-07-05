@@ -1,6 +1,7 @@
 use crate::fanbox_api::FanboxClientInternal;
 use crate::parser::json::parse_u64;
 use json::JsonValue;
+use proc_macros::fanbox_api_test;
 use std::fmt::Debug;
 use std::sync::Arc;
 
@@ -88,6 +89,16 @@ impl FanboxPostArticle {
     }
 
     #[inline]
+    pub fn prev_post(&self) -> Option<FanboxPostRef> {
+        let obj = &self.data["prevPost"];
+        if obj.is_object() {
+            Some(FanboxPostRef::new(obj, Arc::clone(&self.client)))
+        } else {
+            None
+        }
+    }
+
+    #[inline]
     pub fn published_datetime(&self) -> Option<&str> {
         self.data["publishedDatetime"].as_str()
     }
@@ -133,6 +144,7 @@ impl Debug for FanboxPostArticle {
             .field("is_restricted", &self.is_restricted())
             .field("like_count", &self.like_count())
             .field("next_post", &self.next_post())
+            .field("prev_post", &self.prev_post())
             .field("published_datetime", &self.published_datetime())
             .field("title", &self.title())
             .field("updated_datetime", &self.updated_datetime())
@@ -152,6 +164,16 @@ pub struct FanboxPostRef {
 }
 
 impl FanboxPostRef {
+    pub async fn get_post(&self) -> Option<FanboxPost> {
+        match self.id() {
+            Some(id) => match self.client.get_post_info(id).await {
+                Some(s) => Some(FanboxPost::new(&s["body"], Arc::clone(&self.client))),
+                None => None,
+            },
+            None => None,
+        }
+    }
+
     #[inline]
     pub fn id(&self) -> Option<u64> {
         parse_u64(&self.data["id"])
@@ -209,3 +231,33 @@ impl FanboxPost {
         }
     }
 }
+
+fanbox_api_test!(test_get_post_info, {
+    match client.get_post_info(4070200).await {
+        Some(data) => match data {
+            FanboxPost::Article(data) => {
+                println!("{:?}", data);
+                match data.next_post() {
+                    Some(r) => {
+                        println!("{:?}", r);
+                        match r.get_post().await {
+                            Some(r) => {
+                                println!("{:?}", r);
+                            }
+                            None => {
+                                panic!("Failed to get next post.")
+                            }
+                        }
+                    }
+                    None => {}
+                }
+            }
+            FanboxPost::Unknown(data) => {
+                println!("{}", data);
+            }
+        },
+        None => {
+            panic!("Failed to get the post info(第253話 【壁紙プレゼント】ひんやりレモンころねちゃん🍋).");
+        }
+    }
+});
