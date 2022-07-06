@@ -171,6 +171,11 @@ impl FanboxPostImage {
     }
 
     #[inline]
+    pub fn cover_image_url(&self) -> Option<&str> {
+        self.data["coverImageUrl"].as_str()
+    }
+
+    #[inline]
     pub fn creator_id(&self) -> Option<&str> {
         self.data["creatorId"].as_str()
     }
@@ -280,6 +285,7 @@ impl Debug for FanboxPostImage {
         f.debug_struct("FanboxPostImage")
             .field("id", &self.id())
             .field("comment_count", &self.comment_count())
+            .field("cover_image_url", &self.cover_image_url())
             .field("creator_id", &self.creator_id())
             .field("excerpt", &self.excerpt())
             .field("fee_required", &self.fee_required())
@@ -289,6 +295,7 @@ impl Debug for FanboxPostImage {
             .field("is_restricted", &self.is_restricted())
             .field("like_count", &self.like_count())
             .field("next_post", &self.next_post())
+            .field("prev_post", &self.prev_post())
             .field("published_datetime", &self.published_datetime())
             .field("title", &self.title())
             .field("updated_datetime", &self.updated_datetime())
@@ -354,6 +361,7 @@ impl Debug for FanboxPostRef {
     }
 }
 
+/// Unknown type
 pub struct FanboxPostUnknown {
     /// Raw data
     pub data: JsonValue,
@@ -438,6 +446,11 @@ impl FanboxPost {
     #[inline]
     pub fn comment_count(&self) -> Option<u64> {
         self.get_json()["commentCount"].as_u64()
+    }
+
+    #[inline]
+    pub fn cover_image_url(&self) -> Option<&str> {
+        self.get_json()["coverImageUrl"].as_str()
     }
 
     #[inline]
@@ -586,6 +599,28 @@ fanbox_api_test!(test_get_post_info, {
         }
         None => {
             panic!("Failed to get the post info(第253話 【壁紙プレゼント】ひんやりレモンころねちゃん🍋).");
+        }
+    }
+});
+
+fanbox_api_test!(test_get_post_info2, {
+    match client.get_post_info(3972093).await {
+        Some(data) => {
+            assert_eq!(data.id(), Some(3972093));
+            match data {
+                FanboxPost::Image(img) => {
+                    println!("{:?}", img);
+                }
+                FanboxPost::Unknown(data) => {
+                    println!("{}", data.data);
+                }
+                _ => {
+                    println!("{:?}", data);
+                }
+            }
+        }
+        None => {
+            panic!("Failed to get the post info(【高解像度JPG】お正月プレゼントはチノ?)");
         }
     }
 });
