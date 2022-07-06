@@ -1,3 +1,5 @@
+pub mod comment;
+pub mod comment_list;
 pub mod creator;
 pub mod error;
 pub mod item;

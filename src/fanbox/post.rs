@@ -1,3 +1,4 @@
+use super::comment_list::FanboxCommentList;
 use crate::fanbox_api::FanboxClientInternal;
 use crate::parser::json::parse_u64;
 use json::JsonValue;
@@ -18,6 +19,11 @@ impl FanboxPostArticle {
     #[inline]
     pub fn comment_count(&self) -> Option<u64> {
         self.data["commentCount"].as_u64()
+    }
+
+    #[inline]
+    pub fn comment_list(&self) -> Option<FanboxCommentList> {
+        FanboxCommentList::new(&self.data["commentList"], Arc::clone(&self.client))
     }
 
     #[inline]
@@ -156,6 +162,7 @@ impl Debug for FanboxPostArticle {
         f.debug_struct("FanboxPostArticle")
             .field("id", &self.id())
             .field("comment_count", &self.comment_count())
+            .field("comment_list", &self.comment_list())
             .field("cover_image_url", &self.cover_image_url())
             .field("creator_id", &self.creator_id())
             .field("excerpt", &self.excerpt())
@@ -190,6 +197,11 @@ impl FanboxPostImage {
     #[inline]
     pub fn comment_count(&self) -> Option<u64> {
         self.data["commentCount"].as_u64()
+    }
+
+    #[inline]
+    pub fn comment_list(&self) -> Option<FanboxCommentList> {
+        FanboxCommentList::new(&self.data["commentList"], Arc::clone(&self.client))
     }
 
     #[inline]
@@ -328,6 +340,7 @@ impl Debug for FanboxPostImage {
         f.debug_struct("FanboxPostImage")
             .field("id", &self.id())
             .field("comment_count", &self.comment_count())
+            .field("comment_list", &self.comment_list())
             .field("cover_image_url", &self.cover_image_url())
             .field("creator_id", &self.creator_id())
             .field("excerpt", &self.excerpt())
@@ -427,6 +440,11 @@ impl FanboxPostUnknown {
 #[allow(dead_code)]
 impl FanboxPostUnknown {
     #[inline]
+    pub fn comment_list(&self) -> Option<FanboxCommentList> {
+        FanboxCommentList::new(&self.data["commentList"], Arc::clone(&self.client))
+    }
+
+    #[inline]
     pub fn next_post(&self) -> Option<FanboxPostRef> {
         let obj = &self.data["nextPost"];
         if obj.is_object() {
@@ -490,6 +508,15 @@ impl FanboxPost {
     #[inline]
     pub fn comment_count(&self) -> Option<u64> {
         self.get_json()["commentCount"].as_u64()
+    }
+
+    #[inline]
+    pub fn comment_list(&self) -> Option<FanboxCommentList> {
+        match self {
+            Self::Article(a) => a.comment_list(),
+            Self::Image(i) => i.comment_list(),
+            Self::Unknown(u) => u.comment_list(),
+        }
     }
 
     #[inline]
