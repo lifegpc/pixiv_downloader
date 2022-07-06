@@ -105,6 +105,27 @@ impl FanboxPostArticle {
     }
 
     #[inline]
+    pub fn tags(&self) -> Option<Vec<&str>> {
+        let mut list = Vec::new();
+        let tags = &self.data["tags"];
+        if tags.is_array() {
+            for i in tags.members() {
+                match i.as_str() {
+                    Some(tag) => {
+                        list.push(tag);
+                    }
+                    None => {
+                        return None;
+                    }
+                }
+            }
+            Some(list)
+        } else {
+            None
+        }
+    }
+
+    #[inline]
     pub fn title(&self) -> Option<&str> {
         self.data["title"].as_str()
     }
@@ -147,6 +168,7 @@ impl Debug for FanboxPostArticle {
             .field("next_post", &self.next_post())
             .field("prev_post", &self.prev_post())
             .field("published_datetime", &self.published_datetime())
+            .field("tags", &self.tags())
             .field("title", &self.title())
             .field("updated_datetime", &self.updated_datetime())
             .field("user_icon_url", &self.user_icon_url())
@@ -255,6 +277,27 @@ impl FanboxPostImage {
     }
 
     #[inline]
+    pub fn tags(&self) -> Option<Vec<&str>> {
+        let mut list = Vec::new();
+        let tags = &self.data["tags"];
+        if tags.is_array() {
+            for i in tags.members() {
+                match i.as_str() {
+                    Some(tag) => {
+                        list.push(tag);
+                    }
+                    None => {
+                        return None;
+                    }
+                }
+            }
+            Some(list)
+        } else {
+            None
+        }
+    }
+
+    #[inline]
     pub fn title(&self) -> Option<&str> {
         self.data["title"].as_str()
     }
@@ -297,6 +340,7 @@ impl Debug for FanboxPostImage {
             .field("next_post", &self.next_post())
             .field("prev_post", &self.prev_post())
             .field("published_datetime", &self.published_datetime())
+            .field("tags", &self.tags())
             .field("title", &self.title())
             .field("updated_datetime", &self.updated_datetime())
             .field("user_icon_url", &self.user_icon_url())
@@ -528,6 +572,27 @@ impl FanboxPost {
     #[inline]
     pub fn published_datetime(&self) -> Option<&str> {
         self.get_json()["publishedDatetime"].as_str()
+    }
+
+    #[inline]
+    pub fn tags(&self) -> Option<Vec<&str>> {
+        let mut list = Vec::new();
+        let tags = &self.get_json()["tags"];
+        if tags.is_array() {
+            for i in tags.members() {
+                match i.as_str() {
+                    Some(tag) => {
+                        list.push(tag);
+                    }
+                    None => {
+                        return None;
+                    }
+                }
+            }
+            Some(list)
+        } else {
+            None
+        }
     }
 
     #[inline]

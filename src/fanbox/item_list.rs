@@ -17,6 +17,7 @@ pub struct FanboxItemList {
 }
 
 impl FanboxItemList {
+    #[allow(dead_code)]
     /// Get next page.
     /// # Note
     /// If no next page presented, will return a error.
@@ -38,6 +39,7 @@ impl FanboxItemList {
         }
     }
 
+    #[allow(dead_code)]
     /// Returns true if next page is presented.
     pub fn has_next_page(&self) -> bool {
         self.next_url.is_some()

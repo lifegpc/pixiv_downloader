@@ -45,6 +45,7 @@ impl PaginatedCreatorPosts {
         Ok(Self { client, pages })
     }
 
+    #[allow(dead_code)]
     /// Get posts' data in specified page.
     /// * `index` - The index of the page
     pub async fn get_page(&self, index: usize) -> Option<FanboxItemList> {
@@ -72,6 +73,7 @@ impl PaginatedCreatorPosts {
         }
     }
 
+    #[allow(dead_code)]
     #[inline]
     /// Returns the total pages
     pub fn len(&self) -> usize {
