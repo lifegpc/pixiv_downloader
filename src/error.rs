@@ -10,6 +10,8 @@ pub enum PixivDownloaderError {
     JoinError(JoinError),
     #[cfg(feature = "ugoira")]
     UgoiraError(UgoiraError),
+    #[cfg(feature = "server")]
+    Hyper(hyper::Error),
 }
 
 impl From<&str> for PixivDownloaderError {

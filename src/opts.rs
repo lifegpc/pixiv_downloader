@@ -9,6 +9,8 @@ use getopts::HasArg;
 use getopts::Options;
 use std::convert::TryFrom;
 use std::env;
+#[cfg(feature = "server")]
+use std::net::SocketAddr;
 use std::num::ParseIntError;
 use std::num::TryFromIntError;
 use std::str::FromStr;
@@ -21,6 +23,9 @@ pub enum Command {
     Config,
     /// Download an artwork
     Download,
+    #[cfg(feature = "server")]
+    /// Run as a server
+    Server,
     /// Already handled when parsing options, just need return 0.
     None,
 }
@@ -84,6 +89,9 @@ pub struct CommandOpts {
     pub max_threads: Option<u64>,
     /// The size of the each part when downloading file.
     pub part_size: Option<u32>,
+    #[cfg(feature = "server")]
+    /// Server listen address
+    pub server: Option<SocketAddr>,
 }
 
 impl CommandOpts {
@@ -110,7 +118,24 @@ impl CommandOpts {
             download_part_retry: None,
             max_threads: None,
             part_size: None,
+            #[cfg(feature = "server")]
+            server: None,
         }
+    }
+
+    pub fn new_with_command<S: AsRef<str> + ?Sized>(cmd: &S) -> Option<Self> {
+        let cmd = cmd.as_ref();
+        if cmd == "download" || cmd == "d" {
+            return Some(CommandOpts::new(Command::Download));
+        }
+        if cmd == "config" {
+            return Some(CommandOpts::new(Command::Config));
+        }
+        #[cfg(feature = "server")]
+        if cmd == "server" || cmd == "s" {
+            return Some(CommandOpts::new(Command::Server));
+        }
+        None
     }
 
     pub fn config(&self) -> Option<String> {
@@ -138,8 +163,9 @@ impl CommandOpts {
     }
 }
 
+#[allow(unused_mut)]
 pub fn print_usage(prog: &str, opts: &Options) {
-    let brief = format!(
+    let mut brief = format!(
         "{}
 {} download/d [options] <id/url> [<id/url>]  {}
 {} config fix [options] {}
@@ -152,6 +178,15 @@ pub fn print_usage(prog: &str, opts: &Options) {
         prog,
         gettext("Print all available settings"),
     );
+    #[cfg(feature = "server")]
+    {
+        brief += format!(
+            "\n{} server/s [options] [address]  {}",
+            prog,
+            gettext("Run as a server")
+        )
+        .as_str();
+    }
     println!("{}", opts.usage(brief.as_str()));
 }
 
@@ -368,14 +403,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         print_usage(&argv[0], &opts);
         return Some(CommandOpts::new(Command::None));
     }
-    let cmd = &result.free[0];
-    let mut re = if cmd == "download" || cmd == "d" {
-        Some(CommandOpts::new(Command::Download))
-    } else if cmd == "config" {
-        Some(CommandOpts::new(Command::Config))
-    } else {
-        None
-    };
+    let mut re = CommandOpts::new_with_command(&result.free[0]);
     if re.is_none() {
         println!("{}", gettext("Unknown command."));
         print_usage(&argv[0], &opts);
@@ -417,6 +445,19 @@ pub fn parse_cmd() -> Option<CommandOpts> {
                 println!("{}", gettext("Unknown config subcommand."));
                 print_usage(&argv[0], &opts);
                 return None;
+            }
+        }
+        #[cfg(feature = "server")]
+        Command::Server => {
+            if result.free.len() >= 2 {
+                let address = &result.free[1];
+                match SocketAddr::from_str(address) {
+                    Ok(address) => re.as_mut().unwrap().server = Some(address),
+                    Err(e) => {
+                        println!("{} {}", gettext("Failed to parse address:"), e);
+                        return None;
+                    }
+                }
             }
         }
         Command::None => {}

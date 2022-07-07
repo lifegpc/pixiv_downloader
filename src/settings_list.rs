@@ -8,6 +8,10 @@ use crate::opt::author_name_filter::check_author_name_filters;
 use crate::opt::proxy::check_proxy;
 use crate::opt::size::parse_u32_size;
 use json::JsonValue;
+#[cfg(feature = "server")]
+use std::net::SocketAddr;
+#[cfg(feature = "server")]
+use std::str::FromStr;
 
 pub fn get_settings_list() -> Vec<SettingDes> {
     vec![
@@ -30,12 +34,25 @@ pub fn get_settings_list() -> Vec<SettingDes> {
         SettingDes::new("max-threads", gettext("The maximun threads when downloading file."), JsonValueType::Number, Some(check_u64)).unwrap(),
         SettingDes::new("part-size", gettext("The size of the each part when downloading file."), JsonValueType::Number, Some(check_parse_size_u32)).unwrap(),
         SettingDes::new("proxy", gettext("Proxy settings."), JsonValueType::Array, Some(check_proxy)).unwrap(),
+        #[cfg(feature = "server")]
+        SettingDes::new("server", gettext("Server address."), JsonValueType::Str, Some(check_socket_addr)).unwrap(),
     ]
 }
 
 fn check_i64(obj: &JsonValue) -> bool {
     let r = obj.as_i64();
     r.is_some()
+}
+
+#[cfg(feature = "server")]
+fn check_socket_addr(obj: &JsonValue) -> bool {
+    match obj.as_str() {
+        Some(s) => match SocketAddr::from_str(s) {
+            Ok(_) => true,
+            Err(_) => false,
+        }
+        None => false,
+    }
 }
 
 fn check_u64(obj: &JsonValue) -> bool {

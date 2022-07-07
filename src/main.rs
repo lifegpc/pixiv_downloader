@@ -36,6 +36,8 @@ mod parser;
 mod pixiv_link;
 mod pixiv_web;
 mod retry_interval;
+#[cfg(feature = "server")]
+mod server;
 mod settings;
 mod settings_list;
 #[cfg(feature = "ugoira")]
@@ -125,6 +127,26 @@ impl Main {
             }
             Command::Download => {
                 return self.download().await;
+            }
+            #[cfg(feature = "server")]
+            Command::Server => {
+                let addr = get_helper().server();
+                match server::service::start_server(&addr) {
+                    Ok(server) => {
+                        println!("Listening on http://{}", addr);
+                        match server.await {
+                            Ok(_) => {}
+                            Err(e) => {
+                                println!("{}", e);
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        println!("{} {}", gettext("Failed to start the server:"), e);
+                        return 1;
+                    }
+                }
+                return 0;
             }
             Command::None => {
                 return 0;

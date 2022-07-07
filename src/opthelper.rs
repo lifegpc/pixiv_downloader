@@ -12,7 +12,15 @@ use crate::opts::CommandOpts;
 use crate::retry_interval::parse_retry_interval_from_json;
 use crate::settings::SettingStore;
 use std::convert::TryFrom;
+#[cfg(feature = "server")]
+use std::net::IpAddr;
+#[cfg(feature = "server")]
+use std::net::Ipv4Addr;
+#[cfg(feature = "server")]
+use std::net::SocketAddr;
 use std::ops::Deref;
+#[cfg(feature = "server")]
+use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::RwLock;
 use std::sync::RwLockReadGuard;
@@ -219,6 +227,22 @@ impl OptHelper {
             return parse_retry_interval_from_json(v).unwrap();
         }
         self.default_retry_interval.clone()
+    }
+
+    #[cfg(feature = "server")]
+    /// Return the server
+    pub fn server(&self) -> SocketAddr {
+        match self.opt.get_ref().server {
+            Some(server) => {
+                return server;
+            }
+            None => {}
+        }
+        if self.settings.get_ref().have("server") {
+            let v = self.settings.get_ref().get("server").unwrap();
+            return SocketAddr::from_str(v.as_str().unwrap()).unwrap();
+        }
+        SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080)
     }
 
     /// Return whether to use data from webpage first.

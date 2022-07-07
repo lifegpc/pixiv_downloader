@@ -1271,6 +1271,7 @@ dependencies = [
  "html_parser",
  "http",
  "http-content-range",
+ "hyper",
  "indicatif",
  "int-enum",
  "itertools",
