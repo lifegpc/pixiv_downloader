@@ -1,3 +1,6 @@
+#[cfg(feature = "async-trait")]
+#[macro_use]
+extern crate async_trait;
 #[macro_use]
 extern crate cfg_if;
 #[macro_use]

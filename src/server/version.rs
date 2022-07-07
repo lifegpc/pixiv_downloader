@@ -17,8 +17,9 @@ impl VersionContext {
     }
 }
 
+#[async_trait]
 impl ResponseJsonFor<Body> for VersionContext {
-    fn response_json(&self, _req: Request<Body>) -> Result<JsonValue, PixivDownloaderError> {
+    async fn response_json(&self, _req: Request<Body>) -> Result<JsonValue, PixivDownloaderError> {
         Ok(json::object! {"version": [0, 0, 1, 0]})
     }
 }

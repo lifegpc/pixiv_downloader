@@ -9,20 +9,24 @@ pub trait MatchRoute<T, R> {
     fn match_route(&self, req: &Request<T>) -> bool;
 }
 
+#[async_trait]
 pub trait ResponseFor<T, R> {
-    fn response(&self, req: Request<T>) -> Result<Response<R>, PixivDownloaderError>;
+    async fn response(&self, req: Request<T>) -> Result<Response<R>, PixivDownloaderError>;
 }
 
+#[async_trait]
 pub trait ResponseJsonFor<T> {
-    fn response_json(&self, req: Request<T>) -> Result<JsonValue, PixivDownloaderError>;
+    async fn response_json(&self, req: Request<T>) -> Result<JsonValue, PixivDownloaderError>;
 }
 
+#[async_trait]
 impl<T, U> ResponseFor<T, Body> for U
 where
-    U: ResponseJsonFor<T>,
+    U: ResponseJsonFor<T> + Sync + Send,
+    T: Sync + Send + 'static,
 {
-    fn response(&self, req: Request<T>) -> Result<Response<Body>, PixivDownloaderError> {
-        let re = self.response_json(req)?;
+    async fn response(&self, req: Request<T>) -> Result<Response<Body>, PixivDownloaderError> {
+        let re = self.response_json(req).await?;
         Ok(Response::new(Body::from(re.to_string())))
     }
 }

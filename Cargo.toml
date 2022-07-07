@@ -6,6 +6,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+async-trait = { version = "0.1", optional = true }
 atty = "0.2"
 c_fixed_string = { version = "0.2", optional = true }
 cfg-if = "1"
@@ -45,7 +46,7 @@ cmake = { version = "0.1", optional = true }
 all = ["exif", "ugoira", "server"]
 avdict = ["bindgen", "cmake", "flagset"]
 exif = ["bindgen", "c_fixed_string", "cmake", "link-cplusplus", "utf16string"]
-server = ["hyper"]
+server = ["async-trait", "hyper"]
 ugoira = ["avdict", "bindgen", "cmake", "link-cplusplus"]
 
 [profile.release-with-debug]

@@ -34,7 +34,7 @@ impl Service<Request<Body>> for PixivDownloaderSvc {
     fn call(&mut self, req: Request<Body>) -> Self::Future {
         match self.routes.match_route(&req) {
             Some(route) => Box::pin(async move {
-                match route.response(req) {
+                match route.response(req).await {
                     Ok(data) => Ok(data),
                     Err(e) => {
                         println!("{}", e);
