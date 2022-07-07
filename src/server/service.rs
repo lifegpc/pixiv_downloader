@@ -1,3 +1,4 @@
+use super::route::ServerRoutes;
 use hyper::server::conn::AddrIncoming;
 use hyper::server::Server;
 use hyper::service::Service;
@@ -7,16 +8,17 @@ use hyper::Response;
 use std::future::Future;
 use std::net::SocketAddr;
 use std::pin::Pin;
+use std::sync::Arc;
 use std::task::Context;
 use std::task::Poll;
 
 pub struct PixivDownloaderSvc {
-    _unused: [u8; 0],
+    routes: Arc<ServerRoutes>,
 }
 
 impl PixivDownloaderSvc {
-    pub fn new() -> Self {
-        Self { _unused: [] }
+    pub fn new(routes: Arc<ServerRoutes>) -> Self {
+        Self { routes }
     }
 }
 
@@ -30,17 +32,35 @@ impl Service<Request<Body>> for PixivDownloaderSvc {
     }
 
     fn call(&mut self, req: Request<Body>) -> Self::Future {
-        Box::pin(async { Ok(Response::builder().body(Body::from("hello world")).unwrap()) })
+        match self.routes.match_route(&req) {
+            Some(route) => Box::pin(async move {
+                match route.response(req) {
+                    Ok(data) => Ok(data),
+                    Err(e) => {
+                        println!("{}", e);
+                        Ok(Response::builder()
+                            .status(500)
+                            .body(Body::from("Internal server error"))
+                            .unwrap())
+                    }
+                }
+            }),
+            None => {
+                Box::pin(async { Ok(Response::builder().body(Body::from("hello world")).unwrap()) })
+            }
+        }
     }
 }
 
 pub struct PixivDownloaderMakeSvc {
-    _unused: [u8; 0],
+    routes: Arc<ServerRoutes>,
 }
 
 impl PixivDownloaderMakeSvc {
     pub fn new() -> Self {
-        Self { _unused: [] }
+        Self {
+            routes: Arc::new(ServerRoutes::new()),
+        }
     }
 }
 
@@ -54,7 +74,8 @@ impl<T> Service<T> for PixivDownloaderMakeSvc {
     }
 
     fn call(&mut self, _: T) -> Self::Future {
-        let fut = async move { Ok(PixivDownloaderSvc::new()) };
+        let routes = Arc::clone(&self.routes);
+        let fut = async move { Ok(PixivDownloaderSvc::new(routes)) };
         Box::pin(fut)
     }
 }
