@@ -1,4 +1,3 @@
-use crate::error::PixivDownloaderError;
 use hyper::server::conn::AddrIncoming;
 use hyper::server::Server;
 use hyper::service::Service;
@@ -23,7 +22,7 @@ impl PixivDownloaderSvc {
 
 impl Service<Request<Body>> for PixivDownloaderSvc {
     type Response = Response<Body>;
-    type Error = PixivDownloaderError;
+    type Error = hyper::Error;
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
 
     fn poll_ready(&mut self, _: &mut Context) -> Poll<Result<(), Self::Error>> {
