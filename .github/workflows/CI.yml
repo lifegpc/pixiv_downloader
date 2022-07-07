@@ -98,6 +98,15 @@ jobs:
         export "LIBRARY_PATH=$LIBRARY_PATH:`pwd`/clib/lib"
         export "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/clib/lib"
         cargo test --features ugoira --verbose -- --show-output || exit 1
+  build-server:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check Out
+      uses: actions/checkout@v2
+    - name: Build
+      run: cargo build --features server -vv
+    - name: Run tests
+      run: cargo test --features server --verbose -- --show-output
   build-all:
     runs-on: ubuntu-latest
     steps:
