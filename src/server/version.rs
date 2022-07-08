@@ -4,6 +4,7 @@ use super::traits::ResponseJsonFor;
 use crate::error::PixivDownloaderError;
 use hyper::Body;
 use hyper::Request;
+use hyper::Response;
 use json::JsonValue;
 use regex::Regex;
 
@@ -19,8 +20,11 @@ impl VersionContext {
 
 #[async_trait]
 impl ResponseJsonFor<Body> for VersionContext {
-    async fn response_json(&self, _req: Request<Body>) -> Result<JsonValue, PixivDownloaderError> {
-        Ok(json::object! {"version": [0, 0, 1, 0]})
+    async fn response_json(
+        &self,
+        _req: Request<Body>,
+    ) -> Result<Response<JsonValue>, PixivDownloaderError> {
+        Ok(Response::new(json::object! {"version": [0, 0, 1, 0]}))
     }
 }
 
