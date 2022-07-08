@@ -8,6 +8,7 @@ use syn::Expr;
 use syn::Ident;
 use syn::ItemFn;
 use syn::Lit;
+use syn::LitBool;
 use syn::LitInt;
 use syn::LitStr;
 
@@ -213,6 +214,7 @@ pub fn fanbox_api_quick_test(item: TokenStream) -> TokenStream {
 struct FilterHttpMethods {
     pub req: Ident,
     pub typ: Expr,
+    pub handle_options: LitBool,
     pub methods: Vec<Ident>,
 }
 
@@ -221,7 +223,14 @@ impl Parse for FilterHttpMethods {
         let req = Ident::parse(input)?;
         token::Comma::parse(input)?;
         let typ = Expr::parse(input)?;
+        token::Comma::parse(input)?;
         let mut methods = Vec::new();
+        let handle_options = match Lit::parse(input)? {
+            Lit::Bool(s) => s,
+            _ => {
+                return Err(syn::Error::new(input.span(), "Failed to parse boolean."));
+            }
+        };
         loop {
             if input.cursor().eof() {
                 break;
@@ -230,24 +239,44 @@ impl Parse for FilterHttpMethods {
             let method = Ident::parse(input)?;
             methods.push(method);
         }
-        Ok(Self { req, typ, methods })
+        Ok(Self {
+            req,
+            typ,
+            handle_options,
+            methods,
+        })
     }
 }
 
 /// Filter http methods.
-/// 
-/// `request, 405 body, [method [, method [, method ...]]]`
+///
+/// `request, 405 body, handle_options, [method [, method [, method ...]]]`
 #[proc_macro]
 pub fn filter_http_methods(item: TokenStream) -> TokenStream {
-    let FilterHttpMethods { req, typ, methods } = parse_macro_input!(item as FilterHttpMethods);
+    let FilterHttpMethods {
+        req,
+        typ,
+        handle_options,
+        methods,
+    } = parse_macro_input!(item as FilterHttpMethods);
     let mut header_value = Vec::new();
     let mut streams = Vec::new();
+    let mut enable_options = false;
     for method in methods {
         header_value.push(method.to_string());
-        streams.push(quote!(&hyper::Method::#method => {}));
+        if method == "OPTIONS" && handle_options.value() {
+            enable_options = true;
+        } else {
+            streams.push(quote!(&hyper::Method::#method => {}));
+        }
     }
     let allow_header = header_value.join(", ");
     let allow_header = LitStr::new(allow_header.as_str(), req.span());
+    if enable_options {
+        streams.push(quote!(&hyper::Method::OPTIONS => {
+            return Ok(hyper::Response::builder().status(200).header("Allow", #allow_header).body(#typ).unwrap());
+        }));
+    }
     let stream = quote! {
         match #req.method() {
             #(#streams)*

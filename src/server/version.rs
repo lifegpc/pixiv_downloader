@@ -25,7 +25,7 @@ impl ResponseJsonFor<Body> for VersionContext {
         &self,
         req: Request<Body>,
     ) -> Result<Response<JsonValue>, PixivDownloaderError> {
-        filter_http_methods!(req, json::object! {}, GET, OPTIONS, POST);
+        filter_http_methods!(req, json::object! {}, true, GET, OPTIONS, POST);
         Ok(Response::new(json::object! {"version": [0, 0, 1, 0]}))
     }
 }
