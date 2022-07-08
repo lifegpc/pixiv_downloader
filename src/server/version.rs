@@ -6,6 +6,7 @@ use hyper::Body;
 use hyper::Request;
 use hyper::Response;
 use json::JsonValue;
+use proc_macros::filter_http_methods;
 use regex::Regex;
 
 pub struct VersionContext {
@@ -22,8 +23,9 @@ impl VersionContext {
 impl ResponseJsonFor<Body> for VersionContext {
     async fn response_json(
         &self,
-        _req: Request<Body>,
+        req: Request<Body>,
     ) -> Result<Response<JsonValue>, PixivDownloaderError> {
+        filter_http_methods!(req, json::object! {}, GET, OPTIONS, POST);
         Ok(Response::new(json::object! {"version": [0, 0, 1, 0]}))
     }
 }

@@ -209,3 +209,52 @@ pub fn fanbox_api_quick_test(item: TokenStream) -> TokenStream {
     };
     stream.into()
 }
+
+struct FilterHttpMethods {
+    pub req: Ident,
+    pub typ: Expr,
+    pub methods: Vec<Ident>,
+}
+
+impl Parse for FilterHttpMethods {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let req = Ident::parse(input)?;
+        token::Comma::parse(input)?;
+        let typ = Expr::parse(input)?;
+        let mut methods = Vec::new();
+        loop {
+            if input.cursor().eof() {
+                break;
+            }
+            token::Comma::parse(input)?;
+            let method = Ident::parse(input)?;
+            methods.push(method);
+        }
+        Ok(Self { req, typ, methods })
+    }
+}
+
+/// Filter http methods.
+/// 
+/// `request, 405 body, [method [, method [, method ...]]]`
+#[proc_macro]
+pub fn filter_http_methods(item: TokenStream) -> TokenStream {
+    let FilterHttpMethods { req, typ, methods } = parse_macro_input!(item as FilterHttpMethods);
+    let mut header_value = Vec::new();
+    let mut streams = Vec::new();
+    for method in methods {
+        header_value.push(method.to_string());
+        streams.push(quote!(&hyper::Method::#method => {}));
+    }
+    let allow_header = header_value.join(", ");
+    let allow_header = LitStr::new(allow_header.as_str(), req.span());
+    let stream = quote! {
+        match #req.method() {
+            #(#streams)*
+            _ => {
+                return Ok(hyper::Response::builder().status(405).header("Allow", #allow_header).body(#typ).unwrap())
+            }
+        }
+    };
+    stream.into()
+}
