@@ -1,3 +1,5 @@
+/// CORS Handle
+pub mod cors;
 /// Routes
 pub mod route;
 /// Services
