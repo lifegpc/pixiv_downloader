@@ -7,6 +7,8 @@ use crate::settings::JsonValueType;
 use crate::opt::author_name_filter::check_author_name_filters;
 use crate::opt::proxy::check_proxy;
 use crate::opt::size::parse_u32_size;
+#[cfg(feature = "server")]
+use crate::server::cors::parse_cors_entries;
 use json::JsonValue;
 #[cfg(feature = "server")]
 use std::net::SocketAddr;
@@ -36,12 +38,25 @@ pub fn get_settings_list() -> Vec<SettingDes> {
         SettingDes::new("proxy", gettext("Proxy settings."), JsonValueType::Array, Some(check_proxy)).unwrap(),
         #[cfg(feature = "server")]
         SettingDes::new("server", gettext("Server address."), JsonValueType::Str, Some(check_socket_addr)).unwrap(),
+        #[cfg(feature = "server")]
+        SettingDes::new("cors-entries", gettext("The domains allowed to send CORS requests."), JsonValueType::Array, Some(check_cors_entries)).unwrap(),
     ]
 }
 
 fn check_i64(obj: &JsonValue) -> bool {
     let r = obj.as_i64();
     r.is_some()
+}
+
+#[cfg(feature = "server")]
+fn check_cors_entries(obj: &JsonValue) -> bool {
+    match parse_cors_entries(obj) {
+        Ok(_) => true,
+        Err(e) => {
+            println!("{}", e);
+            false
+        }
+    }
 }
 
 #[cfg(feature = "server")]

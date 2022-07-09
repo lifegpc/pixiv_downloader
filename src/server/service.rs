@@ -1,3 +1,4 @@
+use super::context::ServerContext;
 use super::route::ServerRoutes;
 use hyper::server::conn::AddrIncoming;
 use hyper::server::Server;
@@ -13,12 +14,13 @@ use std::task::Context;
 use std::task::Poll;
 
 pub struct PixivDownloaderSvc {
+    context: Arc<ServerContext>,
     routes: Arc<ServerRoutes>,
 }
 
 impl PixivDownloaderSvc {
-    pub fn new(routes: Arc<ServerRoutes>) -> Self {
-        Self { routes }
+    pub fn new(routes: Arc<ServerRoutes>, context: Arc<ServerContext>) -> Self {
+        Self { routes, context }
     }
 }
 
@@ -33,7 +35,7 @@ impl Service<Request<Body>> for PixivDownloaderSvc {
 
     fn call(&mut self, req: Request<Body>) -> Self::Future {
         println!("{} {}", req.method(), req.uri());
-        match self.routes.match_route(&req) {
+        match self.routes.match_route(&req, &self.context) {
             Some(route) => Box::pin(async move {
                 match route.response(req).await {
                     Ok(data) => Ok(data),
@@ -54,12 +56,14 @@ impl Service<Request<Body>> for PixivDownloaderSvc {
 }
 
 pub struct PixivDownloaderMakeSvc {
+    context: Arc<ServerContext>,
     routes: Arc<ServerRoutes>,
 }
 
 impl PixivDownloaderMakeSvc {
     pub fn new() -> Self {
         Self {
+            context: Arc::new(ServerContext::default()),
             routes: Arc::new(ServerRoutes::new()),
         }
     }
@@ -76,7 +80,8 @@ impl<T> Service<T> for PixivDownloaderMakeSvc {
 
     fn call(&mut self, _: T) -> Self::Future {
         let routes = Arc::clone(&self.routes);
-        let fut = async move { Ok(PixivDownloaderSvc::new(routes)) };
+        let context = Arc::clone(&self.context);
+        let fut = async move { Ok(PixivDownloaderSvc::new(routes, context)) };
         Box::pin(fut)
     }
 }

@@ -1,11 +1,13 @@
+use super::context::ServerContext;
 use crate::error::PixivDownloaderError;
 use hyper::Body;
 use hyper::Request;
 use hyper::Response;
 use json::JsonValue;
+use std::sync::Arc;
 
 pub trait MatchRoute<T, R> {
-    fn get_route(&self) -> Box<dyn ResponseFor<T, R> + Send + Sync>;
+    fn get_route(&self, ctx: Arc<ServerContext>) -> Box<dyn ResponseFor<T, R> + Send + Sync>;
     fn match_route(&self, req: &Request<T>) -> bool;
 }
 

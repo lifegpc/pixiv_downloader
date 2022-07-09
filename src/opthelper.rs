@@ -10,6 +10,10 @@ use crate::opt::size::parse_u32_size;
 use crate::opt::use_progress_bar::UseProgressBar;
 use crate::opts::CommandOpts;
 use crate::retry_interval::parse_retry_interval_from_json;
+#[cfg(feature = "server")]
+use crate::server::cors::parse_cors_entries;
+#[cfg(feature = "server")]
+use crate::server::cors::CorsEntry;
 use crate::settings::SettingStore;
 use std::convert::TryFrom;
 #[cfg(feature = "server")]
@@ -38,6 +42,8 @@ pub struct OptHelper {
     _use_progress_bar: RwLock<Option<UseProgressBar>>,
     /// Proxy settings
     _proxy_chain: RwLock<ProxyChain>,
+    #[cfg(feature = "server")]
+    _cors_entries: RwLock<Vec<CorsEntry>>,
 }
 
 impl OptHelper {
@@ -57,6 +63,12 @@ impl OptHelper {
         } else {
             None
         }
+    }
+
+    #[cfg(feature = "server")]
+    #[inline]
+    pub fn cors_entries(&self) -> Vec<CorsEntry> {
+        self._cors_entries.get_ref().clone()
     }
 
     /// Return max retry count of each part when downloading in multiple thread mode.
@@ -187,6 +199,11 @@ impl OptHelper {
         if settings.have("proxy") {
             self._proxy_chain
                 .replace_with2(ProxyChain::try_from(settings.get("proxy").unwrap()).unwrap());
+        }
+        #[cfg(feature = "server")]
+        if settings.have("cors-entries") {
+            self._cors_entries
+                .replace_with2(parse_cors_entries(&settings.get("cors-entries").unwrap()).unwrap());
         }
         self.opt.replace_with2(opt);
         self.settings.replace_with2(settings);
@@ -323,6 +340,8 @@ impl Default for OptHelper {
             _author_name_filters: RwLock::new(Vec::new()),
             _use_progress_bar: RwLock::new(None),
             _proxy_chain: RwLock::new(ProxyChain::default()),
+            #[cfg(feature = "server")]
+            _cors_entries: RwLock::new(Vec::new()),
         }
     }
 }

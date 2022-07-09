@@ -1,10 +1,13 @@
 use crate::gettext;
+use crate::opthelper::get_helper;
 use http::uri::InvalidUri;
 use http::uri::Scheme;
 use http::Uri;
+use json::JsonValue;
 use std::cmp::PartialEq;
 use std::convert::From;
 use std::convert::TryFrom;
+use std::default::Default;
 use std::fmt::Display;
 use std::net::SocketAddr;
 use std::str::FromStr;
@@ -165,6 +168,28 @@ impl TryFrom<String> for CorsEntry {
     }
 }
 
+impl TryFrom<&JsonValue> for CorsEntry {
+    type Error = CorsError;
+    fn try_from(value: &JsonValue) -> Result<Self, Self::Error> {
+        match value.as_str() {
+            Some(s) => Self::try_from(s),
+            None => Err(CorsError::from(gettext("Object is not a string."))),
+        }
+    }
+}
+
+pub fn parse_cors_entries(v: &JsonValue) -> Result<Vec<CorsEntry>, CorsError> {
+    if v.is_array() {
+        let mut list = Vec::new();
+        for i in v.members() {
+            list.push(CorsEntry::try_from(i)?);
+        }
+        Ok(list)
+    } else {
+        Err(CorsError::from(gettext("Object is not an array.")))
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 /// Current host
 pub struct CorsHost {
@@ -319,6 +344,75 @@ pub enum CorsError {
 impl From<&str> for CorsError {
     fn from(v: &str) -> Self {
         Self::String(String::from(v))
+    }
+}
+
+#[derive(Clone, Debug, derive_more::Display, PartialEq, Eq, PartialOrd, Ord)]
+pub enum CorsResult {
+    Allowed,
+    AllowedAll,
+    NotAllowed,
+}
+
+pub struct CorsContext {
+    allow_all: bool,
+    entries: Vec<CorsEntry>,
+    hosts: Vec<CorsHost>,
+}
+
+impl CorsContext {
+    pub fn matches<T: Clone>(&self, host: T) -> CorsResult
+    where
+        CorsEntry: PartialEq<T>,
+        CorsHost: PartialEq<T>,
+    {
+        if self.is_in_hosts(host.clone()) || self.is_in_entries(host.clone()) {
+            CorsResult::Allowed
+        } else if self.is_all_allowed() {
+            CorsResult::AllowedAll
+        } else {
+            CorsResult::NotAllowed
+        }
+    }
+
+    /// Returns true if every domain allowed
+    pub fn is_all_allowed(&self) -> bool {
+        self.allow_all
+    }
+
+    pub fn is_in_entries<T>(&self, host: T) -> bool
+    where
+        CorsEntry: PartialEq<T>,
+    {
+        for ent in self.entries.iter() {
+            if *ent == host {
+                return true;
+            }
+        }
+        false
+    }
+
+    pub fn is_in_hosts<T>(&self, host: T) -> bool
+    where
+        CorsHost: PartialEq<T>,
+    {
+        for h in self.hosts.iter() {
+            if *h == host {
+                return true;
+            }
+        }
+        false
+    }
+}
+
+impl Default for CorsContext {
+    fn default() -> Self {
+        let helper = get_helper();
+        Self {
+            allow_all: false,
+            entries: helper.cors_entries(),
+            hosts: Vec::new(),
+        }
     }
 }
 

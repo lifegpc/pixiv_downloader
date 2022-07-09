@@ -1,8 +1,10 @@
+use super::context::ServerContext;
 use super::traits::MatchRoute;
 use super::traits::ResponseFor;
 use super::version::VersionRoute;
 use hyper::Body;
 use hyper::Request;
+use std::sync::Arc;
 
 pub type RouteType = dyn MatchRoute<Body, Body> + Send + Sync;
 pub type ResponseForType = dyn ResponseFor<Body, Body> + Send + Sync;
@@ -18,10 +20,14 @@ impl ServerRoutes {
         Self { routes }
     }
 
-    pub fn match_route(&self, req: &Request<Body>) -> Option<Box<ResponseForType>> {
+    pub fn match_route(
+        &self,
+        req: &Request<Body>,
+        ctx: &Arc<ServerContext>,
+    ) -> Option<Box<ResponseForType>> {
         for i in self.routes.iter() {
             if i.match_route(req) {
-                return Some(i.get_route());
+                return Some(i.get_route(Arc::clone(ctx)));
             }
         }
         None

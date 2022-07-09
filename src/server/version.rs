@@ -1,3 +1,4 @@
+use super::context::ServerContext;
 use super::route::ResponseForType;
 use super::traits::MatchRoute;
 use super::traits::ResponseJsonFor;
@@ -8,14 +9,15 @@ use hyper::Response;
 use json::JsonValue;
 use proc_macros::filter_http_methods;
 use regex::Regex;
+use std::sync::Arc;
 
 pub struct VersionContext {
-    _unused: [u8; 0],
+    ctx: Arc<ServerContext>,
 }
 
 impl VersionContext {
-    pub fn new() -> Self {
-        Self { _unused: [] }
+    pub fn new(ctx: Arc<ServerContext>) -> Self {
+        Self { ctx }
     }
 }
 
@@ -25,8 +27,10 @@ impl ResponseJsonFor<Body> for VersionContext {
         &self,
         req: Request<Body>,
     ) -> Result<Response<JsonValue>, PixivDownloaderError> {
-        filter_http_methods!(req, json::object! {}, true, GET, OPTIONS, POST);
-        Ok(Response::new(json::object! {"version": [0, 0, 1, 0]}))
+        filter_http_methods!(req, json::object! {}, true, self.ctx, GET, OPTIONS, POST);
+        Ok(builder
+            .body(json::object! {"version": [0, 0, 1, 0]})
+            .unwrap())
     }
 }
 
@@ -43,8 +47,8 @@ impl VersionRoute {
 }
 
 impl MatchRoute<Body, Body> for VersionRoute {
-    fn get_route(&self) -> Box<ResponseForType> {
-        Box::new(VersionContext::new())
+    fn get_route(&self, ctx: Arc<ServerContext>) -> Box<ResponseForType> {
+        Box::new(VersionContext::new(ctx))
     }
 
     fn match_route(&self, req: &http::Request<Body>) -> bool {
