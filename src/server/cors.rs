@@ -3,6 +3,7 @@ use http::uri::InvalidUri;
 use http::uri::Scheme;
 use http::Uri;
 use std::cmp::PartialEq;
+use std::convert::From;
 use std::convert::TryFrom;
 use std::fmt::Display;
 use std::net::SocketAddr;
@@ -48,6 +49,22 @@ impl CorsHost {
 impl Display for CorsHost {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("{}://{}", self.scheme, self.port))
+    }
+}
+
+impl From<&SocketAddr> for CorsHost {
+    fn from(v: &SocketAddr) -> Self {
+        Self {
+            host: v.ip().to_string(),
+            port: v.port(),
+            scheme: Scheme::HTTP,
+        }
+    }
+}
+
+impl From<SocketAddr> for CorsHost {
+    fn from(v: SocketAddr) -> Self {
+        Self::from(&v)
     }
 }
 
@@ -137,20 +154,6 @@ impl TryFrom<String> for CorsHost {
     }
 }
 
-impl TryFrom<&SocketAddr> for CorsHost {
-    type Error = CorsHostError;
-    fn try_from(value: &SocketAddr) -> Result<Self, Self::Error> {
-        Self::try_from(value.to_string())
-    }
-}
-
-impl TryFrom<SocketAddr> for CorsHost {
-    type Error = CorsHostError;
-    fn try_from(value: SocketAddr) -> Result<Self, Self::Error> {
-        Self::try_from(value.to_string())
-    }
-}
-
 #[derive(Debug, derive_more::Display, derive_more::From)]
 pub enum CorsHostError {
     String(String),
@@ -186,5 +189,5 @@ fn test_cors_host() {
     assert!(host3 != Uri::from_str("http://127.0.0.1").unwrap());
     assert!(host != host3);
     assert!(host == CorsHost::try_from("http://127.0.0.1:8080").unwrap());
-    assert!(host == CorsHost::try_from(SocketAddr::from_str("127.0.0.1:8080").unwrap()).unwrap());
+    assert!(host == CorsHost::from(SocketAddr::from_str("127.0.0.1:8080").unwrap()));
 }
