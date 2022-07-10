@@ -13,5 +13,6 @@ proc-macro = true
 [dependencies]
 convert_case = "0.5"
 parse_duration = "2"
+proc-macro2 = "1"
 quote = "1"
 syn = { version = "1", features = ["full"] }

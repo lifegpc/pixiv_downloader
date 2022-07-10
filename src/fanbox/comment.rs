@@ -1,5 +1,7 @@
+use super::check::CheckUnkown;
 use crate::parser::json::parse_u64;
 use json::JsonValue;
+use proc_macros::check_json_keys;
 use std::fmt::Debug;
 
 pub struct FanboxComment {
@@ -80,6 +82,13 @@ impl FanboxComment {
     #[inline]
     pub fn user_name(&self) -> Option<&str> {
         self.data["user"]["name"].as_str()
+    }
+}
+
+impl CheckUnkown for FanboxComment {
+    fn check_unknown(&self) -> Result<(), super::error::FanboxAPIError> {
+        check_json_keys!("id"+, "body"+, "createdDatetime"+, "isLiked"+, "isOwn"+, "likeCount"+, "parentCommentId", "replies", "rootCommentId", "user": ["userId", "name", "iconUrl"]);
+        Ok(())
     }
 }
 
