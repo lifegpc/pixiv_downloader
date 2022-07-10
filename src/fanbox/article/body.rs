@@ -1,6 +1,9 @@
+use super::super::check::CheckUnkown;
+use super::super::error::FanboxAPIError;
 use super::block::FanboxArticleBlock;
 use crate::fanbox_api::FanboxClientInternal;
 use json::JsonValue;
+use proc_macros::check_json_keys;
 use std::fmt::Debug;
 use std::sync::Arc;
 
@@ -33,6 +36,21 @@ impl FanboxArticleBody {
             data: data.clone(),
             client,
         }
+    }
+}
+
+impl CheckUnkown for FanboxArticleBody {
+    fn check_unknown(&self) -> Result<(), FanboxAPIError> {
+        check_json_keys!("blocks"+, "imageMap", "fileMap", "embedMap", "urlEmbedMap",);
+        match self.blocks() {
+            Some(blocks) => {
+                for i in blocks {
+                    i.check_unknown()?;
+                }
+            }
+            None => {}
+        }
+        Ok(())
     }
 }
 
