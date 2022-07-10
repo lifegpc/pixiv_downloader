@@ -1,3 +1,4 @@
+use super::article::body::FanboxArticleBody;
 use super::comment_list::FanboxCommentList;
 use crate::fanbox_api::FanboxClientInternal;
 use crate::parser::json::parse_u64;
@@ -16,6 +17,11 @@ pub struct FanboxPostArticle {
 }
 
 impl FanboxPostArticle {
+    #[inline]
+    pub fn body(&self) -> FanboxArticleBody {
+        FanboxArticleBody::new(&self.data["body"], Arc::clone(&self.client))
+    }
+
     #[inline]
     pub fn comment_count(&self) -> Option<u64> {
         self.data["commentCount"].as_u64()
@@ -161,6 +167,7 @@ impl Debug for FanboxPostArticle {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("FanboxPostArticle")
             .field("id", &self.id())
+            .field("body", &self.body())
             .field("comment_count", &self.comment_count())
             .field("comment_list", &self.comment_list())
             .field("cover_image_url", &self.cover_image_url())

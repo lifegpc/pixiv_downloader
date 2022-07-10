@@ -1,3 +1,5 @@
+use convert_case::Case;
+use convert_case::Casing;
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::bracketed;
@@ -509,5 +511,72 @@ pub fn filter_http_methods(item: TokenStream) -> TokenStream {
         }
         #post_stream
     };
+    stream.into()
+}
+
+struct CheckJsonKeys {
+    pub keys: Vec<(LitStr, bool)>,
+}
+
+impl Parse for CheckJsonKeys {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let mut keys = Vec::new();
+        let first: LitStr = input.parse()?;
+        match input.parse::<token::Add>() {
+            Ok(_) => {
+                keys.push((first, true));
+            }
+            Err(_) => {
+                keys.push((first, false));
+            }
+        }
+        while !input.is_empty() {
+            let _: token::Comma = input.parse()?;
+            if input.is_empty() {
+                break;
+            }
+            let key: LitStr = input.parse()?;
+            match input.parse::<token::Add>() {
+                Ok(_) => {
+                    keys.push((key, true));
+                }
+                Err(_) => {
+                    keys.push((key, false));
+                }
+            }
+        }
+        Ok(Self { keys })
+    }
+}
+
+#[proc_macro]
+pub fn check_json_keys(item: TokenStream) -> TokenStream {
+    let CheckJsonKeys { keys } = parse_macro_input!(item as CheckJsonKeys);
+    let mut streams = Vec::new();
+    for (key, check) in keys {
+        if check {
+            let k = key.value();
+            let k = k.to_case(Case::Snake);
+            let fun = Ident::new(&k, key.span());
+            streams.push(quote!(#key => {
+                self.#fun().try_err(gettext("The value of the key <key> is missing.").replace("<key>", key))?;
+            }));
+        } else {
+            streams.push(quote!(#key => {}));
+        }
+    }
+    let stream = quote!(
+        {
+            use crate::ext::try_err::TryErr;
+            use crate::gettext;
+            self.data.is_object().try_err(gettext("Data is not a object."))?;
+            for (key, _) in self.data.entries() {
+                match key {
+                    #(#streams)*
+                    _ => { Err(format!("{} {}", gettext("Key <key> is handled:").replace("<key>", key).as_str(), self.data))?; }
+                }
+            }
+        }
+    );
     stream.into()
 }

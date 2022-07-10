@@ -36,3 +36,13 @@ impl<T, E, E2> TryErr<T, E> for Result<T, E2> {
         }
     }
 }
+
+impl<E> TryErr<(), E> for bool {
+    fn try_err(self, err: E) -> Result<(), E> {
+        if self {
+            Ok(())
+        } else {
+            Err(err)
+        }
+    }
+}

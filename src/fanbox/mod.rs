@@ -1,3 +1,5 @@
+pub mod article;
+pub mod check;
 pub mod comment;
 pub mod comment_list;
 pub mod creator;
