@@ -1,4 +1,5 @@
 use super::super::check::CheckUnkown;
+use super::super::error::FanboxAPIError;
 use json::JsonValue;
 use proc_macros::check_json_keys;
 use std::fmt::Debug;
@@ -26,8 +27,8 @@ impl FanboxArticleParagraphBoldStyle {
 }
 
 impl CheckUnkown for FanboxArticleParagraphBoldStyle {
-    fn check_unknown(&self) -> Result<(), crate::fanbox::error::FanboxAPIError> {
-        check_json_keys!("offset"+, "length"+,);
+    fn check_unknown(&self) -> Result<(), FanboxAPIError> {
+        check_json_keys!("offset"+, "length"+, "type",);
         Ok(())
     }
 }
@@ -41,7 +42,7 @@ impl Debug for FanboxArticleParagraphBoldStyle {
     }
 }
 
-#[derive(Debug)]
+#[derive(proc_macros::CheckUnkown, Debug)]
 pub enum FanboxArticleParagraphStyle {
     Bold(FanboxArticleParagraphBoldStyle),
     Unknown(JsonValue),
@@ -92,6 +93,21 @@ impl FanboxArticleParagraphBlock {
     }
 }
 
+impl CheckUnkown for FanboxArticleParagraphBlock {
+    fn check_unknown(&self) -> Result<(), FanboxAPIError> {
+        check_json_keys!("styles", "text"+, "type",);
+        match self.styles() {
+            Some(styles) => {
+                for style in styles {
+                    style.check_unknown()?;
+                }
+            }
+            None => {}
+        }
+        Ok(())
+    }
+}
+
 impl Debug for FanboxArticleParagraphBlock {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("FanboxArticleParagraphBlock")
@@ -101,7 +117,7 @@ impl Debug for FanboxArticleParagraphBlock {
     }
 }
 
-#[derive(Debug)]
+#[derive(proc_macros::CheckUnkown, Debug)]
 pub enum FanboxArticleBlock {
     Paragraph(FanboxArticleParagraphBlock),
     Unknown(JsonValue),

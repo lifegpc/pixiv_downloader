@@ -9,6 +9,7 @@ use syn::token;
 use syn::Block;
 use syn::Expr;
 use syn::Ident;
+use syn::ItemEnum;
 use syn::ItemFn;
 use syn::Lit;
 use syn::LitBool;
@@ -574,6 +575,45 @@ pub fn check_json_keys(item: TokenStream) -> TokenStream {
                 match key {
                     #(#streams)*
                     _ => { Err(format!("{} {}", gettext("Key <key> is handled:").replace("<key>", key).as_str(), self.data))?; }
+                }
+            }
+        }
+    );
+    stream.into()
+}
+
+#[proc_macro_derive(CheckUnkown)]
+pub fn derive_check_unknown(item: TokenStream) -> TokenStream {
+    let ItemEnum {
+        attrs: _,
+        vis: _,
+        enum_token: _,
+        ident,
+        generics: _,
+        brace_token: _,
+        variants,
+    } = parse_macro_input!(item as ItemEnum);
+    let mut streams = Vec::new();
+    for i in variants.iter() {
+        let ident = i.ident.clone();
+        let s = ident.to_string();
+        if s == "Unknown" {
+            streams.push(
+                quote!(Self::#ident(data) => Err(crate::fanbox::error::FanboxAPIError::from(format!(
+                "{} {}",
+                crate::gettext("Failed to recognize type:"),
+                data
+            ))),),
+            );
+        } else {
+            streams.push(quote!(Self::#ident(tmp) => crate::fanbox::check::CheckUnkown::check_unknown(tmp),));
+        }
+    }
+    let stream = quote!(
+        impl crate::fanbox::check::CheckUnkown for #ident {
+            fn check_unknown(&self) -> Result<(), crate::fanbox::error::FanboxAPIError> {
+                match self {
+                    #(#streams)*
                 }
             }
         }
