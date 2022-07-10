@@ -515,8 +515,10 @@ pub fn filter_http_methods(item: TokenStream) -> TokenStream {
     stream.into()
 }
 
+type CheckJsonKey = (LitStr, bool, Option<Ident>, Option<CheckJsonKeys>);
+
 struct CheckJsonKeys {
-    pub keys: Vec<(LitStr, bool, Option<CheckJsonKeys>)>,
+    pub keys: Vec<CheckJsonKey>,
 }
 
 impl Parse for CheckJsonKeys {
@@ -524,18 +526,23 @@ impl Parse for CheckJsonKeys {
         let mut keys = Vec::new();
         let first: LitStr = input.parse()?;
         match input.parse::<token::Add>() {
-            Ok(_) => {
-                keys.push((first, true, None));
-            }
+            Ok(_) => match input.parse::<Ident>() {
+                Ok(ident) => {
+                    keys.push((first, true, Some(ident), None));
+                }
+                Err(_) => {
+                    keys.push((first, true, None, None));
+                }
+            },
             Err(_) => match input.parse::<token::Colon>() {
                 Ok(_) => {
                     let content;
                     bracketed!(content in input);
                     let childrens = CheckJsonKeys::parse(&content)?;
-                    keys.push((first, false, Some(childrens)));
+                    keys.push((first, false, None, Some(childrens)));
                 }
                 Err(_) => {
-                    keys.push((first, false, None));
+                    keys.push((first, false, None, None));
                 }
             },
         }
@@ -546,18 +553,23 @@ impl Parse for CheckJsonKeys {
             }
             let key: LitStr = input.parse()?;
             match input.parse::<token::Add>() {
-                Ok(_) => {
-                    keys.push((key, true, None));
-                }
+                Ok(_) => match input.parse::<Ident>() {
+                    Ok(ident) => {
+                        keys.push((key, true, Some(ident), None));
+                    }
+                    Err(_) => {
+                        keys.push((key, true, None, None));
+                    }
+                },
                 Err(_) => match input.parse::<token::Colon>() {
                     Ok(_) => {
                         let content;
                         bracketed!(content in input);
                         let childrens = CheckJsonKeys::parse(&content)?;
-                        keys.push((key, false, Some(childrens)));
+                        keys.push((key, false, None, Some(childrens)));
                     }
                     Err(_) => {
-                        keys.push((key, false, None));
+                        keys.push((key, false, None, None));
                     }
                 },
             }
@@ -567,13 +579,16 @@ impl Parse for CheckJsonKeys {
 }
 
 fn get_check_json_keys_streams(
-    keys: Vec<(LitStr, bool, Option<CheckJsonKeys>)>,
+    keys: Vec<CheckJsonKey>,
+    pkeys: Vec<LitStr>,
 ) -> Vec<proc_macro2::TokenStream> {
     let mut streams = Vec::new();
-    for (key, check, childrens) in keys {
+    for (key, check, fname, childrens) in keys {
         match childrens {
             Some(childrens) => {
-                let streams2 = get_check_json_keys_streams(childrens.keys);
+                let mut keys2 = pkeys.clone();
+                keys2.push(key.clone());
+                let streams2 = get_check_json_keys_streams(childrens.keys, keys2);
                 streams.push(quote!(#key => {
                     let obj = sobj;
                     obj.is_object().try_err(format!("{} {}", gettext("Data is not a object:"), obj))?;
@@ -587,9 +602,16 @@ fn get_check_json_keys_streams(
             }
             None => {
                 if check {
-                    let k = key.value();
-                    let k = k.to_case(Case::Snake);
-                    let fun = Ident::new(&k, key.span());
+                    let mut keys = Vec::new();
+                    for i in pkeys.iter() {
+                        keys.push(i.value());
+                    }
+                    keys.push(key.value());
+                    let k = keys.join("_").to_case(Case::Snake);
+                    let fun = match fname {
+                        Some(fname) => fname,
+                        None => Ident::new(&k, key.span()),
+                    };
                     streams.push(quote!(#key => {
                         self.#fun().try_err(format!("{} {}", gettext("The value of the key <key> is missing:").replace("<key>", key).as_str(), obj))?;
                     }));
@@ -605,7 +627,7 @@ fn get_check_json_keys_streams(
 #[proc_macro]
 pub fn check_json_keys(item: TokenStream) -> TokenStream {
     let CheckJsonKeys { keys } = parse_macro_input!(item as CheckJsonKeys);
-    let streams = get_check_json_keys_streams(keys);
+    let streams = get_check_json_keys_streams(keys, Vec::new());
     let stream = quote!(
         {
             use crate::ext::try_err::TryErr;
