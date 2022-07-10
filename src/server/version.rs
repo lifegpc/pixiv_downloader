@@ -27,7 +27,16 @@ impl ResponseJsonFor<Body> for VersionContext {
         &self,
         req: Request<Body>,
     ) -> Result<Response<JsonValue>, PixivDownloaderError> {
-        filter_http_methods!(req, json::object! {}, true, self.ctx, GET, OPTIONS, POST);
+        filter_http_methods!(
+            req,
+            json::object! {},
+            true,
+            self.ctx,
+            allow_headers = [X_TOKEN],
+            GET,
+            OPTIONS,
+            POST
+        );
         Ok(builder.body(json::object! {"version": [0, 0, 1, 0]})?)
     }
 }
@@ -39,7 +48,7 @@ pub struct VersionRoute {
 impl VersionRoute {
     pub fn new() -> Self {
         Self {
-            regex: Regex::new(r"^(/api)?/version(/.*)?$").unwrap(),
+            regex: Regex::new(r"^(/+api)?/+version(/.*)?$").unwrap(),
         }
     }
 }

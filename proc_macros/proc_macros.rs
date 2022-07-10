@@ -220,15 +220,20 @@ impl Parse for HTTPHeader {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let mut header = String::new();
         let ident = Ident::parse(input)?;
-        header += ident.to_string().as_str();
+        header += ident.to_string().replace("_", "-").as_str();
         loop {
             if input.cursor().eof() {
                 break;
             }
-            token::Sub::parse(input)?;
+            match token::Sub::parse(input) {
+                Ok(_) => {}
+                Err(_) => {
+                    break;
+                }
+            }
             let ident = Ident::parse(input)?;
             header += "-";
-            header += ident.to_string().as_str();
+            header += ident.to_string().replace("_", "-").as_str();
         }
         return Ok(Self { header });
     }
@@ -242,6 +247,7 @@ struct FilterHttpMethods {
     pub methods: Vec<Ident>,
     pub cors_methods: Option<Vec<Ident>>,
     pub expose_headers: Option<Vec<String>>,
+    pub cors_allow_headers: Option<Vec<String>>,
 }
 
 impl Parse for FilterHttpMethods {
@@ -265,6 +271,7 @@ impl Parse for FilterHttpMethods {
         };
         let mut cors_methods = None;
         let mut expose_headers = None;
+        let mut cors_allow_headers = None;
         loop {
             if input.cursor().eof() {
                 break;
@@ -295,6 +302,18 @@ impl Parse for FilterHttpMethods {
                     let m: HTTPHeader = content.parse()?;
                     expose_headers.as_mut().unwrap().push(m.header);
                 }
+            } else if method.to_string() == "allow_headers" {
+                cors_allow_headers.replace(Vec::new());
+                token::Eq::parse(input)?;
+                let content;
+                bracketed!(content in input);
+                let first: HTTPHeader = content.parse()?;
+                cors_allow_headers.as_mut().unwrap().push(first.header);
+                while !content.is_empty() {
+                    let _: token::Comma = content.parse()?;
+                    let m: HTTPHeader = content.parse()?;
+                    cors_allow_headers.as_mut().unwrap().push(m.header);
+                }
             } else {
                 methods.push(method);
             }
@@ -307,6 +326,7 @@ impl Parse for FilterHttpMethods {
             methods,
             cors_methods,
             expose_headers,
+            cors_allow_headers,
         })
     }
 }
@@ -324,6 +344,7 @@ pub fn filter_http_methods(item: TokenStream) -> TokenStream {
         methods,
         cors_methods,
         expose_headers,
+        cors_allow_headers,
     } = parse_macro_input!(item as FilterHttpMethods);
     let mut header_value = Vec::new();
     let mut streams = Vec::new();
@@ -360,6 +381,16 @@ pub fn filter_http_methods(item: TokenStream) -> TokenStream {
             }
             None => quote!(),
         };
+        let cors_allow_headers = match &cors_allow_headers {
+            Some(h) => {
+                let headers = h.join(", ");
+                let headers = LitStr::new(headers.as_str(), req.span());
+                quote!(
+                    let builder = builder.header(hyper::header::ACCESS_CONTROL_ALLOW_HEADERS, #headers);
+                )
+            }
+            None => quote!(),
+        };
         streams.push(quote!(&hyper::Method::OPTIONS => {
             let builder = hyper::Response::builder();
             let headers = #req.headers();
@@ -378,6 +409,7 @@ pub fn filter_http_methods(item: TokenStream) -> TokenStream {
                                 .header(hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN, origin.as_str())
                                 .header(hyper::header::ACCESS_CONTROL_ALLOW_METHODS, #cors_methods_header);
                                 #expose_headers
+                                #cors_allow_headers
                             return Ok(builder.status(200).header("Allow", #allow_header).body(#typ)?);
                         }
                         crate::server::cors::CorsResult::AllowedAll => {
@@ -385,6 +417,7 @@ pub fn filter_http_methods(item: TokenStream) -> TokenStream {
                                 .header(hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
                                 .header(hyper::header::ACCESS_CONTROL_ALLOW_METHODS, #cors_methods_header);
                                 #expose_headers
+                                #cors_allow_headers
                             return Ok(builder.status(200).header("Allow", #allow_header).body(#typ)?);
                         }
                         _ => {
@@ -412,6 +445,19 @@ pub fn filter_http_methods(item: TokenStream) -> TokenStream {
             }
             None => quote!(),
         };
+        let cors_allow_headers = match cors_allow_headers {
+            Some(h) => {
+                let headers = h.join(", ");
+                let headers = LitStr::new(headers.as_str(), req.span());
+                quote!(
+                    builder.
+                        headers_mut()
+                        .try_err(gettext("Failed to build response."))?
+                        .insert(hyper::header::ACCESS_CONTROL_ALLOW_HEADERS, #headers.parse()?);
+                )
+            }
+            None => quote!(),
+        };
         quote!(
             let mut builder = hyper::Response::builder();
             let headers = #req.headers();
@@ -433,6 +479,7 @@ pub fn filter_http_methods(item: TokenStream) -> TokenStream {
                                 .try_err(gettext("Failed to build response."))?
                                 .insert(hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN, origin.parse()?);
                             #expose_headers
+                            #cors_allow_headers
                         }
                         crate::server::cors::CorsResult::AllowedAll => {
                             builder
@@ -440,6 +487,7 @@ pub fn filter_http_methods(item: TokenStream) -> TokenStream {
                                 .try_err(gettext("Failed to build response."))?
                                 .insert(hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN, "*".parse()?);
                             #expose_headers
+                            #cors_allow_headers
                         }
                         _ => {
                             return Ok(builder.status(403).body(#typ)?);
