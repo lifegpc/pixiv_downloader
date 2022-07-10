@@ -378,22 +378,22 @@ pub fn filter_http_methods(item: TokenStream) -> TokenStream {
                                 .header(hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN, origin.as_str())
                                 .header(hyper::header::ACCESS_CONTROL_ALLOW_METHODS, #cors_methods_header);
                                 #expose_headers
-                            return Ok(builder.status(200).header("Allow", #allow_header).body(#typ).unwrap());
+                            return Ok(builder.status(200).header("Allow", #allow_header).body(#typ)?);
                         }
                         crate::server::cors::CorsResult::AllowedAll => {
                             let builder = builder
                                 .header(hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
                                 .header(hyper::header::ACCESS_CONTROL_ALLOW_METHODS, #cors_methods_header);
                                 #expose_headers
-                            return Ok(builder.status(200).header("Allow", #allow_header).body(#typ).unwrap());
+                            return Ok(builder.status(200).header("Allow", #allow_header).body(#typ)?);
                         }
                         _ => {
-                            return Ok(builder.status(400).header("Allow", #allow_header).body(#typ).unwrap());
+                            return Ok(builder.status(400).header("Allow", #allow_header).body(#typ)?);
                         }
                     }
                 }
                 None => {
-                    return Ok(builder.status(200).header("Allow", #allow_header).body(#typ).unwrap());
+                    return Ok(builder.status(200).header("Allow", #allow_header).body(#typ)?);
                 }
             }
         }));
@@ -404,7 +404,10 @@ pub fn filter_http_methods(item: TokenStream) -> TokenStream {
                 let headers = h.join(", ");
                 let headers = LitStr::new(headers.as_str(), req.span());
                 quote!(
-                    builder.headers_mut().unwrap().insert(hyper::header::ACCESS_CONTROL_EXPOSE_HEADERS, #headers.parse().unwrap());
+                    builder.
+                        headers_mut()
+                        .try_err(gettext("Failed to build response."))?
+                        .insert(hyper::header::ACCESS_CONTROL_EXPOSE_HEADERS, #headers.parse()?);
                 )
             }
             None => quote!(),
@@ -421,17 +424,25 @@ pub fn filter_http_methods(item: TokenStream) -> TokenStream {
             };
             match origin {
                 Some(origin) => {
+                    use crate::ext::try_err::TryErr;
+                    use crate::gettext;
                     match #ctx.cors.matches(origin.as_str()) {
                         crate::server::cors::CorsResult::Allowed => {
-                            builder.headers_mut().unwrap().insert(hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN, origin.parse().unwrap());
+                            builder
+                                .headers_mut()
+                                .try_err(gettext("Failed to build response."))?
+                                .insert(hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN, origin.parse()?);
                             #expose_headers
                         }
                         crate::server::cors::CorsResult::AllowedAll => {
-                            builder.headers_mut().unwrap().insert(hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN, "*".parse().unwrap());
+                            builder
+                                .headers_mut()
+                                .try_err(gettext("Failed to build response."))?
+                                .insert(hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN, "*".parse()?);
                             #expose_headers
                         }
                         _ => {
-                            return Ok(builder.status(403).body(#typ).unwrap());
+                            return Ok(builder.status(403).body(#typ)?);
                         }
                     }
                 }
@@ -445,7 +456,7 @@ pub fn filter_http_methods(item: TokenStream) -> TokenStream {
         match #req.method() {
             #(#streams)*
             _ => {
-                return Ok(hyper::Response::builder().status(405).header("Allow", #allow_header).body(#typ).unwrap())
+                return Ok(hyper::Response::builder().status(405).header("Allow", #allow_header).body(#typ)?)
             }
         }
         #post_stream

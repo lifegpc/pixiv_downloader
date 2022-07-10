@@ -12,11 +12,18 @@ pub enum PixivDownloaderError {
     UgoiraError(UgoiraError),
     #[cfg(feature = "server")]
     Hyper(hyper::Error),
+    HTTP(http::Error),
 }
 
 impl From<&str> for PixivDownloaderError {
     fn from(p: &str) -> Self {
         Self::String(String::from(p))
+    }
+}
+
+impl From<http::header::InvalidHeaderValue> for PixivDownloaderError {
+    fn from(v: http::header::InvalidHeaderValue) -> Self {
+        Self::HTTP(http::Error::from(v))
     }
 }
 
