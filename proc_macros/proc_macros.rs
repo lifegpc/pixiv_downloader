@@ -560,7 +560,7 @@ pub fn check_json_keys(item: TokenStream) -> TokenStream {
             let k = k.to_case(Case::Snake);
             let fun = Ident::new(&k, key.span());
             streams.push(quote!(#key => {
-                self.#fun().try_err(gettext("The value of the key <key> is missing.").replace("<key>", key))?;
+                self.#fun().try_err(format!("{} {}", gettext("The value of the key <key> is missing:").replace("<key>", key).as_str(), self.data))?;
             }));
         } else {
             streams.push(quote!(#key => {}));
@@ -570,7 +570,7 @@ pub fn check_json_keys(item: TokenStream) -> TokenStream {
         {
             use crate::ext::try_err::TryErr;
             use crate::gettext;
-            self.data.is_object().try_err(gettext("Data is not a object."))?;
+            self.data.is_object().try_err(format!("{} {}", gettext("Data is not a object:"), self.data))?;
             for (key, _) in self.data.entries() {
                 match key {
                     #(#streams)*
@@ -606,7 +606,9 @@ pub fn derive_check_unknown(item: TokenStream) -> TokenStream {
             ))),),
             );
         } else {
-            streams.push(quote!(Self::#ident(tmp) => crate::fanbox::check::CheckUnkown::check_unknown(tmp),));
+            streams.push(
+                quote!(Self::#ident(tmp) => crate::fanbox::check::CheckUnkown::check_unknown(tmp),),
+            );
         }
     }
     let stream = quote!(
