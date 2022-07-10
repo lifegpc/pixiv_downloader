@@ -1,7 +1,9 @@
+use super::check::CheckUnkown;
 use super::error::FanboxAPIError;
 use crate::gettext;
 use crate::parser::json::parse_u64;
 use json::JsonValue;
+use proc_macros::check_json_keys;
 use std::fmt::Debug;
 use std::ops::Deref;
 use std::ops::DerefMut;
@@ -69,6 +71,27 @@ impl FanboxPlan {
     }
 }
 
+impl CheckUnkown for FanboxPlan {
+    fn check_unknown(&self) -> Result<(), FanboxAPIError> {
+        check_json_keys!(
+            "id"+,
+            "coverImageUrl",
+            "creatorId"+,
+            "description"+,
+            "fee"+,
+            "hasAdultContent"+,
+            "paymentMethod",
+            "title"+,
+            "user": [
+                "iconUrl",
+                "userId"+user_id,
+                "name"+,
+            ],
+        );
+        Ok(())
+    }
+}
+
 impl Debug for FanboxPlan {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("FanboxPlan")
@@ -125,6 +148,15 @@ impl FanboxPlanList {
                 "Failed to parse fanbox plan list.",
             )))
         }
+    }
+}
+
+impl CheckUnkown for FanboxPlanList {
+    fn check_unknown(&self) -> Result<(), FanboxAPIError> {
+        for i in self.list.iter() {
+            i.check_unknown()?;
+        }
+        Ok(())
     }
 }
 

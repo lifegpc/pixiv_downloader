@@ -1,7 +1,9 @@
+use super::check::CheckUnkown;
 use super::error::FanboxAPIError;
 use crate::fanbox_api::FanboxClientInternal;
 use crate::parser::json::parse_u64;
 use json::JsonValue;
+use proc_macros::check_json_keys;
 use std::convert::From;
 use std::fmt::Debug;
 use std::ops::Deref;
@@ -42,6 +44,17 @@ impl FanboxProfileImage {
     }
 }
 
+impl CheckUnkown for FanboxProfileImage {
+    fn check_unknown(&self) -> Result<(), FanboxAPIError> {
+        check_json_keys!(
+            "id"+,
+            "imageUrl"+,
+            "thumbnailUrl",
+        );
+        Ok(())
+    }
+}
+
 impl Debug for FanboxProfileImage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("FanboxProfileImage")
@@ -53,7 +66,7 @@ impl Debug for FanboxProfileImage {
 }
 
 /// Profile item
-#[derive(Debug)]
+#[derive(proc_macros::CheckUnkown, Debug)]
 pub enum FanboxProfileItem {
     /// Image
     Image(FanboxProfileImage),
@@ -97,6 +110,15 @@ impl FanboxProfileItems {
         } else {
             Err(FanboxAPIError::from("Failed to get profile items."))
         }
+    }
+}
+
+impl CheckUnkown for FanboxProfileItems {
+    fn check_unknown(&self) -> Result<(), FanboxAPIError> {
+        for i in self.list.iter() {
+            i.check_unknown()?;
+        }
+        Ok(())
     }
 }
 
@@ -219,6 +241,33 @@ impl FanboxCreator {
     #[inline]
     pub fn user_name(&self) -> Option<&str> {
         self.data["user"]["name"].as_str()
+    }
+}
+
+impl CheckUnkown for FanboxCreator {
+    fn check_unknown(&self) -> Result<(), FanboxAPIError> {
+        check_json_keys!(
+            "creatorId"+,
+            "coverImageUrl",
+            "description"+,
+            "hasAdultContent"+,
+            "hasBoothShop"+,
+            "isAcceptingRequest"+,
+            "isFollowed"+,
+            "isStopped"+,
+            "isSupported"+,
+            "profileItems",
+            "profileLinks"+,
+            "user": [
+                "userId"+user_id,
+                "iconUrl",
+                "name"+,
+            ],
+        );
+        for i in self.profile_items()?.iter() {
+            i.check_unknown()?;
+        }
+        Ok(())
     }
 }
 

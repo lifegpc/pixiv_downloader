@@ -1,3 +1,4 @@
+use super::check::CheckUnkown;
 use super::comment::FanboxComment;
 #[cfg(test)]
 use super::post::FanboxPost;
@@ -68,6 +69,15 @@ impl FanboxCommentList {
             next_url,
             client,
         })
+    }
+}
+
+impl CheckUnkown for FanboxCommentList {
+    fn check_unknown(&self) -> Result<(), super::error::FanboxAPIError> {
+        for i in self.items.iter() {
+            i.check_unknown()?;
+        }
+        Ok(())
     }
 }
 

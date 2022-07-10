@@ -87,7 +87,30 @@ impl FanboxComment {
 
 impl CheckUnkown for FanboxComment {
     fn check_unknown(&self) -> Result<(), super::error::FanboxAPIError> {
-        check_json_keys!("id"+, "body"+, "createdDatetime"+, "isLiked"+, "isOwn"+, "likeCount"+, "parentCommentId", "replies", "rootCommentId", "user": ["userId"+user_id, "name"+, "iconUrl"]);
+        check_json_keys!(
+            "id"+,
+            "body"+,
+            "createdDatetime"+,
+            "isLiked"+,
+            "isOwn"+,
+            "likeCount"+,
+            "parentCommentId",
+            "replies",
+            "rootCommentId",
+            "user": [
+                "userId"+user_id,
+                "name"+,
+                "iconUrl",
+            ],
+        );
+        match self.replies() {
+            Some(replies) => {
+                for i in replies {
+                    i.check_unknown()?;
+                }
+            }
+            None => {}
+        }
         Ok(())
     }
 }

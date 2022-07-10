@@ -28,7 +28,11 @@ impl FanboxArticleParagraphBoldStyle {
 
 impl CheckUnkown for FanboxArticleParagraphBoldStyle {
     fn check_unknown(&self) -> Result<(), FanboxAPIError> {
-        check_json_keys!("offset"+, "length"+, "type",);
+        check_json_keys!(
+            "offset"+,
+            "length"+, 
+            "type",
+        );
         Ok(())
     }
 }
@@ -95,7 +99,11 @@ impl FanboxArticleParagraphBlock {
 
 impl CheckUnkown for FanboxArticleParagraphBlock {
     fn check_unknown(&self) -> Result<(), FanboxAPIError> {
-        check_json_keys!("styles", "text"+, "type",);
+        check_json_keys!(
+            "styles",
+            "text"+,
+            "type",
+        );
         match self.styles() {
             Some(styles) => {
                 for style in styles {
