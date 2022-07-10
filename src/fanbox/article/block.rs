@@ -1,4 +1,4 @@
-use super::super::check::CheckUnkown;
+use super::super::check::CheckUnknown;
 use super::super::error::FanboxAPIError;
 use json::JsonValue;
 use proc_macros::check_json_keys;
@@ -26,7 +26,7 @@ impl FanboxArticleParagraphBoldStyle {
     }
 }
 
-impl CheckUnkown for FanboxArticleParagraphBoldStyle {
+impl CheckUnknown for FanboxArticleParagraphBoldStyle {
     fn check_unknown(&self) -> Result<(), FanboxAPIError> {
         check_json_keys!(
             "offset"+,
@@ -46,7 +46,7 @@ impl Debug for FanboxArticleParagraphBoldStyle {
     }
 }
 
-#[derive(proc_macros::CheckUnkown, Debug)]
+#[derive(proc_macros::CheckUnknown, Debug)]
 pub enum FanboxArticleParagraphStyle {
     Bold(FanboxArticleParagraphBoldStyle),
     Unknown(JsonValue),
@@ -97,7 +97,7 @@ impl FanboxArticleParagraphBlock {
     }
 }
 
-impl CheckUnkown for FanboxArticleParagraphBlock {
+impl CheckUnknown for FanboxArticleParagraphBlock {
     fn check_unknown(&self) -> Result<(), FanboxAPIError> {
         check_json_keys!(
             "styles",
@@ -125,7 +125,7 @@ impl Debug for FanboxArticleParagraphBlock {
     }
 }
 
-#[derive(proc_macros::CheckUnkown, Debug)]
+#[derive(proc_macros::CheckUnknown, Debug)]
 pub enum FanboxArticleBlock {
     Paragraph(FanboxArticleParagraphBlock),
     Unknown(JsonValue),

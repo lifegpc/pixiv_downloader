@@ -1,4 +1,4 @@
-use super::super::check::CheckUnkown;
+use super::super::check::CheckUnknown;
 use super::super::error::FanboxAPIError;
 use super::block::FanboxArticleBlock;
 use crate::fanbox_api::FanboxClientInternal;
@@ -39,7 +39,7 @@ impl FanboxArticleBody {
     }
 }
 
-impl CheckUnkown for FanboxArticleBody {
+impl CheckUnknown for FanboxArticleBody {
     fn check_unknown(&self) -> Result<(), FanboxAPIError> {
         check_json_keys!(
             "blocks"+,

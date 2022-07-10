@@ -1,8 +1,11 @@
 use super::article::body::FanboxArticleBody;
+use super::check::CheckUnknown;
 use super::comment_list::FanboxCommentList;
+use super::error::FanboxAPIError;
 use crate::fanbox_api::FanboxClientInternal;
 use crate::parser::json::parse_u64;
 use json::JsonValue;
+use proc_macros::check_json_keys;
 use proc_macros::fanbox_api_test;
 use std::fmt::Debug;
 use std::fmt::Display;
@@ -160,6 +163,57 @@ impl FanboxPostArticle {
     #[inline]
     pub fn user_name(&self) -> Option<&str> {
         self.data["user"]["name"].as_str()
+    }
+}
+
+impl CheckUnknown for FanboxPostArticle {
+    fn check_unknown(&self) -> Result<(), FanboxAPIError> {
+        check_json_keys!(
+            "body",
+            "id"+,
+            "commentCount"+,
+            "commentList",
+            "coverImageUrl",
+            "creatorId"+,
+            "excerpt"+,
+            "feeRequired"+,
+            "hasAdultContent"+,
+            "imageForShare",
+            "isLiked"+,
+            "isRestricted"+,
+            "likeCount"+,
+            "nextPost",
+            "prevPost",
+            "publishedDatetime"+,
+            "restrictedFor",
+            "tags"+,
+            "type",
+            "title"+,
+            "updatedDatetime"+,
+            "user": [
+                "userId"+user_id,
+                "iconUrl",
+                "name"+,
+            ],
+        );
+        self.body().check_unknown()?;
+        match self.comment_list() {
+            Some(list) => {
+                for i in list.items {
+                    i.check_unknown()?;
+                }
+            }
+            None => {}
+        }
+        match self.next_post() {
+            Some(post) => post.check_unknown()?,
+            None => {}
+        }
+        match self.prev_post() {
+            Some(post) => post.check_unknown()?,
+            None => {}
+        }
+        Ok(())
     }
 }
 
@@ -342,6 +396,55 @@ impl FanboxPostImage {
     }
 }
 
+impl CheckUnknown for FanboxPostImage {
+    fn check_unknown(&self) -> Result<(), FanboxAPIError> {
+        check_json_keys!(
+            "id"+,
+            "commentCount"+,
+            "commentList",
+            "coverImageUrl",
+            "creatorId"+,
+            "excerpt"+,
+            "feeRequired"+,
+            "hasAdultContent"+,
+            "imageForShare",
+            "isLiked"+,
+            "isRestricted"+,
+            "likeCount"+,
+            "nextPost",
+            "prevPost",
+            "publishedDatetime"+,
+            "restrictedFor",
+            "tags"+,
+            "title"+,
+            "type",
+            "updatedDatetime"+,
+            "user": [
+                "userId"+user_id,
+                "iconUrl",
+                "name"+,
+            ],
+        );
+        match self.comment_list() {
+            Some(list) => {
+                for i in list.items {
+                    i.check_unknown()?;
+                }
+            }
+            None => {}
+        }
+        match self.next_post() {
+            Some(post) => post.check_unknown()?,
+            None => {}
+        }
+        match self.prev_post() {
+            Some(post) => post.check_unknown()?,
+            None => {}
+        }
+        Ok(())
+    }
+}
+
 impl Debug for FanboxPostImage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("FanboxPostImage")
@@ -415,6 +518,17 @@ impl FanboxPostRef {
     }
 }
 
+impl CheckUnknown for FanboxPostRef {
+    fn check_unknown(&self) -> Result<(), FanboxAPIError> {
+        check_json_keys!(
+            "id"+,
+            "publishedDatetime"+,
+            "title"+,
+        );
+        Ok(())
+    }
+}
+
 impl Debug for FanboxPostRef {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("FanboxPostRef")
@@ -484,7 +598,7 @@ impl Display for FanboxPostUnknown {
     }
 }
 
-#[derive(Debug)]
+#[derive(proc_macros::CheckUnknown, Debug)]
 /// The fanbox's post
 pub enum FanboxPost {
     /// Article
@@ -669,6 +783,12 @@ fanbox_api_test!(test_get_post_info, {
                     );
                     assert_eq!(data.user_name(), Some("しらたま"));
                     assert_eq!(data.creator_id(), Some("shiratamaco"));
+                    match data.check_unknown() {
+                        Ok(_) => {}
+                        Err(e) => {
+                            println!("Check unknown: {}", e);
+                        }
+                    }
                     match data.next_post() {
                         Some(r) => {
                             println!("{:?}", r);

@@ -637,7 +637,7 @@ pub fn check_json_keys(item: TokenStream) -> TokenStream {
             for (key, sobj) in self.data.entries() {
                 match key {
                     #(#streams)*
-                    _ => { Err(format!("{} {}", gettext("Key <key> is handled:").replace("<key>", key).as_str(), obj))?; }
+                    _ => { Err(format!("{} {}", gettext("Key <key> is not handled:").replace("<key>", key).as_str(), obj))?; }
                 }
             }
         }
@@ -645,7 +645,7 @@ pub fn check_json_keys(item: TokenStream) -> TokenStream {
     stream.into()
 }
 
-#[proc_macro_derive(CheckUnkown)]
+#[proc_macro_derive(CheckUnknown)]
 pub fn derive_check_unknown(item: TokenStream) -> TokenStream {
     let ItemEnum {
         attrs: _,
@@ -670,12 +670,12 @@ pub fn derive_check_unknown(item: TokenStream) -> TokenStream {
             );
         } else {
             streams.push(
-                quote!(Self::#ident(tmp) => crate::fanbox::check::CheckUnkown::check_unknown(tmp),),
+                quote!(Self::#ident(tmp) => crate::fanbox::check::CheckUnknown::check_unknown(tmp),),
             );
         }
     }
     let stream = quote!(
-        impl crate::fanbox::check::CheckUnkown for #ident {
+        impl crate::fanbox::check::CheckUnknown for #ident {
             fn check_unknown(&self) -> Result<(), crate::fanbox::error::FanboxAPIError> {
                 match self {
                     #(#streams)*

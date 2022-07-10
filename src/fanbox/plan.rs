@@ -1,4 +1,4 @@
-use super::check::CheckUnkown;
+use super::check::CheckUnknown;
 use super::error::FanboxAPIError;
 use crate::gettext;
 use crate::parser::json::parse_u64;
@@ -71,7 +71,7 @@ impl FanboxPlan {
     }
 }
 
-impl CheckUnkown for FanboxPlan {
+impl CheckUnknown for FanboxPlan {
     fn check_unknown(&self) -> Result<(), FanboxAPIError> {
         check_json_keys!(
             "id"+,
@@ -151,7 +151,7 @@ impl FanboxPlanList {
     }
 }
 
-impl CheckUnkown for FanboxPlanList {
+impl CheckUnknown for FanboxPlanList {
     fn check_unknown(&self) -> Result<(), FanboxAPIError> {
         for i in self.list.iter() {
             i.check_unknown()?;

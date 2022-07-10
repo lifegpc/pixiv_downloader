@@ -1,4 +1,4 @@
-use super::check::CheckUnkown;
+use super::check::CheckUnknown;
 use super::comment::FanboxComment;
 #[cfg(test)]
 use super::post::FanboxPost;
@@ -72,7 +72,7 @@ impl FanboxCommentList {
     }
 }
 
-impl CheckUnkown for FanboxCommentList {
+impl CheckUnknown for FanboxCommentList {
     fn check_unknown(&self) -> Result<(), super::error::FanboxAPIError> {
         for i in self.items.iter() {
             i.check_unknown()?;

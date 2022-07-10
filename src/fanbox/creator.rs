@@ -1,4 +1,4 @@
-use super::check::CheckUnkown;
+use super::check::CheckUnknown;
 use super::error::FanboxAPIError;
 use crate::fanbox_api::FanboxClientInternal;
 use crate::parser::json::parse_u64;
@@ -44,12 +44,13 @@ impl FanboxProfileImage {
     }
 }
 
-impl CheckUnkown for FanboxProfileImage {
+impl CheckUnknown for FanboxProfileImage {
     fn check_unknown(&self) -> Result<(), FanboxAPIError> {
         check_json_keys!(
             "id"+,
             "imageUrl"+,
             "thumbnailUrl",
+            "type",
         );
         Ok(())
     }
@@ -66,7 +67,7 @@ impl Debug for FanboxProfileImage {
 }
 
 /// Profile item
-#[derive(proc_macros::CheckUnkown, Debug)]
+#[derive(proc_macros::CheckUnknown, Debug)]
 pub enum FanboxProfileItem {
     /// Image
     Image(FanboxProfileImage),
@@ -113,7 +114,7 @@ impl FanboxProfileItems {
     }
 }
 
-impl CheckUnkown for FanboxProfileItems {
+impl CheckUnknown for FanboxProfileItems {
     fn check_unknown(&self) -> Result<(), FanboxAPIError> {
         for i in self.list.iter() {
             i.check_unknown()?;
@@ -244,7 +245,7 @@ impl FanboxCreator {
     }
 }
 
-impl CheckUnkown for FanboxCreator {
+impl CheckUnknown for FanboxCreator {
     fn check_unknown(&self) -> Result<(), FanboxAPIError> {
         check_json_keys!(
             "creatorId"+,

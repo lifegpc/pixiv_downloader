@@ -1,4 +1,4 @@
-use super::check::CheckUnkown;
+use super::check::CheckUnknown;
 use crate::parser::json::parse_u64;
 use json::JsonValue;
 use proc_macros::check_json_keys;
@@ -85,7 +85,7 @@ impl FanboxComment {
     }
 }
 
-impl CheckUnkown for FanboxComment {
+impl CheckUnknown for FanboxComment {
     fn check_unknown(&self) -> Result<(), super::error::FanboxAPIError> {
         check_json_keys!(
             "id"+,
