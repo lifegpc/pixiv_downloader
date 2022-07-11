@@ -43,10 +43,10 @@ impl CheckUnknown for FanboxArticleBody {
     fn check_unknown(&self) -> Result<(), FanboxAPIError> {
         check_json_keys!(
             "blocks"+,
-            "imageMap",
-            "fileMap",
-            "embedMap",
-            "urlEmbedMap",
+            "imageMap": [],
+            "fileMap": [],
+            "embedMap": [],
+            "urlEmbedMap": [],
         );
         match self.blocks() {
             Some(blocks) => {

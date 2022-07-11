@@ -30,7 +30,7 @@ impl CheckUnknown for FanboxArticleParagraphBoldStyle {
     fn check_unknown(&self) -> Result<(), FanboxAPIError> {
         check_json_keys!(
             "offset"+,
-            "length"+, 
+            "length"+,
             "type",
         );
         Ok(())
@@ -63,6 +63,41 @@ impl FanboxArticleParagraphStyle {
             },
             None => Self::Unknown(data.clone()),
         }
+    }
+}
+
+pub struct FanboxArticleImageBlock {
+    pub data: JsonValue,
+}
+
+impl FanboxArticleImageBlock {
+    #[inline]
+    pub fn image_id(&self) -> Option<&str> {
+        self.data["imageId"].as_str()
+    }
+
+    #[inline]
+    /// Create a new instance
+    pub fn new(data: &JsonValue) -> Self {
+        Self { data: data.clone() }
+    }
+}
+
+impl CheckUnknown for FanboxArticleImageBlock {
+    fn check_unknown(&self) -> Result<(), FanboxAPIError> {
+        check_json_keys!(
+            "type",
+            "imageId"+,
+        );
+        Ok(())
+    }
+}
+
+impl Debug for FanboxArticleImageBlock {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("FanboxArticleImageBlock")
+            .field("image_id", &self.image_id())
+            .finish_non_exhaustive()
     }
 }
 
@@ -125,9 +160,46 @@ impl Debug for FanboxArticleParagraphBlock {
     }
 }
 
+pub struct FanboxArticleUrlEmbedBlock {
+    pub data: JsonValue,
+}
+
+impl FanboxArticleUrlEmbedBlock {
+    #[inline]
+    /// Create a new instance
+    pub fn new(data: &JsonValue) -> Self {
+        Self { data: data.clone() }
+    }
+
+    #[inline]
+    pub fn url_embed_id(&self) -> Option<&str> {
+        self.data["urlEmbedId"].as_str()
+    }
+}
+
+impl CheckUnknown for FanboxArticleUrlEmbedBlock {
+    fn check_unknown(&self) -> Result<(), FanboxAPIError> {
+        check_json_keys!(
+            "type",
+            "urlEmbedId"+,
+        );
+        Ok(())
+    }
+}
+
+impl Debug for FanboxArticleUrlEmbedBlock {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("FanboxArticleUrlEmbedBlock")
+            .field("url_embed_id", &self.url_embed_id())
+            .finish_non_exhaustive()
+    }
+}
+
 #[derive(proc_macros::CheckUnknown, Debug)]
 pub enum FanboxArticleBlock {
+    Image(FanboxArticleImageBlock),
     Paragraph(FanboxArticleParagraphBlock),
+    UrlEmbed(FanboxArticleUrlEmbedBlock),
     Unknown(JsonValue),
 }
 
@@ -137,7 +209,9 @@ impl FanboxArticleBlock {
     pub fn new(data: &JsonValue) -> Self {
         match data["type"].as_str() {
             Some(t) => match t {
+                "image" => Self::Image(FanboxArticleImageBlock::new(data)),
                 "p" => Self::Paragraph(FanboxArticleParagraphBlock::new(data)),
+                "url_embed" => Self::UrlEmbed(FanboxArticleUrlEmbedBlock::new(data)),
                 _ => Self::Unknown(data.clone()),
             },
             None => Self::Unknown(data.clone()),

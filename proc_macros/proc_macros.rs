@@ -526,6 +526,9 @@ struct CheckJsonKeys {
 impl Parse for CheckJsonKeys {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let mut keys = Vec::new();
+        if input.cursor().eof() {
+            return Ok(Self { keys });
+        }
         let first: LitStr = input.parse()?;
         match input.parse::<token::Add>() {
             Ok(_) => match input.parse::<Ident>() {
