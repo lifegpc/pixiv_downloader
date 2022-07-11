@@ -171,7 +171,7 @@ impl CheckUnknown for FanboxItem {
             "user": [
                 "name"+author_name,
                 "iconUrl",
-                "id"+,
+                "userId"+user_id,
             ],
         );
         Ok(())

@@ -199,7 +199,9 @@ pub fn fanbox_api_quick_test(item: TokenStream) -> TokenStream {
                     }
                     match #expr.await {
                         Some(data) => {
+                            use crate::fanbox::check::CheckUnknown;
                             println!("{:?}", data);
+                            data.check_unknown().unwrap();
                         }
                         None => {
                             panic!("{}", #errmsg);
