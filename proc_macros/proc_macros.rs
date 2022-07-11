@@ -597,7 +597,7 @@ fn get_check_json_keys_streams(
                     for (key, sobj) in obj.entries() {
                         match key {
                             #(#streams2)*
-                            _ => { Err(format!("{} {}", gettext("Key <key> is handled:").replace("<key>", key).as_str(), obj))?; }
+                            _ => { Err(format!("{} {}", gettext("Key <key> is not handled:").replace("<key>", key).as_str(), obj))?; }
                         }
                     }
                 }))
