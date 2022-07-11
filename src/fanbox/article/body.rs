@@ -1,6 +1,7 @@
 use super::super::check::CheckUnknown;
 use super::super::error::FanboxAPIError;
 use super::block::FanboxArticleBlock;
+use super::image::FanboxArticleImageMap;
 use crate::fanbox_api::FanboxClientInternal;
 use json::JsonValue;
 use proc_macros::check_json_keys;
@@ -30,6 +31,16 @@ impl FanboxArticleBody {
     }
 
     #[inline]
+    pub fn image_map(&self) -> Option<FanboxArticleImageMap> {
+        let map = &self.data["imageMap"];
+        if map.is_object() {
+            Some(FanboxArticleImageMap::new(map, Arc::clone(&self.client)))
+        } else {
+            None
+        }
+    }
+
+    #[inline]
     /// Create a new instance
     pub fn new(data: &JsonValue, client: Arc<FanboxClientInternal>) -> Self {
         Self {
@@ -43,7 +54,7 @@ impl CheckUnknown for FanboxArticleBody {
     fn check_unknown(&self) -> Result<(), FanboxAPIError> {
         check_json_keys!(
             "blocks"+,
-            "imageMap": [],
+            "imageMap"+,
             "fileMap": [],
             "embedMap": [],
             "urlEmbedMap": [],
@@ -56,6 +67,12 @@ impl CheckUnknown for FanboxArticleBody {
             }
             None => {}
         }
+        match self.image_map() {
+            Some(map) => {
+                map.check_unknown()?;
+            }
+            None => {}
+        }
         Ok(())
     }
 }
@@ -64,6 +81,7 @@ impl Debug for FanboxArticleBody {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("FanboxArticleBody")
             .field("blocks", &self.blocks())
+            .field("image_map", &self.image_map())
             .finish_non_exhaustive()
     }
 }
