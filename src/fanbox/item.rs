@@ -1,5 +1,8 @@
+use super::check::CheckUnknown;
+use super::error::FanboxAPIError;
 use crate::parser::json::parse_u64;
 use json::JsonValue;
+use proc_macros::check_json_keys;
 use std::fmt::Debug;
 
 /// To represent a fanbox item
@@ -141,6 +144,37 @@ impl FanboxItem {
     /// Returns pixiv user id
     pub fn user_id(&self) -> Option<u64> {
         parse_u64(&self.data["user"]["userId"])
+    }
+}
+
+impl CheckUnknown for FanboxItem {
+    fn check_unknown(&self) -> Result<(), FanboxAPIError> {
+        check_json_keys!(
+            "id"+,
+            "commentCount"+,
+            "coverImageUrl",
+            "cover": [
+                "type"+,
+                "url",
+            ],
+            "creatorId"+,
+            "excerpt"+,
+            "feeRequired"+,
+            "hasAdultContent"+,
+            "isLiked"+,
+            "isRestricted"+,
+            "likeCount"+,
+            "publishedDatetime"+,
+            "tags"+,
+            "title"+,
+            "updatedDatetime"+,
+            "user": [
+                "name"+author_name,
+                "iconUrl",
+                "id"+,
+            ],
+        );
+        Ok(())
     }
 }
 
