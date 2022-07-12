@@ -887,7 +887,7 @@ fanbox_api_test!(test_get_post_info, {
                                     match n.check_unknown() {
                                         Ok(_) => {}
                                         Err(e) => {
-                                            println!("Check unknown: {}", e);
+                                            panic!("Check unknown: {}", e);
                                         }
                                     }
                                 }
@@ -917,7 +917,7 @@ fanbox_api_test!(test_get_post_info2, {
     match client.get_post_info(3972093).await {
         Some(data) => {
             assert_eq!(data.id(), Some(3972093));
-            match data {
+            match &data {
                 FanboxPost::Image(img) => {
                     println!("{:#?}", img);
                 }
@@ -926,6 +926,12 @@ fanbox_api_test!(test_get_post_info2, {
                 }
                 _ => {
                     println!("{:#?}", data);
+                }
+            }
+            match data.check_unknown() {
+                Ok(_) => {}
+                Err(e) => {
+                    panic!("Check unknown: {}", e);
                 }
             }
         }

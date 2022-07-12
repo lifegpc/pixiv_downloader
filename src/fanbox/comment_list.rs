@@ -101,11 +101,23 @@ fanbox_api_test!(test_comment_list, {
             match data {
                 FanboxPost::Article(a) => {
                     println!("{:?}", a);
+                    match a.check_unknown() {
+                        Ok(_) => {}
+                        Err(e) => {
+                            panic!("Check unknown: {}", e);
+                        }
+                    }
                     let list = a.comment_list().unwrap();
                     if list.has_next_page() {
                         match list.get_next_page().await {
                             Some(list) => {
                                 println!("{:?}", list);
+                                match list.check_unknown() {
+                                    Ok(_) => {}
+                                    Err(e) => {
+                                        panic!("Check unknown: {}", e);
+                                    }
+                                }
                             }
                             None => {
                                 panic!("Failed to get the next page.")
