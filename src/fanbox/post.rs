@@ -775,7 +775,7 @@ fanbox_api_test!(test_get_post_info, {
             assert_eq!(data.id(), Some(4070200));
             match data {
                 FanboxPost::Article(data) => {
-                    println!("{:?}", data);
+                    println!("{:#?}", data);
                     assert_eq!(data.user_id(), Some(705370));
                     assert_eq!(
                         data.title(),
@@ -786,15 +786,15 @@ fanbox_api_test!(test_get_post_info, {
                     match data.check_unknown() {
                         Ok(_) => {}
                         Err(e) => {
-                            println!("Check unknown: {}", e);
+                            panic!("Check unknown: {}", e);
                         }
                     }
                     match data.next_post() {
                         Some(r) => {
-                            println!("{:?}", r);
+                            println!("{:#?}", r);
                             match r.get_post().await {
                                 Some(n) => {
-                                    println!("{:?}", n);
+                                    println!("{:#?}", n);
                                     assert_eq!(n.id(), r.id());
                                     assert_eq!(n.user_id(), Some(705370));
                                     assert_eq!(n.user_name(), Some("しらたま"));
@@ -809,7 +809,7 @@ fanbox_api_test!(test_get_post_info, {
                     }
                 }
                 FanboxPost::Image(data) => {
-                    println!("{:?}", data);
+                    println!("{:#?}", data);
                 }
                 FanboxPost::Unknown(data) => {
                     println!("{}", data);
@@ -828,13 +828,13 @@ fanbox_api_test!(test_get_post_info2, {
             assert_eq!(data.id(), Some(3972093));
             match data {
                 FanboxPost::Image(img) => {
-                    println!("{:?}", img);
+                    println!("{:#?}", img);
                 }
                 FanboxPost::Unknown(data) => {
                     println!("{}", data.data);
                 }
                 _ => {
-                    println!("{:?}", data);
+                    println!("{:#?}", data);
                 }
             }
         }
