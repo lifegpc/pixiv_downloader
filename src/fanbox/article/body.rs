@@ -2,6 +2,7 @@ use super::super::check::CheckUnknown;
 use super::super::error::FanboxAPIError;
 use super::block::FanboxArticleBlock;
 use super::image::FanboxArticleImageMap;
+use super::url_embed::FanboxArticleUrlEmbedMap;
 use crate::fanbox_api::FanboxClientInternal;
 use json::JsonValue;
 use proc_macros::check_json_keys;
@@ -48,6 +49,16 @@ impl FanboxArticleBody {
             client,
         }
     }
+
+    #[inline]
+    pub fn url_embed_map(&self) -> Option<FanboxArticleUrlEmbedMap> {
+        let map = &self.data["urlEmbedMap"];
+        if map.is_object() {
+            Some(FanboxArticleUrlEmbedMap::new(map, Arc::clone(&self.client)))
+        } else {
+            None
+        }
+    }
 }
 
 impl CheckUnknown for FanboxArticleBody {
@@ -57,7 +68,7 @@ impl CheckUnknown for FanboxArticleBody {
             "imageMap"+,
             "fileMap": [],
             "embedMap": [],
-            "urlEmbedMap": [],
+            "urlEmbedMap"+,
         );
         match self.blocks() {
             Some(blocks) => {
@@ -73,6 +84,12 @@ impl CheckUnknown for FanboxArticleBody {
             }
             None => {}
         }
+        match self.url_embed_map() {
+            Some(map) => {
+                map.check_unknown()?;
+            }
+            None => {}
+        }
         Ok(())
     }
 }
@@ -82,6 +99,7 @@ impl Debug for FanboxArticleBody {
         f.debug_struct("FanboxArticleBody")
             .field("blocks", &self.blocks())
             .field("image_map", &self.image_map())
+            .field("url_embed_map", &self.url_embed_map())
             .finish_non_exhaustive()
     }
 }

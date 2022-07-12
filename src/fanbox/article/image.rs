@@ -18,8 +18,8 @@ impl FanboxArticleImage {
     }
 
     #[inline]
-    pub fn height(&self) -> Option<&str> {
-        self.data["height"].as_str()
+    pub fn height(&self) -> Option<u64> {
+        self.data["height"].as_u64()
     }
 
     #[inline]
