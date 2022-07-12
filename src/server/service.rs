@@ -48,9 +48,12 @@ impl Service<Request<Body>> for PixivDownloaderSvc {
                     }
                 }
             }),
-            None => {
-                Box::pin(async { Ok(Response::builder().body(Body::from("hello world")).unwrap()) })
-            }
+            None => Box::pin(async {
+                Ok(Response::builder()
+                    .status(404)
+                    .body(Body::from("404 Not Found"))
+                    .unwrap())
+            }),
         }
     }
 }
