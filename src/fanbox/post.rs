@@ -1,4 +1,5 @@
 use super::article::body::FanboxArticleBody;
+use super::article::image::FanboxArticleImage;
 use super::check::CheckUnknown;
 use super::comment_list::FanboxCommentList;
 use super::error::FanboxAPIError;
@@ -246,6 +247,72 @@ impl Debug for FanboxPostArticle {
     }
 }
 
+pub struct FanboxImageBody {
+    pub data: JsonValue,
+    client: Arc<FanboxClientInternal>,
+}
+
+impl FanboxImageBody {
+    #[inline]
+    pub fn images(&self) -> Option<Vec<FanboxArticleImage>> {
+        let images = &self.data["images"];
+        if images.is_array() {
+            let mut list = Vec::new();
+            for i in images.members() {
+                if i.is_object() {
+                    list.push(FanboxArticleImage::new(i, Arc::clone(&self.client)));
+                } else {
+                    return None;
+                }
+            }
+            Some(list)
+        } else {
+            None
+        }
+    }
+
+    #[inline]
+    /// Create a new instance
+    pub fn new(data: &JsonValue, client: Arc<FanboxClientInternal>) -> Self {
+        Self {
+            data: data.clone(),
+            client,
+        }
+    }
+
+    #[inline]
+    pub fn text(&self) -> Option<&str> {
+        self.data["text"].as_str()
+    }
+}
+
+impl CheckUnknown for FanboxImageBody {
+    fn check_unknown(&self) -> Result<(), FanboxAPIError> {
+        check_json_keys!(
+            "text"+,
+            "images"+,
+        );
+        match self.images() {
+            Some(imgs) => {
+                for img in imgs {
+                    img.check_unknown()?;
+                }
+            }
+            None => {}
+        }
+        Ok(())
+    }
+}
+
+impl Debug for FanboxImageBody {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("FanboxImageBody")
+            .field("text", &self.text())
+            .field("images", &self.images())
+            .finish_non_exhaustive()
+    }
+}
+
 /// Fanbox image post
 pub struct FanboxPostImage {
     /// Raw data
@@ -255,6 +322,16 @@ pub struct FanboxPostImage {
 }
 
 impl FanboxPostImage {
+    #[inline]
+    pub fn body(&self) -> Option<FanboxImageBody> {
+        let body = &self.data["body"];
+        if body.is_object() {
+            Some(FanboxImageBody::new(body, Arc::clone(&self.client)))
+        } else {
+            None
+        }
+    }
+
     #[inline]
     pub fn comment_count(&self) -> Option<u64> {
         self.data["commentCount"].as_u64()
@@ -400,6 +477,7 @@ impl CheckUnknown for FanboxPostImage {
     fn check_unknown(&self) -> Result<(), FanboxAPIError> {
         check_json_keys!(
             "id"+,
+            "body"+,
             "commentCount"+,
             "commentList",
             "coverImageUrl",
@@ -425,6 +503,12 @@ impl CheckUnknown for FanboxPostImage {
                 "name"+,
             ],
         );
+        match self.body() {
+            Some(body) => {
+                body.check_unknown()?;
+            }
+            None => {}
+        }
         match self.comment_list() {
             Some(list) => {
                 for i in list.items {
@@ -449,6 +533,7 @@ impl Debug for FanboxPostImage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("FanboxPostImage")
             .field("id", &self.id())
+            .field("body", &self.body())
             .field("comment_count", &self.comment_count())
             .field("comment_list", &self.comment_list())
             .field("cover_image_url", &self.cover_image_url())
@@ -799,6 +884,12 @@ fanbox_api_test!(test_get_post_info, {
                                     assert_eq!(n.user_id(), Some(705370));
                                     assert_eq!(n.user_name(), Some("しらたま"));
                                     assert_eq!(n.creator_id(), Some("shiratamaco"));
+                                    match n.check_unknown() {
+                                        Ok(_) => {}
+                                        Err(e) => {
+                                            println!("Check unknown: {}", e);
+                                        }
+                                    }
                                 }
                                 None => {
                                     panic!("Failed to get next post.")
