@@ -1,7 +1,7 @@
 use super::super::check::CheckUnknown;
+use super::super::creator::FanboxCreator;
 use super::super::error::FanboxAPIError;
 use crate::fanbox_api::FanboxClientInternal;
-use crate::parser::json::parse_u64;
 use json::JsonValue;
 use proc_macros::check_json_keys;
 use std::fmt::Debug;
@@ -28,13 +28,13 @@ impl FanboxArticleUrlEmbedFanboxCreator {
     }
 
     #[inline]
-    pub fn user_id(&self) -> Option<u64> {
-        parse_u64(&self.data["profile"]["user"]["userId"])
-    }
-
-    #[inline]
-    pub fn user_name(&self) -> Option<&str> {
-        self.data["profile"]["user"]["name"].as_str()
+    pub fn profile(&self) -> Option<FanboxCreator> {
+        let profile = &self.data["profile"];
+        if profile.is_object() {
+            Some(FanboxCreator::new(&profile, Arc::clone(&self.client)))
+        } else {
+            None
+        }
     }
 }
 
@@ -43,13 +43,14 @@ impl CheckUnknown for FanboxArticleUrlEmbedFanboxCreator {
         check_json_keys!(
             "id"+,
             "type",
-            "profile": [
-                "user": [
-                    "userId"+user_id,
-                    "name"+user_name,
-                ],
-            ],
+            "profile"+,
         );
+        match self.profile() {
+            Some(profile) => {
+                profile.check_unknown()?;
+            }
+            None => {}
+        }
         Ok(())
     }
 }
@@ -58,8 +59,7 @@ impl Debug for FanboxArticleUrlEmbedFanboxCreator {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("FanboxArticleUrlEmbedFanboxCreator")
             .field("id", &self.id())
-            .field("user_id", &self.user_id())
-            .field("user_name", &self.user_name())
+            .field("profile", &self.profile())
             .finish_non_exhaustive()
     }
 }
