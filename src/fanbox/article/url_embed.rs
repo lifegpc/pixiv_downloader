@@ -64,9 +64,56 @@ impl Debug for FanboxArticleUrlEmbedFanboxCreator {
     }
 }
 
+pub struct FanboxArticleUrlEmbedHTML {
+    pub data: JsonValue,
+    client: Arc<FanboxClientInternal>,
+}
+
+impl FanboxArticleUrlEmbedHTML {
+    #[inline]
+    pub fn html(&self) -> Option<&str> {
+        self.data["html"].as_str()
+    }
+
+    #[inline]
+    pub fn id(&self) -> Option<&str> {
+        self.data["id"].as_str()
+    }
+
+    #[inline]
+    /// Create a new instance
+    pub fn new(data: &JsonValue, client: Arc<FanboxClientInternal>) -> Self {
+        Self {
+            data: data.clone(),
+            client,
+        }
+    }
+}
+
+impl CheckUnknown for FanboxArticleUrlEmbedHTML {
+    fn check_unknown(&self) -> Result<(), FanboxAPIError> {
+        check_json_keys!(
+            "type",
+            "id"+,
+            "html"+,
+        );
+        Ok(())
+    }
+}
+
+impl Debug for FanboxArticleUrlEmbedHTML {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("FanboxArticleUrlEmbedHTML")
+            .field("id", &self.id())
+            .field("html", &self.html())
+            .finish_non_exhaustive()
+    }
+}
+
 #[derive(proc_macros::CheckUnknown, Debug)]
 pub enum FanboxArticleUrlEmbed {
     FanboxCreator(FanboxArticleUrlEmbedFanboxCreator),
+    HTML(FanboxArticleUrlEmbedHTML),
     Unknown(JsonValue),
 }
 
@@ -79,6 +126,7 @@ impl FanboxArticleUrlEmbed {
                 "fanbox.creator" => {
                     Self::FanboxCreator(FanboxArticleUrlEmbedFanboxCreator::new(data, client))
                 }
+                "html" => Self::HTML(FanboxArticleUrlEmbedHTML::new(data, client)),
                 _ => Self::Unknown(data.clone()),
             },
             None => Self::Unknown(data.clone()),
