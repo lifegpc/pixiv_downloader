@@ -32,7 +32,7 @@ impl ResponseJsonFor<Body> for VersionContext {
             json::object! {},
             true,
             self.ctx,
-            allow_headers = [X_TOKEN],
+            allow_headers = [CONTENT_TYPE, X_TOKEN],
             GET,
             OPTIONS,
             POST
