@@ -287,6 +287,9 @@ impl Parse for FilterHttpMethods {
                 break;
             }
             token::Comma::parse(input)?;
+            if input.cursor().eof() {
+                break;
+            }
             let method = Ident::parse(input)?;
             if method.to_string() == "cors_methods" {
                 cors_methods.replace(Vec::new());
@@ -359,10 +362,12 @@ pub fn filter_http_methods(item: TokenStream) -> TokenStream {
     let mut header_value = Vec::new();
     let mut streams = Vec::new();
     let mut enable_options = false;
+    let mut options_method = None;
     for method in methods {
         header_value.push(method.to_string());
         if method == "OPTIONS" && handle_options.value() {
             enable_options = true;
+            options_method = Some(method);
         } else {
             streams.push(quote!(&hyper::Method::#method => {}));
         }
@@ -401,7 +406,8 @@ pub fn filter_http_methods(item: TokenStream) -> TokenStream {
             }
             None => quote!(),
         };
-        streams.push(quote!(&hyper::Method::OPTIONS => {
+        let options_method = options_method.unwrap();
+        streams.push(quote!(&hyper::Method::#options_method => {
             let builder = hyper::Response::builder();
             let headers = #req.headers();
             let origin = match headers.get(hyper::header::ORIGIN) {

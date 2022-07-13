@@ -35,7 +35,7 @@ impl ResponseJsonFor<Body> for VersionContext {
             allow_headers = [CONTENT_TYPE, X_TOKEN],
             GET,
             OPTIONS,
-            POST
+            POST,
         );
         Ok(builder.body(json::object! {"version": [0, 0, 1, 0]})?)
     }
