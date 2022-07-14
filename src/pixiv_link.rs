@@ -17,9 +17,9 @@ lazy_static! {
 /// Fanbox post ID
 pub struct FanboxPostID {
     /// Creator ID
-    creator_id: String,
+    pub creator_id: String,
     /// Post ID
-    post_id: u64,
+    pub post_id: u64,
 }
 
 impl FanboxPostID {
@@ -122,6 +122,12 @@ impl ToJson for PixivID {
                 json::value!({"type": "fanbox_post", "post_id": id.post_id.clone(), "creator_id": id.creator_id.clone(), "link": self.to_link()}),
             ),
         }
+    }
+}
+
+impl ToPixivID for FanboxPostID {
+    fn to_pixiv_id(&self) -> Option<PixivID> {
+        Some(PixivID::FanboxPost(self.clone()))
     }
 }
 

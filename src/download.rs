@@ -4,6 +4,7 @@ use crate::concat_pixiv_downloader_error;
 use crate::data::data::PixivData;
 #[cfg(feature = "exif")]
 use crate::data::exif::add_exifdata_to_image;
+use crate::data::fanbox::FanboxData;
 use crate::data::json::JSONDataFile;
 #[cfg(feature = "ugoira")]
 use crate::data::video::get_video_metadata;
@@ -12,9 +13,12 @@ use crate::downloader::DownloaderResult;
 use crate::downloader::LocalFile;
 use crate::error::PixivDownloaderError;
 use crate::ext::try_err::TryErr;
+use crate::fanbox::check::CheckUnknown;
+use crate::fanbox::post::FanboxPost;
 use crate::fanbox_api::FanboxClient;
 use crate::gettext;
 use crate::opthelper::get_helper;
+use crate::pixiv_link::FanboxPostID;
 use crate::pixiv_link::PixivID;
 use crate::pixiv_web::PixivWebClient;
 #[cfg(feature = "ugoira")]
@@ -61,7 +65,7 @@ impl Main {
                         return r;
                     }
                 }
-                PixivID::FanboxPost(_) => {
+                PixivID::FanboxPost(id) => {
                     if !fc.is_inited() {
                         let helper = get_helper();
                         if !fc.init(helper.cookies()) {
@@ -71,7 +75,20 @@ impl Main {
                         if !fc.check_login().await {
                             return 1;
                         }
-                        println!("Logined: {}", fc.logined());
+                        if !fc.logined() {
+                            println!("{}", gettext("Warning: Fanbox client is not logined."));
+                        }
+                        let r = self.download_fanbox_post(Arc::clone(&fc), id.clone()).await;
+                        let r = match r {
+                            Ok(_) => 0,
+                            Err(e) => {
+                                println!("{} {}", gettext("Failed to download post:"), e);
+                                1
+                            }
+                        };
+                        if r != 0 {
+                            return r;
+                        }
                     }
                 }
             }
@@ -350,6 +367,56 @@ impl Main {
                 Arc::clone(&base),
             )
             .await?;
+        }
+        Ok(())
+    }
+
+    pub async fn download_fanbox_post(
+        &self,
+        fc: Arc<FanboxClient>,
+        id: FanboxPostID,
+    ) -> Result<(), PixivDownloaderError> {
+        let post = fc
+            .get_post_info(id.post_id)
+            .await
+            .try_err(gettext("Failed to get post info."))?;
+        let helper = get_helper();
+        if helper.verbose() {
+            println!("{:#?}", post);
+        }
+        match post.check_unknown() {
+            Ok(_) => {}
+            Err(e) => {
+                println!(
+                    "{} {}",
+                    gettext("Warning: Post info contains unknown data:"),
+                    e
+                );
+            }
+        }
+        if post
+            .is_restricted()
+            .try_err(gettext("Failed to check the post is restricted or not."))?
+        {
+            println!("{}", gettext("Warning: This article is restricted."));
+            // #TODO allow to continue
+            return Ok(());
+        }
+        let base = Arc::new(PathBuf::from(format!("./{}", id.post_id)));
+        let json_file = base.join("body.json");
+        let data = FanboxData::new(id, &post).try_err("Failed to create data file.")?;
+        let data_file = JSONDataFile::from(data);
+        data_file
+            .save(&json_file)
+            .try_err(gettext("Failed to save post data to file."))?;
+        match post {
+            FanboxPost::Article(article) => {}
+            FanboxPost::Image(img) => {}
+            FanboxPost::Unknown(_) => {
+                return Err(PixivDownloaderError::from(gettext(
+                    "Unrecognized post type.",
+                )));
+            }
         }
         Ok(())
     }

@@ -1,3 +1,4 @@
+use super::fanbox::FanboxData;
 use crate::data::data::PixivData;
 use crate::ext::json::ToJson;
 use crate::gettext;
@@ -104,6 +105,17 @@ impl From<&PixivData> for JSONDataFile {
                 f.add("parsed_description", pd.unwrap()).unwrap();
             }
         }
+        f
+    }
+}
+
+impl From<FanboxData> for JSONDataFile {
+    fn from(d: FanboxData) -> Self {
+        let mut f = Self {
+            id: d.id.clone(),
+            maps: HashMap::new(),
+        };
+        f.add("raw", d.raw).unwrap();
         f
     }
 }
