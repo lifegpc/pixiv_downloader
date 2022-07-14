@@ -33,7 +33,7 @@ proc_macros = { path = "proc_macros" }
 regex = "1"
 reqwest = { version = "0.11", features = ["brotli", "deflate", "gzip", "rustls-tls", "socks", "stream"] }
 RustyXML = "0.3"
-tokio = { version = "1.19", features = ["rt", "macros", "rt-multi-thread", "time"] }
+tokio = { version = "1.20", features = ["rt", "macros", "rt-multi-thread", "time"] }
 url = "2.2"
 urlparse = "0.7"
 utf16string = { version= "0.2", optional = true }
