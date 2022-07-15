@@ -34,6 +34,7 @@ impl Clone for FanboxData {
         Self {
             id: self.id.clone(),
             raw: self.raw.clone(),
+            #[cfg(feature = "exif")]
             exif_data: None,
         }
     }

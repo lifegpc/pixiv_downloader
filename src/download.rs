@@ -492,6 +492,7 @@ impl Main {
                     .try_err(gettext("Failed to get images from the image post."))?;
                 let mut np = 0;
                 let mut datas = data.clone();
+                #[cfg(feature = "exif")]
                 datas.exif_data.replace(Box::new(Arc::clone(&img)));
                 let datas = Arc::new(datas);
                 for img in images.iter() {
