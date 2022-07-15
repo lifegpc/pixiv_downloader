@@ -14,6 +14,7 @@ use crate::downloader::DownloaderResult;
 use crate::downloader::LocalFile;
 use crate::error::PixivDownloaderError;
 use crate::ext::try_err::TryErr;
+use crate::fanbox::article::block::FanboxArticleBlock;
 use crate::fanbox::check::CheckUnknown;
 use crate::fanbox::post::FanboxPost;
 use crate::fanbox_api::FanboxClient;
@@ -481,7 +482,47 @@ impl Main {
             .save(&json_file)
             .try_err(gettext("Failed to save post data to file."))?;
         match post {
-            FanboxPost::Article(article) => {}
+            FanboxPost::Article(article) => {
+                let article = Arc::new(article);
+                let body = article.body();
+                let image_map = body
+                    .image_map()
+                    .try_err(gettext("Failed to get image map from article."))?;
+                let blocks = body
+                    .blocks()
+                    .try_err(gettext("Failed to get blocks from article."))?;
+                let mut np = 0;
+                let mut datas = data.clone();
+                #[cfg(feature = "exif")]
+                datas.exif_data.replace(Box::new(Arc::clone(&article)));
+                let datas = Arc::new(datas);
+                for i in blocks {
+                    match i {
+                        FanboxArticleBlock::Image(img) => {
+                            let img = image_map
+                                .get_image(
+                                    img.image_id()
+                                        .try_err(gettext("Failed to get image id from block."))?,
+                                )
+                                .try_err(gettext("Failed get image information from image map."))?;
+                            let dh = img
+                                .download_original_url()?
+                                .try_err(gettext("Can not get original url for image"))?;
+                            Self::download_fanbox_image(
+                                &self,
+                                dh,
+                                np,
+                                None,
+                                Arc::clone(&datas),
+                                Arc::clone(&base),
+                            )
+                            .await?;
+                            np += 1;
+                        }
+                        _ => {}
+                    }
+                }
+            }
             FanboxPost::Image(img) => {
                 let img = Arc::new(img);
                 let body = img

@@ -249,6 +249,30 @@ impl Debug for FanboxPostArticle {
     }
 }
 
+#[cfg(feature = "exif")]
+impl ExifDataSource for FanboxPostArticle {
+    fn image_author(&self) -> Option<String> {
+        match self.user_name() {
+            Some(u) => Some(u.to_owned()),
+            None => None,
+        }
+    }
+
+    fn image_comment(&self) -> Option<String> {
+        match self.excerpt() {
+            Some(e) => Some(e.to_owned()),
+            None => None,
+        }
+    }
+
+    fn image_title(&self) -> Option<String> {
+        match self.title() {
+            Some(t) => Some(t.to_owned()),
+            None => None,
+        }
+    }
+}
+
 pub struct FanboxImageBody {
     pub data: JsonValue,
     client: Arc<FanboxClientInternal>,
