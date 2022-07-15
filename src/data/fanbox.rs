@@ -29,6 +29,16 @@ impl FanboxData {
     }
 }
 
+impl Clone for FanboxData {
+    fn clone(&self) -> Self {
+        Self {
+            id: self.id.clone(),
+            raw: self.raw.clone(),
+            exif_data: None,
+        }
+    }
+}
+
 #[cfg(feature = "exif")]
 impl ExifDataSource for FanboxData {
     call_parent_data_source_fun!(

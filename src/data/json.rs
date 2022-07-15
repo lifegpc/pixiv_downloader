@@ -120,6 +120,17 @@ impl From<FanboxData> for JSONDataFile {
     }
 }
 
+impl From<&FanboxData> for JSONDataFile {
+    fn from(d: &FanboxData) -> Self {
+        let mut f = Self {
+            id: d.id.clone(),
+            maps: HashMap::new(),
+        };
+        f.add("raw", d.raw.clone()).unwrap();
+        f
+    }
+}
+
 impl ToJson for JSONDataFile {
     fn to_json(&self) -> Option<JsonValue> {
         let mut value = json::object! {};

@@ -3,6 +3,8 @@ use super::article::image::FanboxArticleImage;
 use super::check::CheckUnknown;
 use super::comment_list::FanboxCommentList;
 use super::error::FanboxAPIError;
+#[cfg(feature = "exif")]
+use crate::data::exif::ExifDataSource;
 use crate::fanbox_api::FanboxClientInternal;
 use crate::parser::json::parse_u64;
 use json::JsonValue;
@@ -313,6 +315,16 @@ impl Debug for FanboxImageBody {
     }
 }
 
+#[cfg(feature = "exif")]
+impl ExifDataSource for FanboxImageBody {
+    fn image_comment(&self) -> Option<String> {
+        match self.text() {
+            Some(text) => Some(text.to_owned()),
+            None => None,
+        }
+    }
+}
+
 /// Fanbox image post
 pub struct FanboxPostImage {
     /// Raw data
@@ -555,6 +567,30 @@ impl Debug for FanboxPostImage {
             .field("user_id", &self.user_id())
             .field("user_name", &self.user_name())
             .finish_non_exhaustive()
+    }
+}
+
+#[cfg(feature = "exif")]
+impl ExifDataSource for FanboxPostImage {
+    fn image_author(&self) -> Option<String> {
+        match self.user_name() {
+            Some(u) => Some(u.to_owned()),
+            None => None,
+        }
+    }
+
+    fn image_comment(&self) -> Option<String> {
+        match self.body() {
+            Some(body) => body.image_comment(),
+            None => None,
+        }
+    }
+
+    fn image_title(&self) -> Option<String> {
+        match self.title() {
+            Some(t) => Some(t.to_owned()),
+            None => None,
+        }
     }
 }
 

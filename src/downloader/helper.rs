@@ -3,6 +3,7 @@ use super::enums::DownloaderResult;
 use super::error::DownloaderError;
 use super::local_file::LocalFile;
 use crate::ext::replace::ReplaceWith;
+use crate::ext::try_err::TryErr;
 use crate::gettext;
 use crate::webclient::ToHeaders;
 use crate::webclient::WebClient;
@@ -48,18 +49,9 @@ impl DownloaderHelper {
         overwrite: Option<bool>,
         base: &P,
     ) -> Result<DownloaderResult<Downloader<LocalFile>>, DownloaderError> {
-        let base = base.as_ref();
-        let file = match &self.file_name {
-            Some(file_name) => base.join(file_name.as_ref()),
-            None => match crate::utils::get_file_name_from_url(self.url.clone()) {
-                Some(file_name) => base.join(file_name),
-                None => {
-                    return Err(DownloaderError::from(gettext(
-                        "Failed to get file name from url.",
-                    )));
-                }
-            },
-        };
+        let file = self
+            .get_local_file_path(base)
+            .try_err(gettext("Failed to get file name from url."))?;
         let headers = match &self.headers {
             Some(headers) => headers.to_headers(),
             None => None,
@@ -73,6 +65,20 @@ impl DownloaderHelper {
                 overwrite,
             ),
             None => Downloader::<LocalFile>::new(self.url.clone(), headers, Some(&file), overwrite),
+        }
+    }
+
+    pub fn get_local_file_path<P: AsRef<Path> + ?Sized>(
+        &self,
+        base: &P,
+    ) -> Option<std::path::PathBuf> {
+        let base = base.as_ref();
+        match &self.file_name {
+            Some(file_name) => Some(base.join(file_name.as_ref())),
+            None => match crate::utils::get_file_name_from_url(self.url.clone()) {
+                Some(file_name) => Some(base.join(file_name)),
+                None => None,
+            },
         }
     }
 

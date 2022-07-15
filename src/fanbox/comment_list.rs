@@ -100,7 +100,7 @@ fanbox_api_test!(test_comment_list, {
             );
             match data {
                 FanboxPost::Article(a) => {
-                    println!("{:?}", a);
+                    println!("{:#?}", a);
                     match a.check_unknown() {
                         Ok(_) => {}
                         Err(e) => {

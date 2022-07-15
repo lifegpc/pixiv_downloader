@@ -9,6 +9,7 @@ use crate::data::json::JSONDataFile;
 #[cfg(feature = "ugoira")]
 use crate::data::video::get_video_metadata;
 use crate::downloader::Downloader;
+use crate::downloader::DownloaderHelper;
 use crate::downloader::DownloaderResult;
 use crate::downloader::LocalFile;
 use crate::error::PixivDownloaderError;
@@ -28,7 +29,7 @@ use crate::Main;
 use indicatif::MultiProgress;
 use json::JsonValue;
 use reqwest::IntoUrl;
-use std::fs::create_dir;
+use std::fs::create_dir_all;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -372,6 +373,65 @@ impl Main {
         Ok(())
     }
 
+    /// Download a fanbox image link
+    /// * `dh` - Link and other informations
+    /// * `np` - Number of page
+    /// * `progress_bars` - Multiple progress bars
+    /// * `datas` - The artwork's data
+    /// * `base` - The directory of the target
+    pub async fn download_fanbox_image(
+        &self,
+        dh: DownloaderHelper,
+        np: u16,
+        progress_bars: Option<Arc<MultiProgress>>,
+        datas: Arc<FanboxData>,
+        base: Arc<PathBuf>,
+    ) -> Result<(), PixivDownloaderError> {
+        let helper = get_helper();
+        let file_name = dh
+            .get_local_file_path(&*base)
+            .try_err(gettext("Failed to get file name from url."))?;
+        match dh.download_local(helper.overwrite(), &*base)? {
+            DownloaderResult::Ok(d) => {
+                d.handle_options(&helper, progress_bars);
+                d.download();
+                d.join().await?;
+                if d.is_downloaded() {
+                    #[cfg(feature = "exif")]
+                    {
+                        if add_exifdata_to_image(&file_name, &datas, np).is_err() {
+                            println!(
+                                "{} {}",
+                                gettext("Failed to add exif data to image:"),
+                                file_name.to_str().unwrap_or("(null)")
+                            );
+                        }
+                    }
+                } else if d.is_panic() {
+                    return Err(PixivDownloaderError::from(
+                        d.get_panic()
+                            .try_err(gettext("Failed to get error message."))?,
+                    ));
+                }
+            }
+            DownloaderResult::Canceled => {
+                #[cfg(feature = "exif")]
+                {
+                    if helper.update_exif() && file_name.exists() {
+                        if add_exifdata_to_image(&file_name, &datas, np).is_err() {
+                            println!(
+                                "{} {}",
+                                gettext("Failed to add exif data to image:"),
+                                file_name.to_str().unwrap_or("(null)")
+                            );
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
     pub async fn download_fanbox_post(
         &self,
         fc: Arc<FanboxClient>,
@@ -406,9 +466,9 @@ impl Main {
         let base = Arc::new(PathBuf::from(format!("./{}/{}", id.creator_id, id.post_id)));
         let json_file = base.join("data.json");
         let data = FanboxData::new(id, &post).try_err("Failed to create data file.")?;
-        let data_file = JSONDataFile::from(data);
+        let data_file = JSONDataFile::from(&data);
         if !base.exists() {
-            match create_dir(&*base) {
+            match create_dir_all(&*base) {
                 Ok(_) => {}
                 Err(e) => {
                     if !base.exists() {
@@ -423,15 +483,32 @@ impl Main {
         match post {
             FanboxPost::Article(article) => {}
             FanboxPost::Image(img) => {
+                let img = Arc::new(img);
                 let body = img
                     .body()
                     .try_err(gettext("Failed to get the body of image post."))?;
-                let text = body
-                    .text()
-                    .try_err(gettext("Failed to get the text of the image post."))?;
                 let images = body
                     .images()
                     .try_err(gettext("Failed to get images from the image post."))?;
+                let mut np = 0;
+                let mut datas = data.clone();
+                datas.exif_data.replace(Box::new(Arc::clone(&img)));
+                let datas = Arc::new(datas);
+                for img in images.iter() {
+                    let dh = img
+                        .download_original_url()?
+                        .try_err(gettext("Can not get original url for image"))?;
+                    Self::download_fanbox_image(
+                        &self,
+                        dh,
+                        np,
+                        None,
+                        Arc::clone(&datas),
+                        Arc::clone(&base),
+                    )
+                    .await?;
+                    np += 1;
+                }
             }
             FanboxPost::Unknown(_) => {
                 return Err(PixivDownloaderError::from(gettext(
