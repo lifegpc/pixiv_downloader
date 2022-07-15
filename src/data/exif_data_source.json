@@ -1,0 +1,6 @@
+{
+    "image_author": { "return": "String", "description": "The author of the image." },
+    "image_comment": { "return": "String", "description": "The comment of the image." },
+    "image_id": { "return": "String", "description": "The image id." },
+    "image_title": { "return": "String", "description": "The title of the image." }
+}

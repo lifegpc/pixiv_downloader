@@ -131,7 +131,7 @@ impl Main {
                 if d.is_downloaded() {
                     #[cfg(feature = "exif")]
                     {
-                        if add_exifdata_to_image(&file_name, &*datas, np).is_err() {
+                        if add_exifdata_to_image(&file_name, &datas, np).is_err() {
                             println!(
                                 "{} {}",
                                 gettext("Failed to add exif data to image:"),
@@ -150,7 +150,7 @@ impl Main {
                 #[cfg(feature = "exif")]
                 {
                     if helper.update_exif() && file_name.exists() {
-                        if add_exifdata_to_image(&file_name, &*datas, np).is_err() {
+                        if add_exifdata_to_image(&file_name, &datas, np).is_err() {
                             println!(
                                 "{} {}",
                                 gettext("Failed to add exif data to image:"),

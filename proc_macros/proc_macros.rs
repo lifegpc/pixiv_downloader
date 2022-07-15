@@ -1,7 +1,10 @@
 use convert_case::Case;
 use convert_case::Casing;
 use proc_macro::TokenStream;
+use proc_macro2::Span;
 use quote::quote;
+use std::io::Read;
+use std::str::FromStr;
 use syn::bracketed;
 use syn::parse::Parse;
 use syn::parse_macro_input;
@@ -732,6 +735,143 @@ pub fn create_fanbox_download_helper(item: TokenStream) -> TokenStream {
                 None => Ok(None),
             }
         }
+    );
+    stream.into()
+}
+
+fn read_json_file<P: AsRef<std::path::Path> + ?Sized>(p: &P) -> json::JsonValue {
+    let mut f = std::fs::File::open(p).unwrap();
+    let mut s = String::new();
+    f.read_to_string(&mut s).unwrap();
+    json::parse(s.as_str()).unwrap()
+}
+
+#[proc_macro]
+pub fn define_exif_data_source(item: TokenStream) -> TokenStream {
+    let file_path = parse_macro_input!(item as LitStr).value();
+    let path =
+        std::path::PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap()).join(file_path);
+    let data = read_json_file(&path);
+    let mut streams = Vec::new();
+    for (key, data) in data.entries() {
+        let doc = match data["description"].as_str() {
+            Some(doc) => {
+                let doc = LitStr::new(doc, Span::call_site());
+                quote!(#[doc = #doc])
+            }
+            None => {
+                quote!()
+            }
+        };
+        let fname = Ident::new(key, Span::call_site());
+        let result = proc_macro2::TokenStream::from_str(match data["return"].as_str() {
+            Some(r) => r,
+            None => "String",
+        })
+        .unwrap();
+        streams.push(quote!(
+            #doc
+            #[inline]
+            fn #fname(&self) -> Option<#result> {
+                None
+            }
+        ));
+    }
+    let stream = quote!(
+        #(#streams)*
+    );
+    stream.into()
+}
+
+struct CallParentDataSourceFun {
+    pub file: LitStr,
+    pub expr: Expr,
+    pub keys: Vec<Ident>,
+    pub is_include: bool,
+}
+
+impl Parse for CallParentDataSourceFun {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let filel = Lit::parse(input)?;
+        let file = match filel {
+            Lit::Str(s) => s,
+            _ => {
+                return Err(syn::Error::new(filel.span(), "Unsupported literal."));
+            }
+        };
+        token::Comma::parse(input)?;
+        let expr = input.parse()?;
+        let mut keys = Vec::new();
+        let mut is_include = false;
+        let mut is_first = true;
+        loop {
+            if input.cursor().eof() {
+                break;
+            }
+            token::Comma::parse(input)?;
+            if input.cursor().eof() {
+                break;
+            }
+            if is_first {
+                is_first = false;
+                match syn::Lit::parse(input) {
+                    Ok(lit) => {
+                        match lit {
+                            syn::Lit::Bool(lit) => {
+                                is_include = lit.value();
+                            }
+                            _ => {
+                                return Err(syn::Error::new(lit.span(), "Unsupported literal."));
+                            }
+                        }
+                        continue;
+                    }
+                    Err(_) => {}
+                }
+            }
+            keys.push(Ident::parse(input)?);
+        }
+        Ok(Self {
+            file,
+            expr,
+            keys,
+            is_include,
+        })
+    }
+}
+
+#[proc_macro]
+pub fn call_parent_data_source_fun(item: TokenStream) -> TokenStream {
+    let CallParentDataSourceFun {
+        file,
+        expr,
+        keys,
+        is_include,
+    } = parse_macro_input!(item as CallParentDataSourceFun);
+    let path =
+        std::path::PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap()).join(file.value());
+    let data = read_json_file(&path);
+    let mut streams = Vec::new();
+    for (key, data) in data.entries() {
+        let is_in = keys.iter().find(|&r| r.to_string() == key).is_some();
+        if is_in != is_include {
+            continue;
+        }
+        let fname = Ident::new(key, Span::call_site());
+        let result = proc_macro2::TokenStream::from_str(match data["return"].as_str() {
+            Some(r) => r,
+            None => "String",
+        })
+        .unwrap();
+        streams.push(quote!(
+            #[inline]
+            fn #fname(&self) -> Option<#result> {
+                (#expr).#fname()
+            }
+        ));
+    }
+    let stream = quote!(
+        #(#streams)*
     );
     stream.into()
 }

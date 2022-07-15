@@ -1337,6 +1337,7 @@ name = "proc_macros"
 version = "0.0.1"
 dependencies = [
  "convert_case 0.5.0",
+ "json",
  "parse_duration",
  "proc-macro2",
  "quote",

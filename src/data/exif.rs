@@ -6,27 +6,31 @@ use crate::exif::ExifTypeID;
 use crate::exif::ExifValue;
 use crate::ext::try_err::TryErr;
 use crate::parser::description::parse_description;
+use proc_macros::call_parent_data_source_fun;
+use proc_macros::define_exif_data_source;
 use std::convert::TryFrom;
 use std::ffi::OsStr;
 use utf16string::LittleEndian;
 use utf16string::WString;
 
 pub trait ExifDataSource {
-    fn image_author(&self) -> Option<String> {
-        None
-    }
+    define_exif_data_source!("src/data/exif_data_source.json");
+}
 
-    fn image_comment(&self) -> Option<String> {
-        None
-    }
+impl<T: ExifDataSource> ExifDataSource for std::sync::Arc<T> {
+    call_parent_data_source_fun!("src/data/exif_data_source.json", *self,);
+}
 
-    fn image_id(&self) -> Option<String> {
-        None
-    }
-
-    fn image_title(&self) -> Option<String> {
-        None
-    }
+impl<T: ExifDataSource> ExifDataSource for Option<T> {
+    call_parent_data_source_fun!(
+        "src/data/exif_data_source.json",
+        match self {
+            Some(data) => data,
+            None => {
+                return None;
+            }
+        },
+    );
 }
 
 fn add_image_id<D: ExifDataSource>(data: &mut ExifData, d: &D) -> Result<(), ()> {
