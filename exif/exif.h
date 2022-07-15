@@ -29,6 +29,7 @@ typedef struct ExifDataRef ExifDataRef;
 
 EXIF_API ExifImage* create_exif_image(const char* path);
 EXIF_API ExifDataRef* exif_image_get_exif_data(ExifImage* image);
+EXIF_API int exif_image_read_metadata(ExifImage* image);
 EXIF_API int exif_image_set_exif_data(ExifImage* image, ExifData* data);
 EXIF_API int exif_image_write_metadata(ExifImage* image);
 EXIF_API void free_exif_image(ExifImage* img);

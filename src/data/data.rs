@@ -1,3 +1,5 @@
+#[cfg(feature = "exif")]
+use super::exif::ExifDataSource;
 use crate::gettext;
 use crate::opt::author_name_filter::AuthorFiler;
 use crate::opthelper::get_helper;
@@ -82,5 +84,24 @@ impl PixivData {
                 }
             }
         }
+    }
+}
+
+#[cfg(feature = "exif")]
+impl ExifDataSource for PixivData {
+    fn image_author(&self) -> Option<String> {
+        self.author.clone()
+    }
+
+    fn image_comment(&self) -> Option<String> {
+        self.description.clone()
+    }
+
+    fn image_id(&self) -> Option<String> {
+        Some(self.id.to_link())
+    }
+
+    fn image_title(&self) -> Option<String> {
+        self.title.clone()
     }
 }

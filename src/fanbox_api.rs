@@ -21,7 +21,7 @@ use std::sync::RwLock;
 /// Fanbox API client
 pub struct FanboxClientInternal {
     /// Web client
-    client: WebClient,
+    client: Arc<WebClient>,
     /// true if in is initialized
     inited: AtomicBool,
     /// Fanbox global data
@@ -65,7 +65,7 @@ impl FanboxClientInternal {
     /// Create an new instance
     pub fn new() -> Self {
         Self {
-            client: WebClient::default(),
+            client: Arc::new(WebClient::default()),
             inited: AtomicBool::new(false),
             data: RwLock::new(None),
         }
@@ -270,6 +270,12 @@ impl FanboxClientInternal {
             gettext("Failed to paginate creator post:"),
             gettext("Paginated data:")
         )
+    }
+}
+
+impl AsRef<Arc<WebClient>> for FanboxClientInternal {
+    fn as_ref(&self) -> &Arc<WebClient> {
+        &self.client
     }
 }
 

@@ -701,6 +701,21 @@ impl ExifImage {
         unsafe { Some(ExifDataRef::from_raw_handle(d)) }
     }
 
+    /// Read all metadata supported by a specific image format from the image. Before this method is called, the image metadata will be cleared.
+    ///
+    /// This method returns success even if no metadata is found in the image. Callers must therefore check the size of individual metadata types before accessing the data.
+    pub fn read_metadata(&mut self) -> Result<(), ()> {
+        if self.img.is_null() {
+            return Err(());
+        }
+        let d = unsafe { _exif::exif_image_read_metadata(self.img) };
+        if d == 0 {
+            Ok(())
+        } else {
+            Err(())
+        }
+    }
+
     /// Assign new Exif data.
     /// The new Exif data is not written to the image until the [Self::write_metadata()] method is called.
     /// * `data` - An [ExifData] instance holding Exif data to be copied

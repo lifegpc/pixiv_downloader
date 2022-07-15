@@ -13,6 +13,7 @@ pub enum PixivDownloaderError {
     #[cfg(feature = "server")]
     Hyper(hyper::Error),
     HTTP(http::Error),
+    IOError(std::io::Error),
 }
 
 impl From<&str> for PixivDownloaderError {

@@ -30,6 +30,17 @@ ExifDataRef* exif_image_get_exif_data(ExifImage* image) {
     return &image->exif_data_ref;
 }
 
+int exif_image_read_metadata(ExifImage* image) {
+    if (!image) return 1;
+    try {
+        image->image->readMetadata();
+    } catch (std::exception& e) {
+        printf("%s\n", e.what());
+        return 1;
+    }
+    return 0;
+}
+
 int exif_image_set_exif_data(ExifImage* image, ExifData* data) {
     if (!image || !data) return 1;
     image->image->setExifData(data->data);

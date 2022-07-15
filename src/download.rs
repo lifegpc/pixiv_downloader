@@ -28,6 +28,7 @@ use crate::Main;
 use indicatif::MultiProgress;
 use json::JsonValue;
 use reqwest::IntoUrl;
+use std::fs::create_dir;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -130,7 +131,7 @@ impl Main {
                 if d.is_downloaded() {
                     #[cfg(feature = "exif")]
                     {
-                        if add_exifdata_to_image(&file_name, &datas, np).is_err() {
+                        if add_exifdata_to_image(&file_name, &*datas, np).is_err() {
                             println!(
                                 "{} {}",
                                 gettext("Failed to add exif data to image:"),
@@ -149,7 +150,7 @@ impl Main {
                 #[cfg(feature = "exif")]
                 {
                     if helper.update_exif() && file_name.exists() {
-                        if add_exifdata_to_image(&file_name, &datas, np).is_err() {
+                        if add_exifdata_to_image(&file_name, &*datas, np).is_err() {
                             println!(
                                 "{} {}",
                                 gettext("Failed to add exif data to image:"),
@@ -402,16 +403,36 @@ impl Main {
             // #TODO allow to continue
             return Ok(());
         }
-        let base = Arc::new(PathBuf::from(format!("./{}", id.post_id)));
-        let json_file = base.join("body.json");
+        let base = Arc::new(PathBuf::from(format!("./{}/{}", id.creator_id, id.post_id)));
+        let json_file = base.join("data.json");
         let data = FanboxData::new(id, &post).try_err("Failed to create data file.")?;
         let data_file = JSONDataFile::from(data);
+        if !base.exists() {
+            match create_dir(&*base) {
+                Ok(_) => {}
+                Err(e) => {
+                    if !base.exists() {
+                        return Err(PixivDownloaderError::from(e));
+                    }
+                }
+            }
+        }
         data_file
             .save(&json_file)
             .try_err(gettext("Failed to save post data to file."))?;
         match post {
             FanboxPost::Article(article) => {}
-            FanboxPost::Image(img) => {}
+            FanboxPost::Image(img) => {
+                let body = img
+                    .body()
+                    .try_err(gettext("Failed to get the body of image post."))?;
+                let text = body
+                    .text()
+                    .try_err(gettext("Failed to get the text of the image post."))?;
+                let images = body
+                    .images()
+                    .try_err(gettext("Failed to get images from the image post."))?;
+            }
             FanboxPost::Unknown(_) => {
                 return Err(PixivDownloaderError::from(gettext(
                     "Unrecognized post type.",

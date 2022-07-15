@@ -701,3 +701,37 @@ pub fn derive_check_unknown(item: TokenStream) -> TokenStream {
     );
     stream.into()
 }
+
+struct CreateFanboxDownloadHelper {
+    pub fn_name: Ident,
+}
+
+impl Parse for CreateFanboxDownloadHelper {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let fn_name = input.parse()?;
+        Ok(Self { fn_name })
+    }
+}
+
+#[proc_macro]
+pub fn create_fanbox_download_helper(item: TokenStream) -> TokenStream {
+    let CreateFanboxDownloadHelper { fn_name } =
+        parse_macro_input!(item as CreateFanboxDownloadHelper);
+    let defn_name = Ident::new(
+        format!("download_{}", fn_name.to_string()).as_str(),
+        fn_name.span(),
+    );
+    let stream = quote!(
+        #[inline]
+        pub fn #defn_name(&self) -> Result<Option<crate::downloader::DownloaderHelper>, crate::downloader::DownloaderError> {
+            match self.#fn_name() {
+                Some(url) => {
+                    let client: &std::sync::Arc<crate::webclient::WebClient> = self.client.as_ref().as_ref();
+                    Ok(Some(crate::downloader::DownloaderHelper::builder(url)?.client(client).build()))
+                }
+                None => Ok(None),
+            }
+        }
+    );
+    stream.into()
+}

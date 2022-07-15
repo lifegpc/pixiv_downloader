@@ -3,6 +3,7 @@ use super::super::error::FanboxAPIError;
 use crate::fanbox_api::FanboxClientInternal;
 use json::JsonValue;
 use proc_macros::check_json_keys;
+use proc_macros::create_fanbox_download_helper;
 use std::fmt::Debug;
 use std::sync::Arc;
 
@@ -41,10 +42,14 @@ impl FanboxArticleImage {
         self.data["originalUrl"].as_str()
     }
 
+    create_fanbox_download_helper!(original_url);
+
     #[inline]
     pub fn thumbnail_url(&self) -> Option<&str> {
         self.data["thumbnailUrl"].as_str()
     }
+
+    create_fanbox_download_helper!(thumbnail_url);
 
     #[inline]
     pub fn width(&self) -> Option<u64> {
