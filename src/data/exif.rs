@@ -110,7 +110,8 @@ pub fn add_exifdata_to_image<S: AsRef<OsStr> + ?Sized, D: ExifDataSource>(
     page: u16,
 ) -> Result<(), ()> {
     let mut f = ExifImage::new(file_name)?;
-    f.read_metadata()?;
+    // # TODO: do duplicate check
+    // f.read_metadata()?;
     let mut d = f.exif_data().try_err(())?.to_owned();
     add_image_id(&mut d, data)?;
     add_image_title(&mut d, data)?;
