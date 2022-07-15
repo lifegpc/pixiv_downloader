@@ -20,7 +20,7 @@ pub trait ExifDataSource {
 impl<T: ExifDataSource> ExifDataSource for std::sync::Arc<T> {
     call_parent_data_source_fun!(
         "src/data/exif_data_source.json",
-        std::ops::Deref::deref(self),
+        **self,
     );
 }
 
