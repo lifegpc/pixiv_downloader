@@ -4,6 +4,7 @@ use super::super::error::FanboxAPIError;
 use crate::fanbox_api::FanboxClientInternal;
 use json::JsonValue;
 use proc_macros::check_json_keys;
+use proc_macros::fanbox_api_test;
 use std::fmt::Debug;
 use std::sync::Arc;
 
@@ -114,6 +115,7 @@ impl Debug for FanboxArticleUrlEmbedHTML {
 pub enum FanboxArticleUrlEmbed {
     FanboxCreator(FanboxArticleUrlEmbedFanboxCreator),
     HTML(FanboxArticleUrlEmbedHTML),
+    HTMLCard(FanboxArticleUrlEmbedHTML),
     Unknown(JsonValue),
 }
 
@@ -127,6 +129,7 @@ impl FanboxArticleUrlEmbed {
                     Self::FanboxCreator(FanboxArticleUrlEmbedFanboxCreator::new(data, client))
                 }
                 "html" => Self::HTML(FanboxArticleUrlEmbedHTML::new(data, client)),
+                "html.card" => Self::HTMLCard(FanboxArticleUrlEmbedHTML::new(data, client)),
                 _ => Self::Unknown(data.clone()),
             },
             None => Self::Unknown(data.clone()),
@@ -184,3 +187,22 @@ impl Debug for FanboxArticleUrlEmbedMap {
         d.finish_non_exhaustive()
     }
 }
+
+fanbox_api_test!(test_html_card, {
+    match client.get_post_info(4135937).await {
+        Some(post) => {
+            assert_eq!(post.title(), Some("第255話 夏の新刊入稿しました！ジュエハキャラバンの話"));
+            assert_eq!(post.creator_id(), Some("shiratamaco"));
+            println!("{:#?}", post);
+            match post.check_unknown() {
+                Ok(_) => {}
+                Err(e) => {
+                    panic!("Check unknown: {}", e);
+                }
+            }
+        }
+        None => {
+            panic!("Failed to get post(第255話 夏の新刊入稿しました！ジュエハキャラバンの話).")
+        }
+    }
+});
