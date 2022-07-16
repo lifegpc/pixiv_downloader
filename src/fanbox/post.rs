@@ -9,6 +9,7 @@ use crate::fanbox_api::FanboxClientInternal;
 use crate::parser::json::parse_u64;
 use json::JsonValue;
 use proc_macros::check_json_keys;
+use proc_macros::create_fanbox_download_helper;
 use proc_macros::fanbox_api_test;
 use std::fmt::Debug;
 use std::fmt::Display;
@@ -270,6 +271,383 @@ impl ExifDataSource for FanboxPostArticle {
             Some(t) => Some(t.to_owned()),
             None => None,
         }
+    }
+}
+
+pub struct FanboxFile {
+    pub data: JsonValue,
+    client: Arc<FanboxClientInternal>,
+}
+
+impl FanboxFile {
+    #[inline]
+    pub fn extension(&self) -> Option<&str> {
+        self.data["extension"].as_str()
+    }
+
+    #[inline]
+    pub fn id(&self) -> Option<&str> {
+        self.data["id"].as_str()
+    }
+
+    #[inline]
+    pub fn name(&self) -> Option<&str> {
+        self.data["name"].as_str()
+    }
+
+    /// Create a new instance.
+    #[inline]
+    pub fn new(data: &JsonValue, client: Arc<FanboxClientInternal>) -> FanboxFile {
+        Self {
+            data: data.clone(),
+            client,
+        }
+    }
+
+    #[inline]
+    pub fn size(&self) -> Option<u64> {
+        self.data["size"].as_u64()
+    }
+
+    #[inline]
+    pub fn url(&self) -> Option<&str> {
+        self.data["url"].as_str()
+    }
+
+    create_fanbox_download_helper!(url);
+}
+
+impl CheckUnknown for FanboxFile {
+    fn check_unknown(&self) -> Result<(), FanboxAPIError> {
+        check_json_keys!(
+            "extension"+,
+            "id"+,
+            "name"+,
+            "size"+,
+            "url"+,
+        );
+        Ok(())
+    }
+}
+
+impl Debug for FanboxFile {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("FanboxFile")
+            .field("id", &self.id())
+            .field("extension", &self.extension())
+            .field("name", &self.name())
+            .field("size", &self.size())
+            .field("url", &self.url())
+            .finish_non_exhaustive()
+    }
+}
+
+pub struct FanboxFileBody {
+    pub data: JsonValue,
+    client: Arc<FanboxClientInternal>,
+}
+
+impl FanboxFileBody {
+    #[inline]
+    pub fn files(&self) -> Option<Vec<FanboxFile>> {
+        let files = &self.data["files"];
+        if files.is_array() {
+            let mut list = Vec::new();
+            for i in files.members() {
+                list.push(FanboxFile::new(i, Arc::clone(&self.client)));
+            }
+            Some(list)
+        } else {
+            None
+        }
+    }
+
+    /// Create a new instance.
+    #[inline]
+    pub fn new(data: &JsonValue, client: Arc<FanboxClientInternal>) -> Self {
+        Self {
+            data: data.clone(),
+            client,
+        }
+    }
+
+    #[inline]
+    pub fn text(&self) -> Option<&str> {
+        self.data["text"].as_str()
+    }
+}
+
+impl CheckUnknown for FanboxFileBody {
+    fn check_unknown(&self) -> Result<(), FanboxAPIError> {
+        check_json_keys!(
+            "text"+,
+            "files"+,
+        );
+        match self.files() {
+            Some(list) => {
+                for i in list {
+                    i.check_unknown()?;
+                }
+            }
+            None => {}
+        }
+        Ok(())
+    }
+}
+
+impl Debug for FanboxFileBody {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("FanboxFileBody")
+            .field("text", &self.text())
+            .field("files", &self.files())
+            .finish_non_exhaustive()
+    }
+}
+
+/// Fanbox file post
+pub struct FanboxPostFile {
+    /// Raw data
+    pub data: JsonValue,
+    /// Fanbox api client
+    client: Arc<FanboxClientInternal>,
+}
+
+impl FanboxPostFile {
+    #[inline]
+    pub fn body(&self) -> Option<FanboxFileBody> {
+        let body = &self.data["body"];
+        if body.is_object() {
+            Some(FanboxFileBody::new(body, Arc::clone(&self.client)))
+        } else {
+            None
+        }
+    }
+
+    #[inline]
+    pub fn comment_count(&self) -> Option<u64> {
+        self.data["commentCount"].as_u64()
+    }
+
+    #[inline]
+    pub fn comment_list(&self) -> Option<FanboxCommentList> {
+        FanboxCommentList::new(&self.data["commentList"], Arc::clone(&self.client))
+    }
+
+    #[inline]
+    pub fn cover_image_url(&self) -> Option<&str> {
+        self.data["coverImageUrl"].as_str()
+    }
+
+    #[inline]
+    pub fn creator_id(&self) -> Option<&str> {
+        self.data["creatorId"].as_str()
+    }
+
+    #[inline]
+    pub fn excerpt(&self) -> Option<&str> {
+        self.data["excerpt"].as_str()
+    }
+
+    #[inline]
+    pub fn fee_required(&self) -> Option<u64> {
+        self.data["feeRequired"].as_u64()
+    }
+
+    #[inline]
+    pub fn has_adult_content(&self) -> Option<bool> {
+        self.data["hasAdultContent"].as_bool()
+    }
+
+    #[inline]
+    pub fn id(&self) -> Option<u64> {
+        parse_u64(&self.data["id"])
+    }
+
+    #[inline]
+    pub fn image_for_share(&self) -> Option<&str> {
+        self.data["imageForShare"].as_str()
+    }
+
+    #[inline]
+    pub fn is_liked(&self) -> Option<bool> {
+        self.data["isLiked"].as_bool()
+    }
+
+    #[inline]
+    pub fn is_restricted(&self) -> Option<bool> {
+        self.data["isRestricted"].as_bool()
+    }
+
+    #[inline]
+    pub fn like_count(&self) -> Option<u64> {
+        self.data["likeCount"].as_u64()
+    }
+
+    #[inline]
+    /// Create a new instance
+    pub fn new(data: &JsonValue, client: Arc<FanboxClientInternal>) -> Self {
+        Self {
+            data: data.clone(),
+            client,
+        }
+    }
+
+    #[inline]
+    pub fn next_post(&self) -> Option<FanboxPostRef> {
+        let obj = &self.data["nextPost"];
+        if obj.is_object() {
+            Some(FanboxPostRef::new(obj, Arc::clone(&self.client)))
+        } else {
+            None
+        }
+    }
+
+    #[inline]
+    pub fn prev_post(&self) -> Option<FanboxPostRef> {
+        let obj = &self.data["prevPost"];
+        if obj.is_object() {
+            Some(FanboxPostRef::new(obj, Arc::clone(&self.client)))
+        } else {
+            None
+        }
+    }
+
+    #[inline]
+    pub fn published_datetime(&self) -> Option<&str> {
+        self.data["publishedDatetime"].as_str()
+    }
+
+    #[inline]
+    pub fn tags(&self) -> Option<Vec<&str>> {
+        let mut list = Vec::new();
+        let tags = &self.data["tags"];
+        if tags.is_array() {
+            for i in tags.members() {
+                match i.as_str() {
+                    Some(tag) => {
+                        list.push(tag);
+                    }
+                    None => {
+                        return None;
+                    }
+                }
+            }
+            Some(list)
+        } else {
+            None
+        }
+    }
+
+    #[inline]
+    pub fn title(&self) -> Option<&str> {
+        self.data["title"].as_str()
+    }
+
+    #[inline]
+    pub fn updated_datetime(&self) -> Option<&str> {
+        self.data["updatedDatetime"].as_str()
+    }
+
+    #[inline]
+    pub fn user_icon_url(&self) -> Option<&str> {
+        self.data["user"]["iconUrl"].as_str()
+    }
+
+    #[inline]
+    pub fn user_id(&self) -> Option<u64> {
+        parse_u64(&self.data["user"]["userId"])
+    }
+
+    #[inline]
+    pub fn user_name(&self) -> Option<&str> {
+        self.data["user"]["name"].as_str()
+    }
+}
+
+impl CheckUnknown for FanboxPostFile {
+    fn check_unknown(&self) -> Result<(), FanboxAPIError> {
+        check_json_keys!(
+            "id"+,
+            "body"+,
+            "commentCount"+,
+            "commentList",
+            "coverImageUrl",
+            "creatorId"+,
+            "excerpt"+,
+            "feeRequired"+,
+            "hasAdultContent"+,
+            "imageForShare",
+            "isLiked"+,
+            "isRestricted"+,
+            "likeCount"+,
+            "nextPost",
+            "prevPost",
+            "publishedDatetime"+,
+            "restrictedFor",
+            "tags"+,
+            "title"+,
+            "type",
+            "updatedDatetime"+,
+            "user": [
+                "userId"+user_id,
+                "iconUrl",
+                "name"+,
+            ],
+        );
+        match self.body() {
+            Some(body) => {
+                body.check_unknown()?;
+            }
+            None => {}
+        }
+        match self.comment_list() {
+            Some(list) => {
+                list.check_unknown()?;
+            }
+            None => {}
+        }
+        match self.next_post() {
+            Some(next) => {
+                next.check_unknown()?;
+            }
+            None => {}
+        }
+        match self.prev_post() {
+            Some(prev) => {
+                prev.check_unknown()?;
+            }
+            None => {}
+        }
+        Ok(())
+    }
+}
+
+impl Debug for FanboxPostFile {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("FanboxPostFile")
+            .field("id", &self.id())
+            .field("body", &self.body())
+            .field("comment_count", &self.comment_count())
+            .field("comment_list", &self.comment_list())
+            .field("cover_image_url", &self.cover_image_url())
+            .field("creator_id", &self.creator_id())
+            .field("excerpt", &self.excerpt())
+            .field("fee_required", &self.fee_required())
+            .field("has_adult_content", &self.has_adult_content())
+            .field("image_for_share", &self.image_for_share())
+            .field("is_liked", &self.is_liked())
+            .field("is_restricted", &self.is_restricted())
+            .field("like_count", &self.like_count())
+            .field("next_post", &self.next_post())
+            .field("prev_post", &self.prev_post())
+            .field("published_datetime", &self.published_datetime())
+            .field("tags", &self.tags())
+            .field("title", &self.title())
+            .field("updated_datetime", &self.updated_datetime())
+            .field("user_icon_url", &self.user_icon_url())
+            .field("user_id", &self.user_id())
+            .field("user_name", &self.user_name())
+            .finish_non_exhaustive()
     }
 }
 
@@ -748,6 +1126,8 @@ impl Display for FanboxPostUnknown {
 pub enum FanboxPost {
     /// Article
     Article(FanboxPostArticle),
+    /// File
+    File(FanboxPostFile),
     /// Image
     Image(FanboxPostImage),
     /// Unknown
@@ -761,6 +1141,7 @@ impl FanboxPost {
         match data["type"].as_str() {
             Some(s) => match s {
                 "article" => Self::Article(FanboxPostArticle::new(data, client)),
+                "file" => Self::File(FanboxPostFile::new(data, client)),
                 "image" => Self::Image(FanboxPostImage::new(data, client)),
                 _ => Self::Unknown(FanboxPostUnknown::new(data, client)),
             },
@@ -780,6 +1161,7 @@ impl FanboxPost {
     pub fn comment_list(&self) -> Option<FanboxCommentList> {
         match self {
             Self::Article(a) => a.comment_list(),
+            Self::File(f) => f.comment_list(),
             Self::Image(i) => i.comment_list(),
             Self::Unknown(u) => u.comment_list(),
         }
@@ -809,6 +1191,7 @@ impl FanboxPost {
     pub fn get_json(&self) -> &JsonValue {
         match self {
             Self::Article(a) => &a.data,
+            Self::File(f) => &f.data,
             Self::Image(a) => &a.data,
             Self::Unknown(a) => &a.data,
         }
@@ -848,6 +1231,7 @@ impl FanboxPost {
     pub fn next_post(&self) -> Option<FanboxPostRef> {
         match self {
             Self::Article(a) => a.next_post(),
+            Self::File(f) => f.next_post(),
             Self::Image(i) => i.next_post(),
             Self::Unknown(u) => u.next_post(),
         }
@@ -857,6 +1241,7 @@ impl FanboxPost {
     pub fn prev_post(&self) -> Option<FanboxPostRef> {
         match self {
             Self::Article(a) => a.prev_post(),
+            Self::File(f) => f.prev_post(),
             Self::Image(i) => i.prev_post(),
             Self::Unknown(u) => u.prev_post(),
         }
@@ -959,11 +1344,11 @@ fanbox_api_test!(test_get_post_info, {
                         None => {}
                     }
                 }
-                FanboxPost::Image(data) => {
-                    println!("{:#?}", data);
-                }
                 FanboxPost::Unknown(data) => {
                     println!("{}", data);
+                }
+                _ => {
+                    println!("{:#?}", data);
                 }
             }
         }
@@ -980,6 +1365,34 @@ fanbox_api_test!(test_get_post_info2, {
             match &data {
                 FanboxPost::Image(img) => {
                     println!("{:#?}", img);
+                }
+                FanboxPost::Unknown(data) => {
+                    println!("{}", data.data);
+                }
+                _ => {
+                    println!("{:#?}", data);
+                }
+            }
+            match data.check_unknown() {
+                Ok(_) => {}
+                Err(e) => {
+                    panic!("Check unknown: {}", e);
+                }
+            }
+        }
+        None => {
+            panic!("Failed to get the post info(【高解像度JPG】お正月プレゼントはチノ?)");
+        }
+    }
+});
+
+fanbox_api_test!(test_get_post_info3, {
+    match client.get_post_info(3960765).await {
+        Some(data) => {
+            assert_eq!(data.id(), Some(3960765));
+            match &data {
+                FanboxPost::File(file) => {
+                    println!("{:#?}", file);
                 }
                 FanboxPost::Unknown(data) => {
                     println!("{}", data.data);

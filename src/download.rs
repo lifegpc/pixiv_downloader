@@ -374,6 +374,34 @@ impl Main {
         Ok(())
     }
 
+    /// Download a fanbox file link
+    /// * `dh` - Link and other informations
+    /// * `progress_bars` - Multiple progress bars
+    /// * `base` - The directory of the target
+    pub async fn download_fanbox_file(
+        &self,
+        dh: DownloaderHelper,
+        progress_bars: Option<Arc<MultiProgress>>,
+        base: Arc<PathBuf>,
+    ) -> Result<(), PixivDownloaderError> {
+        let helper = get_helper();
+        match dh.download_local(helper.overwrite(), &*base)? {
+            DownloaderResult::Ok(d) => {
+                d.handle_options(&helper, progress_bars);
+                d.download();
+                d.join().await?;
+                if d.is_panic() {
+                    return Err(PixivDownloaderError::from(
+                        d.get_panic()
+                            .try_err(gettext("Failed to get error message."))?,
+                    ));
+                }
+            }
+            DownloaderResult::Canceled => {}
+        }
+        Ok(())
+    }
+
     /// Download a fanbox image link
     /// * `dh` - Link and other informations
     /// * `np` - Number of page
@@ -508,8 +536,7 @@ impl Main {
                             let dh = img
                                 .download_original_url()?
                                 .try_err(gettext("Can not get original url for image"))?;
-                            Self::download_fanbox_image(
-                                &self,
+                            self.download_fanbox_image(
                                 dh,
                                 np,
                                 None,
@@ -521,6 +548,21 @@ impl Main {
                         }
                         _ => {}
                     }
+                }
+            }
+            FanboxPost::File(file) => {
+                let body = file
+                    .body()
+                    .try_err(gettext("Failed to get the body of file post."))?;
+                let files = body
+                    .files()
+                    .try_err(gettext("Failed to get files from file post."))?;
+                for f in files.iter() {
+                    let dh = f
+                        .download_url()?
+                        .try_err(gettext("Failed to get url of the file."))?;
+                    self.download_fanbox_file(dh, None, Arc::clone(&base))
+                        .await?;
                 }
             }
             FanboxPost::Image(img) => {
@@ -540,15 +582,8 @@ impl Main {
                     let dh = img
                         .download_original_url()?
                         .try_err(gettext("Can not get original url for image"))?;
-                    Self::download_fanbox_image(
-                        &self,
-                        dh,
-                        np,
-                        None,
-                        Arc::clone(&datas),
-                        Arc::clone(&base),
-                    )
-                    .await?;
+                    self.download_fanbox_image(dh, np, None, Arc::clone(&datas), Arc::clone(&base))
+                        .await?;
                     np += 1;
                 }
             }
