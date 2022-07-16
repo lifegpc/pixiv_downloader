@@ -32,6 +32,7 @@ parse-size = "1"
 proc_macros = { path = "proc_macros" }
 regex = "1"
 reqwest = { version = "0.11", features = ["brotli", "deflate", "gzip", "rustls-tls", "socks", "stream"] }
+rusqlite = { version = "0.28", features = ["bundled", "chrono", "winsqlite3"], optional = true }
 RustyXML = "0.3"
 tokio = { version = "1.20", features = ["rt", "macros", "rt-multi-thread", "time"] }
 url = "2.2"
@@ -43,10 +44,12 @@ bindgen = { version = "0.60", optional = true }
 cmake = { version = "0.1", optional = true }
 
 [features]
-all = ["exif", "ugoira", "server"]
+all = ["db", "db_sqlite", "exif", "ugoira", "server"]
 avdict = ["bindgen", "cmake", "flagset"]
+db = []
+db_sqlite = ["rusqlite"]
 exif = ["bindgen", "c_fixed_string", "cmake", "link-cplusplus", "utf16string"]
-server = ["async-trait", "hyper"]
+server = ["async-trait", "db", "hyper"]
 ugoira = ["avdict", "bindgen", "cmake", "link-cplusplus"]
 
 [profile.release-with-debug]

@@ -5,3 +5,4 @@
 | author | Author name | string |
 | uid | User id of the author | integer |
 | description | Description of artwork | string |
+| count | Number of pages | integer |
