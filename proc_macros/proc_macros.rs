@@ -706,68 +706,33 @@ pub fn derive_check_unknown(item: TokenStream) -> TokenStream {
 }
 
 struct CreateFanboxDownloadHelper {
-    pub file_name: Option<Expr>,
     pub fn_name: Ident,
-    pub headers: Option<Expr>,
+    pub block: Option<Block>,
 }
 
 impl Parse for CreateFanboxDownloadHelper {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let fn_name = input.parse()?;
-        let mut file_name = None;
-        let mut headers = None;
-        loop {
-            if input.cursor().eof() {
-                break;
-            }
-            token::Comma::parse(input)?;
-            if input.cursor().eof() {
-                break;
-            }
-            let name: Ident = input.parse()?;
-            let nname = name.to_string();
-            match nname.as_str() {
-                "file_path" => {
-                    token::Eq::parse(input)?;
-                    file_name.replace(Expr::parse(input)?);
-                }
-                "headers" => {
-                    token::Eq::parse(input)?;
-                    headers.replace(Expr::parse(input)?);
-                }
-                _ => {
-                    return Err(syn::Error::new(name.span(), "Unsupported name."));
-                }
-            }
-        }
-        Ok(Self {
-            file_name,
-            fn_name,
-            headers,
-        })
+        let block = match token::Comma::parse(input) {
+            Ok(_) => Some(input.parse()?),
+            Err(_) => None,
+        };
+        Ok(Self { fn_name, block })
     }
 }
 
 #[proc_macro]
 pub fn create_fanbox_download_helper(item: TokenStream) -> TokenStream {
-    let CreateFanboxDownloadHelper {
-        file_name,
-        fn_name,
-        headers,
-    } = parse_macro_input!(item as CreateFanboxDownloadHelper);
+    let CreateFanboxDownloadHelper { fn_name, block } =
+        parse_macro_input!(item as CreateFanboxDownloadHelper);
     let defn_name = Ident::new(
         format!("download_{}", fn_name.to_string()).as_str(),
         fn_name.span(),
     );
-    let headers = match headers {
-        Some(headers) => {
-            quote!(.headers(#headers))
-        }
-        None => quote!(),
-    };
-    let file_name = match file_name {
-        Some(file_name) => {
-            quote!(.file_name(#file_name))
+    let stream2 = match block {
+        Some(block) => {
+            let stmts = block.stmts;
+            quote!(#(#stmts)*)
         }
         None => quote!(),
     };
@@ -777,10 +742,9 @@ pub fn create_fanbox_download_helper(item: TokenStream) -> TokenStream {
             match self.#fn_name() {
                 Some(url) => {
                     let client: &std::sync::Arc<crate::webclient::WebClient> = self.client.as_ref().as_ref();
-                    Ok(Some(crate::downloader::DownloaderHelper::builder(url)?.client(client)
-                        #file_name
-                        #headers
-                        .build()))
+                    let mut dh = crate::downloader::DownloaderHelper::builder(url)?.client(client).build();
+                    #stream2
+                    Ok(Some(dh))
                 }
                 None => Ok(None),
             }

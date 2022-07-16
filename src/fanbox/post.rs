@@ -314,7 +314,19 @@ impl FanboxFile {
         self.data["url"].as_str()
     }
 
-    create_fanbox_download_helper!(url);
+    create_fanbox_download_helper!(url, {
+        match self.name() {
+            Some(name) => match self.extension() {
+                Some(ext) => {
+                    dh.set_file_name((name.to_owned() + "." + ext).as_str());
+                }
+                None => {
+                    dh.set_file_name(name);
+                }
+            },
+            None => {}
+        }
+    });
 }
 
 impl CheckUnknown for FanboxFile {
