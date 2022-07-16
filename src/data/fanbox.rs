@@ -1,6 +1,8 @@
 #[cfg(feature = "exif")]
 use super::exif::ExifDataSource;
 use crate::fanbox::post::FanboxPost;
+use crate::opt::author_name_filter::AuthorFiler;
+use crate::opthelper::get_helper;
 use crate::pixiv_link::PixivID;
 use crate::pixiv_link::ToPixivID;
 use json::JsonValue;
@@ -50,9 +52,28 @@ impl ExifDataSource for FanboxData {
                 return None;
             }
         },
+        image_author,
         image_id,
     );
 
+    fn image_author(&self) -> Option<String> {
+        match (match &self.exif_data {
+            Some(d) => d,
+            None => {
+                return None;
+            }
+        })
+        .image_author()
+        {
+            Some(a) => match get_helper().author_name_filters() {
+                Some(filters) => Some(filters.filter(&a)),
+                None => Some(a),
+            },
+            None => None,
+        }
+    }
+
+    #[inline]
     fn image_id(&self) -> Option<String> {
         Some(self.id.to_link())
     }
