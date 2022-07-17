@@ -92,6 +92,8 @@ pub struct CommandOpts {
     #[cfg(feature = "server")]
     /// Server listen address
     pub server: Option<SocketAddr>,
+    /// Maximun number of tasks to download simultaneously
+    pub max_download_tasks: Option<usize>,
 }
 
 impl CommandOpts {
@@ -120,6 +122,7 @@ impl CommandOpts {
             part_size: None,
             #[cfg(feature = "server")]
             server: None,
+            max_download_tasks: None,
         }
     }
 
@@ -260,6 +263,18 @@ pub fn parse_u64<T: AsRef<str>>(s: Option<T>) -> Result<Option<u64>, ParseIntErr
     }
 }
 
+pub fn parse_nonempty_usize<T: AsRef<str>>(s: Option<T>) -> Result<Option<usize>, ParseIntError> {
+    match s {
+        Some(s) => {
+            let s = s.as_ref();
+            let s = s.trim();
+            let c = s.parse::<std::num::NonZeroUsize>()?;
+            Ok(Some(c.get()))
+        }
+        None => Ok(None),
+    }
+}
+
 /// Parse optional option
 /// * `opts` - The result of options. See [getopts::Matches].
 /// * `key` - The key of the option.
@@ -391,6 +406,20 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         "part-size",
         gettext("The size of the each part when downloading file."),
         "SIZE",
+    );
+    opts.opt(
+        "",
+        "max-download-tasks",
+        format!(
+            "{} ({} {})",
+            gettext("The maximun number of tasks to download simultaneously."),
+            gettext("Default:"),
+            "5"
+        )
+        .as_str(),
+        "COUNT",
+        HasArg::Maybe,
+        getopts::Occur::Optional,
     );
     let result = match opts.parse(&argv[1..]) {
         Ok(m) => m,
@@ -602,6 +631,17 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         }
         Err(e) => {
             println!("{} {}", gettext("Failed to parse part size:"), e);
+            return None;
+        }
+    }
+    match parse_optional_opt(&result, "max-download-tasks", 5, parse_nonempty_usize) {
+        Ok(r) => re.as_mut().unwrap().max_download_tasks = r,
+        Err(e) => {
+            println!(
+                "{} {}",
+                gettext("Failed to parse <opt>:").replace("<opt>", "max-download-tasks"),
+                e
+            );
             return None;
         }
     }

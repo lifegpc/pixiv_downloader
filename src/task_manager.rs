@@ -2,6 +2,7 @@ use crate::ext::any::AsAny;
 use crate::ext::replace::ReplaceWith;
 use crate::ext::replace::ReplaceWith2;
 use crate::ext::rw_lock::GetRwLock;
+use crate::opthelper::get_helper;
 use futures_util::lock::Mutex;
 use indicatif::MultiProgress;
 use std::any::Any;
@@ -58,7 +59,7 @@ impl MaxDownloadTasks {
 
 impl GetMaxCount for MaxDownloadTasks {
     fn get_max_count(&self) -> usize {
-        5
+        get_helper().max_download_tasks()
     }
 }
 
@@ -95,13 +96,6 @@ impl TaskManager {
         loop {
             {
                 let mut count = self.task_count.lock().await;
-                if *count < total_count {
-                    self.tasks
-                        .get_mut()
-                        .push(Box::new(tokio::task::spawn(future)));
-                    count.replace_with(*count + 1);
-                    break;
-                }
                 let tasks = self.tasks.replace_with2(Vec::new());
                 let mut new_tasks = Vec::new();
                 let mut new_count = *count;
@@ -115,6 +109,13 @@ impl TaskManager {
                 }
                 self.tasks.replace_with2(new_tasks);
                 count.replace_with(new_count);
+                if *count < total_count {
+                    self.tasks
+                        .get_mut()
+                        .push(Box::new(tokio::task::spawn(future)));
+                    count.replace_with(*count + 1);
+                    break;
+                }
             }
             tokio::time::sleep(Duration::new(0, 10_000_000)).await;
         }

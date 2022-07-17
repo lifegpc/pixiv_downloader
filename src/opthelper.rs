@@ -128,6 +128,23 @@ impl OptHelper {
         }
     }
 
+    /// Return the maximun number of tasks to download simultaneously.
+    pub fn max_download_tasks(&self) -> usize {
+        match self.opt.get_ref().max_download_tasks {
+            Some(r) => {
+                return r;
+            }
+            None => {}
+        }
+        match self.settings.get_ref().get("max-download-tasks") {
+            Some(re) => {
+                return re.as_usize().unwrap();
+            }
+            None => {}
+        }
+        5
+    }
+
     /// Return the maximun threads when downloading file.
     pub fn max_threads(&self) -> u64 {
         match self.opt.get_ref().max_threads {

@@ -40,6 +40,7 @@ pub fn get_settings_list() -> Vec<SettingDes> {
         SettingDes::new("server", gettext("Server address."), JsonValueType::Str, Some(check_socket_addr)).unwrap(),
         #[cfg(feature = "server")]
         SettingDes::new("cors-entries", gettext("The domains allowed to send CORS requests."), JsonValueType::Array, Some(check_cors_entries)).unwrap(),
+        SettingDes::new("max-download-tasks", gettext("The maximun number of tasks to download simultaneously."), JsonValueType::Number, Some(check_nozero_usize)).unwrap(),
     ]
 }
 
@@ -68,6 +69,11 @@ fn check_socket_addr(obj: &JsonValue) -> bool {
         }
         None => false,
     }
+}
+
+fn check_nozero_usize(obj: &JsonValue) -> bool {
+    let r = obj.as_usize();
+    r.is_some() && r.unwrap() > 0
 }
 
 fn check_u64(obj: &JsonValue) -> bool {
