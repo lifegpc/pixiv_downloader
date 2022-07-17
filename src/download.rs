@@ -79,12 +79,12 @@ impl Main {
                         if !fc.logined() {
                             println!("{}", gettext("Warning: Fanbox client is not logged in."));
                         }
-                        tasks
-                            .add_task(Self::download_fanbox_post(Arc::clone(&fc), id.clone()))
-                            .await;
-                        if !download_multiple_posts {
-                            tasks.join().await;
-                        }
+                    }
+                    tasks
+                        .add_task(Self::download_fanbox_post(Arc::clone(&fc), id.clone()))
+                        .await;
+                    if !download_multiple_posts {
+                        tasks.join().await;
                     }
                 }
             }
