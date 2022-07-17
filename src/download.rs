@@ -758,6 +758,7 @@ pub async fn download_fanbox_creator_info(
         .save(&json_file)
         .try_err(gettext("Failed to save post data to file."))?;
     let tasks = TaskManager::default();
+    #[cfg(feature = "exif")]
     fdata.exif_data.replace(Box::new(Arc::clone(&data)));
     let fdata = Arc::new(fdata);
     let download_multiple_files = helper.download_multiple_files();
