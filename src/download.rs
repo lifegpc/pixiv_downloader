@@ -307,7 +307,7 @@ impl Main {
         } else {
             println!("{}", gettext("Warning: Failed to get illust's type."));
         }
-        if pages_data.is_some() && helper.download_multiple_images() {
+        if pages_data.is_some() && helper.download_multiple_files() {
             let mut np = 0u16;
             let pages_data = pages_data.as_ref().unwrap();
             let progress_bars = get_progress_bar();
@@ -546,7 +546,7 @@ impl Main {
             .save(&json_file)
             .try_err(gettext("Failed to save post data to file."))?;
         let tasks = TaskManager::default();
-        let download_mutiple_images = helper.download_multiple_images();
+        let download_multiple_files = helper.download_multiple_files();
         match post {
             FanboxPost::Article(article) => {
                 let article = Arc::new(article);
@@ -583,7 +583,7 @@ impl Main {
                                     Arc::clone(&base),
                                 ))
                                 .await;
-                            if !download_mutiple_images {
+                            if !download_multiple_files {
                                 tasks.join().await;
                             }
                             np += 1;
@@ -610,7 +610,7 @@ impl Main {
                             Arc::clone(&base),
                         ))
                         .await;
-                    if !download_mutiple_images {
+                    if !download_multiple_files {
                         tasks.join().await;
                     }
                 }
@@ -641,7 +641,7 @@ impl Main {
                             Arc::clone(&base),
                         ))
                         .await;
-                    if !download_mutiple_images {
+                    if !download_multiple_files {
                         tasks.join().await;
                     }
                     np += 1;

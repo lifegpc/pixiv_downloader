@@ -323,9 +323,9 @@ impl OptHelper {
         String::from("[{elapsed_precise}] [{wide_bar:.green/yellow}] {bytes}/{total_bytes} ({bytes_per_sec}, {eta}) {msg:40}")
     }
 
-    /// Return whether to download multiple images at the same time.
-    pub fn download_multiple_images(&self) -> bool {
-        match self.opt.get_ref().download_multiple_images {
+    /// Return whether to download multiple files at the same time.
+    pub fn download_multiple_files(&self) -> bool {
+        match self.opt.get_ref().download_multiple_files {
             Some(r) => {
                 return r;
             }
@@ -334,12 +334,12 @@ impl OptHelper {
         if self
             .settings
             .get_ref()
-            .have_bool("download-multiple-images")
+            .have_bool("download-multiple-files")
         {
             return self
                 .settings
                 .get_ref()
-                .get_bool("download-multiple-images")
+                .get_bool("download-multiple-files")
                 .unwrap();
         }
         false

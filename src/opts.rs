@@ -75,8 +75,8 @@ pub struct CommandOpts {
     pub update_exif: bool,
     /// Whether to enable progress bar
     pub use_progress_bar: Option<UseOrNot>,
-    /// Whether to download multiple images at the same time
-    pub download_multiple_images: Option<bool>,
+    /// Whether to download multiple files at the same time
+    pub download_multiple_files: Option<bool>,
     /// Max retry count when downloading failed.
     pub download_retry: Option<i64>,
     /// Retry interval when downloading files.
@@ -113,7 +113,7 @@ impl CommandOpts {
             #[cfg(feature = "exif")]
             update_exif: false,
             use_progress_bar: None,
-            download_multiple_images: None,
+            download_multiple_files: None,
             download_retry: None,
             download_retry_interval: None,
             multiple_threads_download: None,
@@ -351,10 +351,10 @@ pub fn parse_cmd() -> Option<CommandOpts> {
     );
     opts.opt(
         "",
-        "download-multiple-images",
+        "download-multiple-files",
         format!(
             "{} ({} {})",
-            gettext("Download multiple images at the same time."),
+            gettext("Download multiple files at the same time."),
             gettext("Default:"),
             "yes"
         )
@@ -559,13 +559,13 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         }
         re.as_mut().unwrap().use_progress_bar = Some(r.unwrap());
     }
-    match parse_optional_opt(&result, "download-multiple-images", true, parse_bool) {
-        Ok(b) => re.as_mut().unwrap().download_multiple_images = b,
+    match parse_optional_opt(&result, "download-multiple-files", true, parse_bool) {
+        Ok(b) => re.as_mut().unwrap().download_multiple_files = b,
         Err(e) => {
             println!(
                 "{} {}",
                 gettext("Failed to parse <opt>:")
-                    .replace("<opt>", "download-multiple-images")
+                    .replace("<opt>", "download-multiple-files")
                     .as_str(),
                 e
             );
