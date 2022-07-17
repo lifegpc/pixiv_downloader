@@ -303,6 +303,7 @@ impl Debug for FanboxCreator {
     }
 }
 
+#[cfg(feature = "exif")]
 impl ExifDataSource for FanboxCreator {
     fn image_author(&self) -> Option<String> {
         self.user_name().map(|s| s.to_owned())
