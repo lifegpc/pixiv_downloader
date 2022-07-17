@@ -534,7 +534,11 @@ pub async fn download_fanbox_post(
         // #TODO allow to continue
         return Ok(());
     }
-    let base = Arc::new(PathBuf::from(format!("./{}/{}", id.creator_id, id.post_id)));
+    let base = Arc::new(
+        PathBuf::from(".")
+            .join(&id.creator_id)
+            .join(format!("{}", id.post_id)),
+    );
     let json_file = base.join("data.json");
     let data = FanboxData::new(id, &post).try_err("Failed to create data file.")?;
     let data_file = JSONDataFile::from(&data);
