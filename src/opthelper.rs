@@ -71,6 +71,24 @@ impl OptHelper {
         self._cors_entries.get_ref().clone()
     }
 
+    /// Whether to download multiple posts/artworks at the same time.
+    pub fn download_multiple_posts(&self) -> bool {
+        match self.opt.get_ref().download_multiple_posts {
+            Some(r) => {
+                return r;
+            }
+            None => {}
+        }
+        if self.settings.get_ref().have_bool("download-multiple-posts") {
+            return self
+                .settings
+                .get_ref()
+                .get_bool("download-multiple-posts")
+                .unwrap();
+        }
+        false
+    }
+
     /// Return max retry count of each part when downloading in multiple thread mode.
     pub fn download_part_retry(&self) -> Option<i64> {
         if self.opt.get_ref().download_part_retry.is_some() {
@@ -128,7 +146,24 @@ impl OptHelper {
         }
     }
 
-    /// Return the maximun number of tasks to download simultaneously.
+    /// Return the maximum number of tasks to download posts/artworks at the same time.
+    pub fn max_download_post_tasks(&self) -> usize {
+        match self.opt.get_ref().max_download_post_tasks {
+            Some(r) => {
+                return r;
+            }
+            None => {}
+        }
+        match self.settings.get_ref().get("max-download-post-tasks") {
+            Some(re) => {
+                return re.as_usize().unwrap();
+            }
+            None => {}
+        }
+        3
+    }
+
+    /// Return the maximum number of tasks to download files at the same time.
     pub fn max_download_tasks(&self) -> usize {
         match self.opt.get_ref().max_download_tasks {
             Some(r) => {
@@ -145,7 +180,7 @@ impl OptHelper {
         5
     }
 
-    /// Return the maximun threads when downloading file.
+    /// Return the maximum threads when downloading file.
     pub fn max_threads(&self) -> u64 {
         match self.opt.get_ref().max_threads {
             Some(r) => {
@@ -331,11 +366,7 @@ impl OptHelper {
             }
             None => {}
         }
-        if self
-            .settings
-            .get_ref()
-            .have_bool("download-multiple-files")
-        {
+        if self.settings.get_ref().have_bool("download-multiple-files") {
             return self
                 .settings
                 .get_ref()

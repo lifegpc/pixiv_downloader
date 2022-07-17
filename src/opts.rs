@@ -85,15 +85,19 @@ pub struct CommandOpts {
     pub multiple_threads_download: Option<bool>,
     /// Max retry count of each part when downloading in multiple thread mode.
     pub download_part_retry: Option<i64>,
-    /// The maximun threads when downloading file.
+    /// The maximum threads when downloading file.
     pub max_threads: Option<u64>,
     /// The size of the each part when downloading file.
     pub part_size: Option<u32>,
     #[cfg(feature = "server")]
     /// Server listen address
     pub server: Option<SocketAddr>,
-    /// Maximun number of tasks to download simultaneously
+    /// maximum number of tasks to download files at the same time
     pub max_download_tasks: Option<usize>,
+    /// Whether to download multiple posts/artworks at the same time.
+    pub download_multiple_posts: Option<bool>,
+    /// The maximum number of tasks to download posts/artworks at the same time.
+    pub max_download_post_tasks: Option<usize>,
 }
 
 impl CommandOpts {
@@ -123,6 +127,8 @@ impl CommandOpts {
             #[cfg(feature = "server")]
             server: None,
             max_download_tasks: None,
+            download_multiple_posts: None,
+            max_download_post_tasks: None,
         }
     }
 
@@ -398,7 +404,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
     opts.optopt(
         "m",
         "max-threads",
-        gettext("The maximun threads when downloading file."),
+        gettext("The maximum threads when downloading file."),
         "COUNT",
     );
     opts.optopt(
@@ -412,12 +418,40 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         "max-download-tasks",
         format!(
             "{} ({} {})",
-            gettext("The maximun number of tasks to download simultaneously."),
+            gettext("The maximum number of tasks to download files at the same time."),
             gettext("Default:"),
             "5"
         )
         .as_str(),
         "COUNT",
+        HasArg::Maybe,
+        getopts::Occur::Optional,
+    );
+    opts.opt(
+        "",
+        "download-multiple-posts",
+        format!(
+            "{} ({} {})",
+            gettext("Download multiple posts/artworks at the same time."),
+            gettext("Default:"),
+            "yes"
+        )
+        .as_str(),
+        "yes/no",
+        HasArg::Maybe,
+        getopts::Occur::Optional,
+    );
+    opts.opt(
+        "",
+        "max-download-post-tasks",
+        format!(
+            "{} ({} {})",
+            gettext("The maximum number of tasks to download posts/artworks at the same time."),
+            gettext("Default:"),
+            3
+        )
+        .as_str(),
+        "yes/no",
         HasArg::Maybe,
         getopts::Occur::Optional,
     );
@@ -640,6 +674,32 @@ pub fn parse_cmd() -> Option<CommandOpts> {
             println!(
                 "{} {}",
                 gettext("Failed to parse <opt>:").replace("<opt>", "max-download-tasks"),
+                e
+            );
+            return None;
+        }
+    }
+    match parse_optional_opt(&result, "download-multiple-posts", true, parse_bool) {
+        Ok(b) => re.as_mut().unwrap().download_multiple_posts = b,
+        Err(e) => {
+            println!(
+                "{} {}",
+                gettext("Failed to parse <opt>:")
+                    .replace("<opt>", "download-multiple-posts")
+                    .as_str(),
+                e
+            );
+            return None;
+        }
+    }
+    match parse_optional_opt(&result, "max-download-post-tasks", 3, parse_nonempty_usize) {
+        Ok(r) => re.as_mut().unwrap().max_download_post_tasks = r,
+        Err(e) => {
+            println!(
+                "{} {}",
+                gettext("Failed to parse <opt>:")
+                    .replace("<opt>", "max-download-post-tasks")
+                    .as_str(),
                 e
             );
             return None;

@@ -42,6 +42,8 @@ impl Main {
     pub async fn download(&mut self) -> i32 {
         let pw = Arc::new(PixivWebClient::new());
         let fc = Arc::new(FanboxClient::new());
+        let tasks = TaskManager::new_post();
+        let download_multiple_posts = get_helper().download_multiple_posts();
         for id in self.cmd.as_ref().unwrap().ids.iter() {
             match id {
                 PixivID::Artwork(id) => {
@@ -54,22 +56,14 @@ impl Main {
                             return 1;
                         }
                         if !pw.logined() {
-                            println!("{}", gettext("Warning: Web api client not logined, some future may not work."));
+                            println!("{}", gettext("Warning: Web api client not logged in, some future may not work."));
                         }
                     }
-                    let r = self.download_artwork(Arc::clone(&pw), id.clone()).await;
-                    let r = if r.is_ok() {
-                        0
-                    } else {
-                        println!(
-                            "{} {}",
-                            gettext("Failed to download artwork:"),
-                            r.unwrap_err()
-                        );
-                        1
-                    };
-                    if r != 0 {
-                        return r;
+                    tasks
+                        .add_task(Self::download_artwork(Arc::clone(&pw), id.clone()))
+                        .await;
+                    if !download_multiple_posts {
+                        tasks.join().await;
                     }
                 }
                 PixivID::FanboxPost(id) => {
@@ -83,24 +77,39 @@ impl Main {
                             return 1;
                         }
                         if !fc.logined() {
-                            println!("{}", gettext("Warning: Fanbox client is not logined."));
+                            println!("{}", gettext("Warning: Fanbox client is not logged in."));
                         }
-                        let r = self.download_fanbox_post(Arc::clone(&fc), id.clone()).await;
-                        let r = match r {
-                            Ok(_) => 0,
-                            Err(e) => {
-                                println!("{} {}", gettext("Failed to download post:"), e);
-                                1
-                            }
-                        };
-                        if r != 0 {
-                            return r;
+                        tasks
+                            .add_task(Self::download_fanbox_post(Arc::clone(&fc), id.clone()))
+                            .await;
+                        if !download_multiple_posts {
+                            tasks.join().await;
                         }
                     }
                 }
             }
         }
-        0
+        let mut re = 0;
+        tasks.join().await;
+        let tasks = tasks.take_finished_tasks();
+        for mut task in tasks {
+            let task = task.as_any_mut();
+            if let Some(task) = task.downcast_mut::<JoinHandle<Result<(), PixivDownloaderError>>>()
+            {
+                let result = match task.await {
+                    Ok(result) => result,
+                    Err(e) => Err(PixivDownloaderError::from(e)),
+                };
+                match result {
+                    Ok(_) => {}
+                    Err(e) => {
+                        println!("{} {}", gettext("Failed to download post:"), e);
+                        re = 1;
+                    }
+                }
+            }
+        }
+        re
     }
 
     /// Download artwork link
@@ -171,7 +180,6 @@ impl Main {
     }
 
     pub async fn download_artwork(
-        &self,
         pw: Arc<PixivWebClient>,
         id: u64,
     ) -> Result<(), PixivDownloaderError> {
@@ -498,7 +506,6 @@ impl Main {
     }
 
     pub async fn download_fanbox_post(
-        &self,
         fc: Arc<FanboxClient>,
         id: FanboxPostID,
     ) -> Result<(), PixivDownloaderError> {

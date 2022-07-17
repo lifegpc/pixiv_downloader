@@ -149,7 +149,7 @@ pub fn fanbox_api_test(item: TokenStream) -> TokenStream {
                         panic!("Failed to initiailze the client.");
                     }
                     if !client.check_login().await {
-                        println!("The client is not logined. Skip test.");
+                        println!("The client is not logged in. Skip test.");
                         return;
                     }
                     #(#stmts)*
@@ -197,7 +197,7 @@ pub fn fanbox_api_quick_test(item: TokenStream) -> TokenStream {
                         panic!("Failed to initiailze the client.");
                     }
                     if !client.check_login().await {
-                        println!("The client is not logined. Skip test.");
+                        println!("The client is not logged in. Skip test.");
                         return;
                     }
                     match #expr.await {

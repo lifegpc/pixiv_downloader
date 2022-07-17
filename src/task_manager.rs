@@ -16,6 +16,8 @@ lazy_static! {
     #[doc(hidden)]
     static ref TOTAL_DOWNLOAD_TASK_COUNT: Arc<Mutex<usize>> = Arc::new(Mutex::new(0));
     #[doc(hidden)]
+    static ref TOTAL_POST_TASK_COUNT: Arc<Mutex<usize>> = Arc::new(Mutex::new(0));
+    #[doc(hidden)]
     static ref PROGRESS_BAR: Arc<MultiProgress> = Arc::new(MultiProgress::new());
 }
 
@@ -63,6 +65,22 @@ impl GetMaxCount for MaxDownloadTasks {
     }
 }
 
+pub struct MaxDownloadPostTasks {
+    _unused: [u8; 0],
+}
+
+impl MaxDownloadPostTasks {
+    pub fn new() -> Self {
+        MaxDownloadPostTasks { _unused: [] }
+    }
+}
+
+impl GetMaxCount for MaxDownloadPostTasks {
+    fn get_max_count(&self) -> usize {
+        get_helper().max_download_post_tasks()
+    }
+}
+
 /// Task manager
 pub struct TaskManager {
     /// Current running task
@@ -71,18 +89,26 @@ pub struct TaskManager {
     finished_tasks: RwLock<Vec<Box<dyn IsFinishedAny + Send + Sync>>>,
     /// Total task count
     task_count: Arc<Mutex<usize>>,
-    max_count: Box<dyn GetMaxCount>,
+    max_count: Box<dyn GetMaxCount + Send + Sync>,
 }
 
 impl TaskManager {
     /// Create a new instance
-    pub fn new<T: GetMaxCount + 'static>(task_count: Arc<Mutex<usize>>, max_count: T) -> Self {
+    pub fn new<T: GetMaxCount + Send + Sync + 'static>(
+        task_count: Arc<Mutex<usize>>,
+        max_count: T,
+    ) -> Self {
         Self {
             tasks: RwLock::new(Vec::new()),
             finished_tasks: RwLock::new(Vec::new()),
             task_count,
             max_count: Box::new(max_count),
         }
+    }
+
+    /// Create a new instance with post max count
+    pub fn new_post() -> Self {
+        Self::new(get_total_post_task_count(), MaxDownloadPostTasks::new())
     }
 
     /// Add a new task.
@@ -159,6 +185,10 @@ pub fn get_progress_bar() -> Arc<MultiProgress> {
 
 pub fn get_total_download_task_count() -> Arc<Mutex<usize>> {
     Arc::clone(&TOTAL_DOWNLOAD_TASK_COUNT)
+}
+
+pub fn get_total_post_task_count() -> Arc<Mutex<usize>> {
+    Arc::clone(&TOTAL_POST_TASK_COUNT)
 }
 
 impl Default for TaskManager {

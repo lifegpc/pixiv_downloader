@@ -33,14 +33,16 @@ pub fn get_settings_list() -> Vec<SettingDes> {
         SettingDes::new("download-retry-interval", gettext("The interval (in seconds) between two retries when downloading files."), JsonValueType::Multiple, Some(check_retry_interval)).unwrap(),
         SettingDes::new("multiple-threads-download", gettext("Whether to enable multiple threads download."), JsonValueType::Boolean, None).unwrap(),
         SettingDes::new("download-part-retry", gettext("Max retry count of each part when downloading in multiple thread mode."), JsonValueType::Number, Some(check_i64)).unwrap(),
-        SettingDes::new("max-threads", gettext("The maximun threads when downloading file."), JsonValueType::Number, Some(check_u64)).unwrap(),
+        SettingDes::new("max-threads", gettext("The maximum threads when downloading file."), JsonValueType::Number, Some(check_u64)).unwrap(),
         SettingDes::new("part-size", gettext("The size of the each part when downloading file."), JsonValueType::Number, Some(check_parse_size_u32)).unwrap(),
         SettingDes::new("proxy", gettext("Proxy settings."), JsonValueType::Array, Some(check_proxy)).unwrap(),
         #[cfg(feature = "server")]
         SettingDes::new("server", gettext("Server address."), JsonValueType::Str, Some(check_socket_addr)).unwrap(),
         #[cfg(feature = "server")]
         SettingDes::new("cors-entries", gettext("The domains allowed to send CORS requests."), JsonValueType::Array, Some(check_cors_entries)).unwrap(),
-        SettingDes::new("max-download-tasks", gettext("The maximun number of tasks to download simultaneously."), JsonValueType::Number, Some(check_nozero_usize)).unwrap(),
+        SettingDes::new("max-download-tasks", gettext("The maximum number of tasks to download files at the same time."), JsonValueType::Number, Some(check_nozero_usize)).unwrap(),
+        SettingDes::new("download-multiple-posts", gettext("Download multiple posts/artworks at the same time."), JsonValueType::Boolean, None).unwrap(),
+        SettingDes::new("max-download-post-tasks", gettext("The maximum number of tasks to download posts/artworks at the same time."), JsonValueType::Number, Some(check_nozero_usize)).unwrap(),
     ]
 }
 

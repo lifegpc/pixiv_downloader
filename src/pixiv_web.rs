@@ -74,7 +74,7 @@ impl PixivWebClient {
         self.auto_init();
         let r = self
             .client
-            .get_with_param("https://www.pixiv.net/", self.params.get_ref(), None)
+            .get_with_param("https://www.pixiv.net/", self.get_params(), None)
             .await;
         if r.is_none() {
             return false;
@@ -186,7 +186,7 @@ impl PixivWebClient {
             .client
             .get_with_param(
                 format!("https://www.pixiv.net/ajax/illust/{}", id),
-                self.params.get_ref(),
+                self.get_params(),
                 None,
             )
             .await;
@@ -211,7 +211,7 @@ impl PixivWebClient {
             .client
             .get_with_param(
                 format!("https://www.pixiv.net/artworks/{}", id),
-                self.params.get_ref(),
+                self.get_params(),
                 None,
             )
             .await;
@@ -256,7 +256,7 @@ impl PixivWebClient {
             .client
             .get_with_param(
                 format!("https://www.pixiv.net/ajax/illust/{}/pages", id),
-                self.params.get_ref(),
+                self.get_params(),
                 None,
             )
             .await;
@@ -275,13 +275,17 @@ impl PixivWebClient {
         v
     }
 
+    pub fn get_params(&self) -> Option<JsonValue> {
+        self.params.get_ref().clone()
+    }
+
     pub async fn get_ugoira(&self, id: u64) -> Option<JsonValue> {
         self.auto_init();
         let r = self
             .client
             .get_with_param(
                 format!("https://www.pixiv.net/ajax/illust/{}/ugoira_meta", id),
-                self.params.get_ref(),
+                self.get_params(),
                 None,
             )
             .await;
