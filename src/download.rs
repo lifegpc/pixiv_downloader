@@ -16,6 +16,7 @@ use crate::error::PixivDownloaderError;
 use crate::ext::any::AsAny;
 use crate::ext::try_err::TryErr;
 use crate::fanbox::article::block::FanboxArticleBlock;
+use crate::fanbox::article::url_embed::FanboxArticleUrlEmbed;
 use crate::fanbox::check::CheckUnknown;
 use crate::fanbox::creator::FanboxCreator;
 use crate::fanbox::creator::FanboxProfileItem;
@@ -108,6 +109,7 @@ impl Main {
                         .add_task(download_fanbox_creator_info(
                             Arc::clone(&fc),
                             id.to_owned(),
+                            None,
                             None,
                         ))
                         .await;
@@ -584,6 +586,8 @@ pub async fn download_fanbox_post(
         .save(&json_file)
         .try_err(gettext("Failed to save post data to file."))?;
     let tasks = TaskManager::default();
+    let ptasks = TaskManager::new_post();
+    let mut re = Ok(());
     let download_multiple_files = helper.download_multiple_files();
     match post {
         FanboxPost::Article(article) => {
@@ -595,6 +599,9 @@ pub async fn download_fanbox_post(
             let blocks = body
                 .blocks()
                 .try_err(gettext("Failed to get blocks from article."))?;
+            let url_embed_map = body
+                .url_embed_map()
+                .try_err(gettext("Failed to get embed url map from article."))?;
             let mut np = 0;
             let mut datas = data.clone();
             #[cfg(feature = "exif")]
@@ -625,6 +632,43 @@ pub async fn download_fanbox_post(
                             tasks.join().await;
                         }
                         np += 1;
+                    }
+                    FanboxArticleBlock::UrlEmbed(u) => {
+                        let embed_url = url_embed_map
+                            .get_url_embed(
+                                u.url_embed_id()
+                                    .try_err(gettext("Failed to get embed url id from block"))?,
+                            )
+                            .try_err(gettext("Failed to get embed url from url embed map."))?;
+                        match embed_url {
+                            FanboxArticleUrlEmbed::FanboxCreator(creator) => {
+                                let profile = creator
+                                    .profile()
+                                    .try_err(gettext("Failed to get creator's profile."))?;
+                                let id = profile
+                                    .creator_id()
+                                    .try_err("Failed to get creator's id.")?;
+                                match ptasks
+                                    .add_task_else_run_local(download_fanbox_creator_info(
+                                        Arc::clone(&fc),
+                                        id.to_owned(),
+                                        Some(profile),
+                                        None,
+                                    ))
+                                    .await
+                                {
+                                    Some(r) => {
+                                        concat_pixiv_downloader_error!(re, r);
+                                    }
+                                    None => {
+                                        if !download_multiple_files {
+                                            ptasks.join().await;
+                                        }
+                                    }
+                                }
+                            }
+                            _ => {}
+                        }
                     }
                     _ => {}
                 }
@@ -692,9 +736,21 @@ pub async fn download_fanbox_post(
         }
     }
     tasks.join().await;
-    let mut re = Ok(());
     let tasks = tasks.take_finished_tasks();
     for mut task in tasks {
+        let task = task.as_any_mut();
+        if let Some(task) = task.downcast_mut::<JoinHandle<Result<(), PixivDownloaderError>>>() {
+            let r = task.await;
+            let r = match r {
+                Ok(r) => r,
+                Err(e) => Err(PixivDownloaderError::from(e)),
+            };
+            concat_pixiv_downloader_error!(re, r);
+        }
+    }
+    ptasks.join().await;
+    let ptasks = ptasks.take_finished_tasks();
+    for mut task in ptasks {
         let task = task.as_any_mut();
         if let Some(task) = task.downcast_mut::<JoinHandle<Result<(), PixivDownloaderError>>>() {
             let r = task.await;
@@ -712,6 +768,7 @@ pub async fn download_fanbox_creator_info(
     fc: Arc<FanboxClient>,
     id: String,
     data: Option<FanboxCreator>,
+    base: Option<PathBuf>,
 ) -> Result<(), PixivDownloaderError> {
     let data = match data {
         Some(data) => {
@@ -751,9 +808,22 @@ pub async fn download_fanbox_creator_info(
     }
     let mut fdata = FanboxData::new(PixivID::FanboxCreator(id.clone()), &*data)
         .try_err("Failed to create data file.")?;
-    let base = Arc::new(PathBuf::from(".").join(&id));
+    let base = match base {
+        Some(base) => Arc::new(base),
+        None => Arc::new(PathBuf::from(".").join(&id)),
+    };
     let json_file = base.join("creator.json");
     let data_file = JSONDataFile::from(&fdata);
+    if !base.exists() {
+        match create_dir_all(&*base) {
+            Ok(_) => {}
+            Err(e) => {
+                if !base.exists() {
+                    return Err(PixivDownloaderError::from(e));
+                }
+            }
+        }
+    }
     data_file
         .save(&json_file)
         .try_err(gettext("Failed to save post data to file."))?;

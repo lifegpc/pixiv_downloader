@@ -147,6 +147,40 @@ impl TaskManager {
         }
     }
 
+    /// Try add a new task, if queue is full, run future on local thread
+    pub async fn add_task_else_run_local<F>(&self, future: F) -> Option<F::Output>
+    where
+        F: Future + Send + 'static,
+        F::Output: Send + 'static,
+        JoinHandle<F::Output>: IsFinishedAny + Send + Sync + 'static,
+    {
+        let total_count = self.max_count.get_max_count();
+        {
+            let mut count = self.task_count.lock().await;
+            let tasks = self.tasks.replace_with2(Vec::new());
+            let mut new_tasks = Vec::new();
+            let mut new_count = *count;
+            for i in tasks {
+                if i.is_finished() {
+                    self.finished_tasks.get_mut().push(i);
+                    new_count -= 1;
+                } else {
+                    new_tasks.push(i);
+                }
+            }
+            self.tasks.replace_with2(new_tasks);
+            count.replace_with(new_count);
+            if *count < total_count {
+                self.tasks
+                    .get_mut()
+                    .push(Box::new(tokio::task::spawn(future)));
+                count.replace_with(*count + 1);
+                return None;
+            }
+        }
+        Some(future.await)
+    }
+
     /// Wait all tasks finished.
     pub async fn join(&self) {
         loop {
