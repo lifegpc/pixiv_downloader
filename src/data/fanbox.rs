@@ -1,6 +1,6 @@
 #[cfg(feature = "exif")]
 use super::exif::ExifDataSource;
-use crate::fanbox::post::FanboxPost;
+use crate::ext::json::ToJson2;
 use crate::opt::author_name_filter::AuthorFiler;
 use crate::opthelper::get_helper;
 use crate::pixiv_link::PixivID;
@@ -18,11 +18,11 @@ pub struct FanboxData {
 }
 
 impl FanboxData {
-    pub fn new<T: ToPixivID>(id: T, post: &FanboxPost) -> Option<Self> {
+    pub fn new<T: ToPixivID, D: ToJson2>(id: T, data: D) -> Option<Self> {
         match id.to_pixiv_id() {
             Some(id) => Some(Self {
                 id,
-                raw: post.get_json().clone(),
+                raw: data.to_json2(),
                 #[cfg(feature = "exif")]
                 exif_data: None,
             }),

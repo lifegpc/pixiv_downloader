@@ -14,6 +14,7 @@ pub enum PixivDownloaderError {
     Hyper(hyper::Error),
     HTTP(http::Error),
     IOError(std::io::Error),
+    Fanbox(crate::fanbox::error::FanboxAPIError),
 }
 
 impl From<&str> for PixivDownloaderError {

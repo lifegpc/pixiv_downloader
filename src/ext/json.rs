@@ -7,9 +7,19 @@ pub trait ToJson {
     fn to_json(&self) -> Option<JsonValue>;
 }
 
+pub trait ToJson2 {
+    fn to_json2(&self) -> JsonValue;
+}
+
 impl ToJson for &str {
     fn to_json(&self) -> Option<JsonValue> {
         Some(JsonValue::String(String::from(*self)))
+    }
+}
+
+impl ToJson2 for &str {
+    fn to_json2(&self) -> JsonValue {
+        JsonValue::String(String::from(*self))
     }
 }
 
@@ -19,15 +29,33 @@ impl ToJson for String {
     }
 }
 
+impl ToJson2 for String {
+    fn to_json2(&self) -> JsonValue {
+        JsonValue::String(self.to_string())
+    }
+}
+
 impl ToJson for JsonValue {
     fn to_json(&self) -> Option<JsonValue> {
         Some(self.clone())
     }
 }
 
+impl ToJson2 for JsonValue {
+    fn to_json2(&self) -> JsonValue {
+        self.clone()
+    }
+}
+
 impl<T: ToJson> ToJson for &T {
     fn to_json(&self) -> Option<JsonValue> {
         (*self).to_json()
+    }
+}
+
+impl<T: ToJson2> ToJson2 for &T {
+    fn to_json2(&self) -> JsonValue {
+        (*self).to_json2()
     }
 }
 
@@ -46,9 +74,21 @@ impl<T: ToJson> ToJson for RwLockReadGuard<'_, T> {
     }
 }
 
+impl<T: ToJson2> ToJson2 for RwLockReadGuard<'_, T> {
+    fn to_json2(&self) -> JsonValue {
+        self.deref().to_json2()
+    }
+}
+
 impl<T: ToJson> ToJson for RwLockWriteGuard<'_, T> {
     fn to_json(&self) -> Option<JsonValue> {
         self.deref().to_json()
+    }
+}
+
+impl<T: ToJson2> ToJson2 for RwLockWriteGuard<'_, T> {
+    fn to_json2(&self) -> JsonValue {
+        self.deref().to_json2()
     }
 }
 

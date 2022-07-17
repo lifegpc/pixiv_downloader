@@ -17,6 +17,8 @@ use crate::ext::any::AsAny;
 use crate::ext::try_err::TryErr;
 use crate::fanbox::article::block::FanboxArticleBlock;
 use crate::fanbox::check::CheckUnknown;
+use crate::fanbox::creator::FanboxCreator;
+use crate::fanbox::creator::FanboxProfileItem;
 use crate::fanbox::post::FanboxPost;
 use crate::fanbox_api::FanboxClient;
 use crate::gettext;
@@ -34,6 +36,7 @@ use indicatif::MultiProgress;
 use json::JsonValue;
 use reqwest::IntoUrl;
 use std::fs::create_dir_all;
+use std::ops::Deref;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::task::JoinHandle;
@@ -82,6 +85,31 @@ impl Main {
                     }
                     tasks
                         .add_task(download_fanbox_post(Arc::clone(&fc), id.clone()))
+                        .await;
+                    if !download_multiple_posts {
+                        tasks.join().await;
+                    }
+                }
+                PixivID::FanboxCreator(id) => {
+                    if !fc.is_inited() {
+                        let helper = get_helper();
+                        if !fc.init(helper.cookies()) {
+                            println!("{}", gettext("Failed to initialize fanbox api client."));
+                            return 1;
+                        }
+                        if !fc.check_login().await {
+                            return 1;
+                        }
+                        if !fc.logined() {
+                            println!("{}", gettext("Warning: Fanbox client is not logged in."));
+                        }
+                    }
+                    tasks
+                        .add_task(download_fanbox_creator_info(
+                            Arc::clone(&fc),
+                            id.to_owned(),
+                            None,
+                        ))
                         .await;
                     if !download_multiple_posts {
                         tasks.join().await;
@@ -661,6 +689,124 @@ pub async fn download_fanbox_post(
             return Err(PixivDownloaderError::from(gettext(
                 "Unrecognized post type.",
             )));
+        }
+    }
+    tasks.join().await;
+    let mut re = Ok(());
+    let tasks = tasks.take_finished_tasks();
+    for mut task in tasks {
+        let task = task.as_any_mut();
+        if let Some(task) = task.downcast_mut::<JoinHandle<Result<(), PixivDownloaderError>>>() {
+            let r = task.await;
+            let r = match r {
+                Ok(r) => r,
+                Err(e) => Err(PixivDownloaderError::from(e)),
+            };
+            concat_pixiv_downloader_error!(re, r);
+        }
+    }
+    re
+}
+
+pub async fn download_fanbox_creator_info(
+    fc: Arc<FanboxClient>,
+    id: String,
+    data: Option<FanboxCreator>,
+) -> Result<(), PixivDownloaderError> {
+    let data = match data {
+        Some(data) => {
+            let cid = data
+                .creator_id()
+                .try_err(gettext("Failed to get creator's id."))?;
+            if id == cid {
+                Some(data)
+            } else {
+                None
+            }
+        }
+        None => None,
+    };
+    let data = match data {
+        Some(data) => data,
+        None => fc
+            .get_creator(&id)
+            .await
+            .try_err(gettext("Failed to get creator's information."))?,
+    };
+    let data = Arc::new(data);
+    let helper = get_helper();
+    if helper.verbose() {
+        println!("{:#?}", data);
+    }
+    match data.check_unknown() {
+        Ok(_) => {}
+        Err(e) => {
+            println!(
+                "{} {}",
+                gettext("Warning: Creator's info contains unknown data:"),
+                e
+            );
+            return Ok(());
+        }
+    }
+    let mut fdata = FanboxData::new(PixivID::FanboxCreator(id.clone()), &*data)
+        .try_err("Failed to create data file.")?;
+    let base = Arc::new(PathBuf::from(".").join(&id));
+    let json_file = base.join("creator.json");
+    let data_file = JSONDataFile::from(&fdata);
+    data_file
+        .save(&json_file)
+        .try_err(gettext("Failed to save post data to file."))?;
+    let tasks = TaskManager::default();
+    fdata.exif_data.replace(Box::new(Arc::clone(&data)));
+    let fdata = Arc::new(fdata);
+    let download_multiple_files = helper.download_multiple_files();
+    let mut np = 0u16;
+    {
+        match data.download_cover_image_url()? {
+            Some(dh) => {
+                tasks
+                    .add_task(download_fanbox_image(
+                        dh,
+                        np,
+                        Some(get_progress_bar()),
+                        Arc::clone(&fdata),
+                        Arc::clone(&base),
+                    ))
+                    .await;
+                if !download_multiple_files {
+                    tasks.join().await;
+                }
+                np += 1;
+            }
+            None => {}
+        }
+    }
+    for i in data.profile_items()?.deref() {
+        match i {
+            FanboxProfileItem::Image(img) => {
+                let dh = img
+                    .download_image_url()?
+                    .try_err(gettext("Can not get image url."))?;
+                tasks
+                    .add_task(download_fanbox_image(
+                        dh,
+                        np,
+                        Some(get_progress_bar()),
+                        Arc::clone(&fdata),
+                        Arc::clone(&base),
+                    ))
+                    .await;
+                if !download_multiple_files {
+                    tasks.join().await;
+                }
+                np += 1;
+            }
+            FanboxProfileItem::Unknown(_) => {
+                return Err(PixivDownloaderError::from(gettext(
+                    "Unrecognized profile item type.",
+                )));
+            }
         }
     }
     tasks.join().await;

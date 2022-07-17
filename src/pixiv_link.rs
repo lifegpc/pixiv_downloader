@@ -11,6 +11,10 @@ lazy_static! {
     static ref RE2: Regex = Regex::new("^(https?://)?(www\\.)?fanbox\\.cc/@(?P<creator>[^/]+)/posts/(?P<id>\\d+)").unwrap();
     #[doc(hidden)]
     static ref RE3: Regex = Regex::new("^(https?://)?(?P<creator>[^./]+)\\.fanbox\\.cc/posts/(?P<id>\\d+)").unwrap();
+    #[doc(hidden)]
+    static ref RE4: Regex = Regex::new("^(https?://)?(?P<creator>[^./]+)\\.fanbox\\.cc(/(\\?.*)?)?$").unwrap();
+    #[doc(hidden)]
+    static ref RE5: Regex = Regex::new("^(https?://)?(www\\.)?fanbox\\.cc/@(?P<creator>[^/?]+)(/(\\?.*)?)?$").unwrap();
 }
 
 #[derive(Clone, Debug)]
@@ -41,6 +45,8 @@ pub enum PixivID {
     Artwork(u64),
     /// Fanbox post
     FanboxPost(FanboxPostID),
+    /// Fanbox creator
+    FanboxCreator(String),
 }
 
 pub trait ToPixivID {
@@ -94,6 +100,25 @@ impl PixivID {
             },
             None => {}
         }
+        match RE4.captures(s) {
+            Some(re) => match re.name("creator") {
+                Some(creator) => match creator.as_str() {
+                    "www" => {}
+                    _ => return Some(Self::FanboxCreator(String::from(creator.as_str()))),
+                },
+                None => {}
+            },
+            None => {}
+        }
+        match RE5.captures(s) {
+            Some(re) => match re.name("creator") {
+                Some(creator) => {
+                    return Some(Self::FanboxCreator(String::from(creator.as_str())));
+                }
+                None => {}
+            },
+            None => {}
+        }
         None
     }
 
@@ -108,6 +133,9 @@ impl PixivID {
                     id.creator_id, id.post_id
                 )
             }
+            Self::FanboxCreator(id) => {
+                format!("https://www.fanbox.cc/@{}", id)
+            }
         }
     }
 }
@@ -120,6 +148,9 @@ impl ToJson for PixivID {
             }
             &PixivID::FanboxPost(id) => Some(
                 json::value!({"type": "fanbox_post", "post_id": id.post_id.clone(), "creator_id": id.creator_id.clone(), "link": self.to_link()}),
+            ),
+            &PixivID::FanboxCreator(id) => Some(
+                json::value!({"type": "fanbox_creator", "creator_id": id.clone(), "link": self.to_link()}),
             ),
         }
     }
@@ -167,6 +198,7 @@ impl TryInto<u64> for PixivID {
         match self {
             Self::Artwork(id) => Ok(id),
             Self::FanboxPost(id) => Ok(id.post_id),
+            Self::FanboxCreator(_) => Err(()),
         }
     }
 }
@@ -177,6 +209,7 @@ impl TryInto<u64> for &PixivID {
         match self {
             PixivID::Artwork(id) => Ok(id.clone()),
             PixivID::FanboxPost(id) => Ok(id.post_id.clone()),
+            PixivID::FanboxCreator(_) => Err(()),
         }
     }
 }

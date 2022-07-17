@@ -5,7 +5,6 @@ use crate::opthelper::get_helper;
 use crate::parser::metadata::MetaDataParser;
 use crate::webclient::WebClient;
 use json::JsonValue;
-use reqwest::IntoUrl;
 use reqwest::Response;
 use std::sync::atomic::AtomicBool;
 use std::sync::RwLock;
@@ -159,25 +158,6 @@ impl PixivWebClient {
             return Some(value);
         }
         Some(body.clone())
-    }
-
-    pub async fn download_image<U: IntoUrl + Clone>(&self, url: U) -> Option<Response> {
-        self.auto_init();
-        let r = self
-            .client
-            .get(url, json::object! {"referer": "https://www.pixiv.net/"})
-            .await;
-        if r.is_none() {
-            return None;
-        }
-        let r = r.unwrap();
-        let status = r.status();
-        let code = status.as_u16();
-        if code >= 400 {
-            println!("{} {}", gettext("Failed to download image:"), status);
-            return None;
-        }
-        Some(r)
     }
 
     pub async fn get_artwork_ajax(&self, id: u64) -> Option<JsonValue> {

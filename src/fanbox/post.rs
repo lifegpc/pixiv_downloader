@@ -5,6 +5,7 @@ use super::comment_list::FanboxCommentList;
 use super::error::FanboxAPIError;
 #[cfg(feature = "exif")]
 use crate::data::exif::ExifDataSource;
+use crate::ext::json::ToJson2;
 use crate::fanbox_api::FanboxClientInternal;
 use crate::parser::json::parse_u64;
 use json::JsonValue;
@@ -1308,6 +1309,12 @@ impl FanboxPost {
     #[inline]
     pub fn user_name(&self) -> Option<&str> {
         self.get_json()["user"]["name"].as_str()
+    }
+}
+
+impl ToJson2 for FanboxPost {
+    fn to_json2(&self) -> JsonValue {
+        self.get_json().clone()
     }
 }
 

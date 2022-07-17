@@ -1,9 +1,13 @@
 use super::check::CheckUnknown;
 use super::error::FanboxAPIError;
+#[cfg(feature = "exif")]
+use crate::data::exif::ExifDataSource;
+use crate::ext::json::ToJson2;
 use crate::fanbox_api::FanboxClientInternal;
 use crate::parser::json::parse_u64;
 use json::JsonValue;
 use proc_macros::check_json_keys;
+use proc_macros::create_fanbox_download_helper;
 use std::convert::From;
 use std::fmt::Debug;
 use std::ops::Deref;
@@ -29,6 +33,8 @@ impl FanboxProfileImage {
         self.data["imageUrl"].as_str()
     }
 
+    create_fanbox_download_helper!(image_url);
+
     #[inline]
     /// Create a new instance
     pub fn new(data: &JsonValue, client: Arc<FanboxClientInternal>) -> Self {
@@ -42,6 +48,8 @@ impl FanboxProfileImage {
     pub fn thumbnail_url(&self) -> Option<&str> {
         self.data["thumbnailUrl"].as_str()
     }
+
+    create_fanbox_download_helper!(thumbnail_url);
 }
 
 impl CheckUnknown for FanboxProfileImage {
@@ -160,6 +168,8 @@ impl FanboxCreator {
     pub fn cover_image_url(&self) -> Option<&str> {
         self.data["coverImageUrl"].as_str()
     }
+
+    create_fanbox_download_helper!(cover_image_url);
 
     #[inline]
     pub fn description(&self) -> Option<&str> {
@@ -290,5 +300,21 @@ impl Debug for FanboxCreator {
             .field("user_id", &self.user_id())
             .field("user_name", &self.user_name())
             .finish_non_exhaustive()
+    }
+}
+
+impl ExifDataSource for FanboxCreator {
+    fn image_author(&self) -> Option<String> {
+        self.user_name().map(|s| s.to_owned())
+    }
+
+    fn image_comment(&self) -> Option<String> {
+        self.description().map(|s| s.to_owned())
+    }
+}
+
+impl ToJson2 for FanboxCreator {
+    fn to_json2(&self) -> JsonValue {
+        self.data.clone()
     }
 }

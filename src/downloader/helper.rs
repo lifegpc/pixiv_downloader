@@ -29,6 +29,7 @@ pub struct DownloaderHelperBuilder {
     helper: DownloaderHelper,
 }
 
+#[allow(dead_code)]
 impl DownloaderHelper {
     pub fn builder<U: IntoUrl>(url: U) -> Result<DownloaderHelperBuilder, DownloaderError> {
         Ok(DownloaderHelperBuilder {
@@ -110,6 +111,7 @@ impl DownloaderHelper {
     }
 }
 
+#[allow(dead_code)]
 impl DownloaderHelperBuilder {
     pub fn build(self) -> DownloaderHelper {
         self.helper
