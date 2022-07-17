@@ -237,34 +237,33 @@ impl Main {
                     let src = (&ugoira_data["originalSrc"])
                         .as_str()
                         .try_err(gettext("Can not find source link for ugoira."))?;
-                    let file_name = get_file_name_from_url(src).try_err(format!(
-                        "{} {}",
-                        gettext("Failed to get file name from url:"),
-                        src
-                    ))?;
-                    let file_name = base.join(file_name);
-                    let downloader = Downloader::new(
-                        src,
-                        json::object! { "referer": "https://www.pixiv.net/" },
-                        Some(&file_name),
-                        helper.overwrite(),
-                    )?;
-                    match downloader {
-                        DownloaderResult::Ok(d) => {
-                            d.handle_options(&helper, None);
-                            d.download();
-                            d.join().await?;
-                            if d.is_panic() {
-                                return Err(PixivDownloaderError::from(
-                                    d.get_panic()
-                                        .try_err(gettext("Failed to get error message."))?,
-                                ));
-                            }
-                        }
-                        DownloaderResult::Canceled => {}
-                    }
+                    let dh = DownloaderHelper::builder(src)?
+                        .headers(json::object! { "referer": "https://www.pixiv.net/" })
+                        .build();
+                    let tasks = TaskManager::default();
+                    tasks
+                        .add_task(Self::download_file(
+                            dh,
+                            Some(get_progress_bar()),
+                            Arc::clone(&base),
+                        ))
+                        .await;
+                    tasks.join().await;
+                    let mut tasks = tasks.take_finished_tasks();
+                    let task = tasks.get_mut(0).try_err(gettext("No finished task."))?;
+                    let task = task.as_any_mut();
+                    let task = task
+                        .downcast_mut::<JoinHandle<Result<(), PixivDownloaderError>>>()
+                        .try_err("Failed to downcast task.")?;
+                    task.await??;
                     #[cfg(feature = "ugoira")]
                     {
+                        let file_name = get_file_name_from_url(src).try_err(format!(
+                            "{} {}",
+                            gettext("Failed to get file name from url:"),
+                            src
+                        ))?;
+                        let file_name = base.join(file_name);
                         let metadata = match get_video_metadata(Arc::clone(&datas).as_ref()) {
                             Ok(m) => m,
                             Err(e) => {
@@ -352,20 +351,38 @@ impl Main {
         } else if pages_data.is_some() {
             let mut np = 0u16;
             let pages_data = pages_data.as_ref().unwrap();
+            let tasks = TaskManager::default();
             for page in pages_data.members() {
                 let link = page["urls"]["original"]
                     .as_str()
                     .try_err(gettext("Failed to get original picture's link."))?;
-                Self::download_artwork_link(
-                    link.to_owned(),
-                    np,
-                    None,
-                    Arc::clone(&datas),
-                    Arc::clone(&base),
-                )
-                .await?;
+                tasks
+                    .add_task(Self::download_artwork_link(
+                        link.to_owned(),
+                        np,
+                        Some(get_progress_bar()),
+                        Arc::clone(&datas),
+                        Arc::clone(&base),
+                    ))
+                    .await;
+                tasks.join().await;
                 np += 1;
             }
+            let mut re = Ok(());
+            let tasks = tasks.take_finished_tasks();
+            for mut task in tasks {
+                let t = task.as_any_mut();
+                if let Some(task) = t.downcast_mut::<JoinHandle<Result<(), PixivDownloaderError>>>()
+                {
+                    let r = task.await;
+                    let r = match r {
+                        Ok(r) => r,
+                        Err(e) => Err(PixivDownloaderError::from(e)),
+                    };
+                    concat_pixiv_downloader_error!(re, r);
+                }
+            }
+            return re;
         } else {
             let link = if ajax_ver {
                 (&re["urls"]["original"]).as_str()
@@ -373,23 +390,33 @@ impl Main {
                 (&re["illust"][format!("{}", id)]["urls"]["original"]).as_str()
             }
             .try_err(gettext("Failed to get original picture's link."))?;
-            Self::download_artwork_link(
-                link.to_owned(),
-                0,
-                None,
-                Arc::clone(&datas),
-                Arc::clone(&base),
-            )
-            .await?;
+            let tasks = TaskManager::default();
+            tasks
+                .add_task(Self::download_artwork_link(
+                    link.to_owned(),
+                    0,
+                    Some(get_progress_bar()),
+                    Arc::clone(&datas),
+                    Arc::clone(&base),
+                ))
+                .await;
+            tasks.join().await;
+            let mut tasks = tasks.take_finished_tasks();
+            let task = tasks.get_mut(0).try_err(gettext("No tasks finished."))?;
+            let task = task.as_any_mut();
+            let task = task
+                .downcast_mut::<JoinHandle<Result<(), PixivDownloaderError>>>()
+                .try_err("Failed to downcast the result.")?;
+            task.await??;
         }
         Ok(())
     }
 
-    /// Download a fanbox file link
+    /// Download a  file link
     /// * `dh` - Link and other informations
     /// * `progress_bars` - Multiple progress bars
     /// * `base` - The directory of the target
-    pub async fn download_fanbox_file(
+    pub async fn download_file(
         dh: DownloaderHelper,
         progress_bars: Option<Arc<MultiProgress>>,
         base: Arc<PathBuf>,
@@ -570,7 +597,7 @@ impl Main {
                     let dh = f
                         .download_url()?
                         .try_err(gettext("Failed to get url of the file."))?;
-                    Self::download_fanbox_file(dh, None, Arc::clone(&base)).await?;
+                    Self::download_file(dh, None, Arc::clone(&base)).await?;
                 }
             }
             FanboxPost::Image(img) => {

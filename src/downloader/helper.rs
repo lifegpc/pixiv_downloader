@@ -8,8 +8,10 @@ use crate::gettext;
 use crate::webclient::ToHeaders;
 use crate::webclient::WebClient;
 use reqwest::IntoUrl;
+use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::path::Path;
+use std::path::PathBuf;
 use std::sync::Arc;
 use url::Url;
 
@@ -20,9 +22,9 @@ pub struct DownloaderHelper {
     /// Web client
     pub client: Option<Arc<WebClient>>,
     /// New headers wants to apply
-    pub headers: Option<Box<dyn ToHeaders>>,
+    pub headers: Option<HashMap<String, String>>,
     /// Recommand file name
-    pub file_name: Option<Box<dyn AsRef<Path>>>,
+    pub file_name: Option<PathBuf>,
 }
 
 pub struct DownloaderHelperBuilder {
@@ -52,19 +54,20 @@ impl DownloaderHelper {
         let file = self
             .get_local_file_path(base)
             .try_err(gettext("Failed to get file name from url."))?;
-        let headers = match &self.headers {
-            Some(headers) => headers.to_headers(),
-            None => None,
-        };
         match &self.client {
             Some(client) => Downloader::<LocalFile>::new2(
                 Arc::clone(client),
                 self.url.clone(),
-                headers,
+                self.headers.clone(),
                 Some(&file),
                 overwrite,
             ),
-            None => Downloader::<LocalFile>::new(self.url.clone(), headers, Some(&file), overwrite),
+            None => Downloader::<LocalFile>::new(
+                self.url.clone(),
+                self.headers.clone(),
+                Some(&file),
+                overwrite,
+            ),
         }
     }
 
@@ -74,7 +77,7 @@ impl DownloaderHelper {
     ) -> Option<std::path::PathBuf> {
         let base = base.as_ref();
         match &self.file_name {
-            Some(file_name) => Some(base.join(file_name.as_ref())),
+            Some(file_name) => Some(base.join(file_name)),
             None => match crate::utils::get_file_name_from_url(self.url.clone()) {
                 Some(file_name) => Some(base.join(file_name)),
                 None => None,
@@ -87,12 +90,12 @@ impl DownloaderHelper {
     }
 
     pub fn set_file_name<P: AsRef<Path> + ?Sized>(&mut self, p: &P) {
-        self.file_name.replace(Box::new(p.as_ref().to_owned()));
+        self.file_name.replace(p.as_ref().to_owned());
     }
 
     pub fn set_headers<H: ToHeaders>(&mut self, headers: H) {
         self.headers.replace_with(match headers.to_headers() {
-            Some(headers) => Some(Box::new(headers)),
+            Some(headers) => Some(headers),
             None => None,
         });
     }
