@@ -545,6 +545,8 @@ impl Main {
         data_file
             .save(&json_file)
             .try_err(gettext("Failed to save post data to file."))?;
+        let tasks = TaskManager::default();
+        let download_mutiple_images = helper.download_multiple_images();
         match post {
             FanboxPost::Article(article) => {
                 let article = Arc::new(article);
@@ -572,14 +574,18 @@ impl Main {
                             let dh = img
                                 .download_original_url()?
                                 .try_err(gettext("Can not get original url for image"))?;
-                            Self::download_fanbox_image(
-                                dh,
-                                np,
-                                None,
-                                Arc::clone(&datas),
-                                Arc::clone(&base),
-                            )
-                            .await?;
+                            tasks
+                                .add_task(Self::download_fanbox_image(
+                                    dh,
+                                    np,
+                                    Some(get_progress_bar()),
+                                    Arc::clone(&datas),
+                                    Arc::clone(&base),
+                                ))
+                                .await;
+                            if !download_mutiple_images {
+                                tasks.join().await;
+                            }
                             np += 1;
                         }
                         _ => {}
@@ -597,7 +603,16 @@ impl Main {
                     let dh = f
                         .download_url()?
                         .try_err(gettext("Failed to get url of the file."))?;
-                    Self::download_file(dh, None, Arc::clone(&base)).await?;
+                    tasks
+                        .add_task(Self::download_file(
+                            dh,
+                            Some(get_progress_bar()),
+                            Arc::clone(&base),
+                        ))
+                        .await;
+                    if !download_mutiple_images {
+                        tasks.join().await;
+                    }
                 }
             }
             FanboxPost::Image(img) => {
@@ -617,14 +632,18 @@ impl Main {
                     let dh = img
                         .download_original_url()?
                         .try_err(gettext("Can not get original url for image"))?;
-                    Self::download_fanbox_image(
-                        dh,
-                        np,
-                        None,
-                        Arc::clone(&datas),
-                        Arc::clone(&base),
-                    )
-                    .await?;
+                    tasks
+                        .add_task(Self::download_fanbox_image(
+                            dh,
+                            np,
+                            Some(get_progress_bar()),
+                            Arc::clone(&datas),
+                            Arc::clone(&base),
+                        ))
+                        .await;
+                    if !download_mutiple_images {
+                        tasks.join().await;
+                    }
                     np += 1;
                 }
             }
@@ -634,6 +653,21 @@ impl Main {
                 )));
             }
         }
-        Ok(())
+        tasks.join().await;
+        let mut re = Ok(());
+        let tasks = tasks.take_finished_tasks();
+        for mut task in tasks {
+            let task = task.as_any_mut();
+            if let Some(task) = task.downcast_mut::<JoinHandle<Result<(), PixivDownloaderError>>>()
+            {
+                let r = task.await;
+                let r = match r {
+                    Ok(r) => r,
+                    Err(e) => Err(PixivDownloaderError::from(e)),
+                };
+                concat_pixiv_downloader_error!(re, r);
+            }
+        }
+        re
     }
 }

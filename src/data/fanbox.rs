@@ -14,7 +14,7 @@ pub struct FanboxData {
     /// Raw data
     pub raw: JsonValue,
     #[cfg(feature = "exif")]
-    pub exif_data: Option<Box<dyn ExifDataSource>>,
+    pub exif_data: Option<Box<dyn ExifDataSource + Send + Sync>>,
 }
 
 impl FanboxData {
