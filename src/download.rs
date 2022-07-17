@@ -13,6 +13,7 @@ use crate::downloader::DownloaderHelper;
 use crate::downloader::DownloaderResult;
 use crate::downloader::LocalFile;
 use crate::error::PixivDownloaderError;
+use crate::ext::any::AsAny;
 use crate::ext::try_err::TryErr;
 use crate::fanbox::article::block::FanboxArticleBlock;
 use crate::fanbox::check::CheckUnknown;
@@ -23,6 +24,8 @@ use crate::opthelper::get_helper;
 use crate::pixiv_link::FanboxPostID;
 use crate::pixiv_link::PixivID;
 use crate::pixiv_web::PixivWebClient;
+use crate::task_manager::get_progress_bar;
+use crate::task_manager::TaskManager;
 #[cfg(feature = "ugoira")]
 use crate::ugoira::{convert_ugoira_to_mp4, UgoiraFrames};
 use crate::utils::get_file_name_from_url;
@@ -33,6 +36,7 @@ use reqwest::IntoUrl;
 use std::fs::create_dir_all;
 use std::path::PathBuf;
 use std::sync::Arc;
+use tokio::task::JoinHandle;
 
 impl Main {
     pub async fn download(&mut self) -> i32 {
@@ -307,8 +311,8 @@ impl Main {
         if pages_data.is_some() && helper.download_multiple_images() {
             let mut np = 0u16;
             let pages_data = pages_data.as_ref().unwrap();
-            let progress_bars = Arc::new(MultiProgress::new());
-            let mut tasks = Vec::new();
+            let progress_bars = get_progress_bar();
+            let tasks = TaskManager::default();
             let mut re: Result<(), PixivDownloaderError> = Ok(());
             for page in pages_data.members() {
                 let url = page["urls"]["original"].as_str();
@@ -319,23 +323,30 @@ impl Main {
                     );
                     continue;
                 }
-                let f = tokio::spawn(Self::download_artwork_link(
-                    url.unwrap().to_owned(),
-                    np,
-                    Some(Arc::clone(&progress_bars)),
-                    Arc::clone(&datas),
-                    Arc::clone(&base),
-                ));
-                tasks.push(f);
+                tasks
+                    .add_task(Self::download_artwork_link(
+                        url.unwrap().to_owned(),
+                        np,
+                        Some(Arc::clone(&progress_bars)),
+                        Arc::clone(&datas),
+                        Arc::clone(&base),
+                    ))
+                    .await;
                 np += 1;
             }
-            for task in tasks {
-                let r = task.await;
-                let r = match r {
-                    Ok(r) => r,
-                    Err(e) => Err(PixivDownloaderError::from(e)),
-                };
-                concat_pixiv_downloader_error!(re, r);
+            tasks.join().await;
+            let tasks = tasks.take_finished_tasks();
+            for mut task in tasks {
+                let t = task.as_any_mut();
+                if let Some(task) = t.downcast_mut::<JoinHandle<Result<(), PixivDownloaderError>>>()
+                {
+                    let r = task.await;
+                    let r = match r {
+                        Ok(r) => r,
+                        Err(e) => Err(PixivDownloaderError::from(e)),
+                    };
+                    concat_pixiv_downloader_error!(re, r);
+                }
             }
             return re;
         } else if pages_data.is_some() {
@@ -379,7 +390,6 @@ impl Main {
     /// * `progress_bars` - Multiple progress bars
     /// * `base` - The directory of the target
     pub async fn download_fanbox_file(
-        &self,
         dh: DownloaderHelper,
         progress_bars: Option<Arc<MultiProgress>>,
         base: Arc<PathBuf>,
@@ -409,7 +419,6 @@ impl Main {
     /// * `datas` - The artwork's data
     /// * `base` - The directory of the target
     pub async fn download_fanbox_image(
-        &self,
         dh: DownloaderHelper,
         np: u16,
         progress_bars: Option<Arc<MultiProgress>>,
@@ -536,7 +545,7 @@ impl Main {
                             let dh = img
                                 .download_original_url()?
                                 .try_err(gettext("Can not get original url for image"))?;
-                            self.download_fanbox_image(
+                            Self::download_fanbox_image(
                                 dh,
                                 np,
                                 None,
@@ -561,8 +570,7 @@ impl Main {
                     let dh = f
                         .download_url()?
                         .try_err(gettext("Failed to get url of the file."))?;
-                    self.download_fanbox_file(dh, None, Arc::clone(&base))
-                        .await?;
+                    Self::download_fanbox_file(dh, None, Arc::clone(&base)).await?;
                 }
             }
             FanboxPost::Image(img) => {
@@ -582,8 +590,14 @@ impl Main {
                     let dh = img
                         .download_original_url()?
                         .try_err(gettext("Can not get original url for image"))?;
-                    self.download_fanbox_image(dh, np, None, Arc::clone(&datas), Arc::clone(&base))
-                        .await?;
+                    Self::download_fanbox_image(
+                        dh,
+                        np,
+                        None,
+                        Arc::clone(&datas),
+                        Arc::clone(&base),
+                    )
+                    .await?;
                     np += 1;
                 }
             }

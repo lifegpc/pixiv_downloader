@@ -43,6 +43,7 @@ mod retry_interval;
 mod server;
 mod settings;
 mod settings_list;
+mod task_manager;
 #[cfg(feature = "ugoira")]
 mod ugoira;
 mod utils;
