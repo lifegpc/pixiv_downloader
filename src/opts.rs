@@ -451,7 +451,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
             3
         )
         .as_str(),
-        "yes/no",
+        "COUNT",
         HasArg::Maybe,
         getopts::Occur::Optional,
     );
