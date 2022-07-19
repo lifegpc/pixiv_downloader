@@ -98,6 +98,9 @@ pub struct CommandOpts {
     pub download_multiple_posts: Option<bool>,
     /// The maximum number of tasks to download posts/artworks at the same time.
     pub max_download_post_tasks: Option<usize>,
+    #[cfg(feature = "ugoira")]
+    /// Whether to force yuv420p as output pixel format when converting ugoira(GIF) to video.
+    pub force_yuv420p: Option<bool>,
 }
 
 impl CommandOpts {
@@ -129,6 +132,8 @@ impl CommandOpts {
             max_download_tasks: None,
             download_multiple_posts: None,
             max_download_post_tasks: None,
+            #[cfg(feature = "ugoira")]
+            force_yuv420p: None,
         }
     }
 
@@ -455,6 +460,21 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         HasArg::Maybe,
         getopts::Occur::Optional,
     );
+    #[cfg(feature = "ugoira")]
+    opts.opt(
+        "",
+        "force-yuv420p",
+        format!(
+            "{} ({} {})",
+            gettext("Force yuv420p as output pixel format when converting ugoira(GIF) to video."),
+            gettext("Default:"),
+            "yes"
+        )
+        .as_str(),
+        "yes/no",
+        HasArg::Maybe,
+        getopts::Occur::Optional,
+    );
     let result = match opts.parse(&argv[1..]) {
         Ok(m) => m,
         Err(err) => {
@@ -699,6 +719,20 @@ pub fn parse_cmd() -> Option<CommandOpts> {
                 "{} {}",
                 gettext("Failed to parse <opt>:")
                     .replace("<opt>", "max-download-post-tasks")
+                    .as_str(),
+                e
+            );
+            return None;
+        }
+    }
+    #[cfg(feature = "ugoira")]
+    match parse_optional_opt(&result, "force-yuv420p", true, parse_bool) {
+        Ok(b) => re.as_mut().unwrap().force_yuv420p = b,
+        Err(e) => {
+            println!(
+                "{} {}",
+                gettext("Failed to parse <opt>:")
+                    .replace("<opt>", "force-yuv420p")
                     .as_str(),
                 e
             );

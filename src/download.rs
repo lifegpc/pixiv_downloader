@@ -314,7 +314,10 @@ pub async fn download_artwork(
                             AVDict::new()
                         }
                     };
-                    let options = AVDict::new();
+                    let mut options = AVDict::new();
+                    if helper.force_yuv420p() {
+                        options.set("force_yuv420p", "1", None)?;
+                    }
                     let frames = UgoiraFrames::from_json(&ugoira_data["frames"])?;
                     let output_file_name = base.join(format!("{}.mp4", id));
                     convert_ugoira_to_mp4(

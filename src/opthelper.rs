@@ -135,6 +135,21 @@ impl OptHelper {
         self.retry_interval()
     }
 
+    #[cfg(feature = "ugoira")]
+    /// Return whether to force yuv420p as output pixel format when converting ugoira(GIF) to video.
+    pub fn force_yuv420p(&self) -> bool {
+        match self.opt.get_ref().force_yuv420p {
+            Some(r) => {
+                return r;
+            }
+            None => {}
+        }
+        if self.settings.get_ref().have_bool("force-yuv420p") {
+            return self.settings.get_ref().get_bool("force-yuv420p").unwrap();
+        }
+        false
+    }
+
     /// return language
     pub fn language(&self) -> Option<String> {
         if self.opt.get_ref().language.is_some() {

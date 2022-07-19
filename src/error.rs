@@ -15,6 +15,8 @@ pub enum PixivDownloaderError {
     HTTP(http::Error),
     IOError(std::io::Error),
     Fanbox(crate::fanbox::error::FanboxAPIError),
+    #[cfg(feature = "avdict")]
+    AVDict(crate::avdict::AVDictError),
 }
 
 impl From<&str> for PixivDownloaderError {
