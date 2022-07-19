@@ -18,7 +18,7 @@ fn main() {
         #[cfg(target_env = "msvc")]
         println!("cargo:rustc-link-arg=/STACK:{}", stack_size);
         #[cfg(target_env = "gnu")]
-        println!("cargo:rustc-link-arg=-Wl,-stack,{}", stack_size);
+        println!("cargo:rustc-link-arg=-Wl,--stack,{}", stack_size);
     }
     #[cfg(any(feature = "exif", feature = "ugoira"))]
     {
