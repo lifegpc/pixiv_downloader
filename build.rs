@@ -10,6 +10,16 @@ use std::io::Read;
 use std::path::PathBuf;
 
 fn main() {
+    #[cfg(windows)]
+    {
+        let stack_size = std::env::var("STACK_SIZE").unwrap_or("4194304".to_string());
+        let stack_size = stack_size.parse::<usize>().unwrap();
+        println!("cargo:rerun-if-env-changed=STACK_SIZE");
+        #[cfg(target_env = "msvc")]
+        println!("cargo:rustc-link-arg=/STACK:{}", stack_size);
+        #[cfg(target_env = "gnu")]
+        println!("cargo:rustc-link-arg=-Wl,-stack,{}", stack_size);
+    }
     #[cfg(any(feature = "exif", feature = "ugoira"))]
     {
         let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
