@@ -1,9 +1,9 @@
 diff --git a/src/basicio.cpp b/src/basicio.cpp
-index 807d75c8..49841f36 100644
+index 0e99c292..e400ff24 100644
 --- a/src/basicio.cpp
 +++ b/src/basicio.cpp
-@@ -87,6 +87,64 @@ namespace {
- }
+@@ -59,6 +59,64 @@ void ReplaceStringInPlace(std::string& subject, std::string_view search, std::st
+ }  // namespace
  
  namespace Exiv2 {
 +#if defined(__MINGW__) || (defined(WIN32) && !defined(__CYGWIN__))
@@ -64,30 +64,30 @@ index 807d75c8..49841f36 100644
 +        return std::fopen(path, mode);
 +    }
 +#endif
-     void BasicIo::readOrThrow(byte* buf, long rcount, ErrorCode err) {
-         const long nread = read(buf, rcount);
-         enforce(nread == rcount, err);
-@@ -201,7 +259,11 @@ namespace Exiv2 {
-         }
-         openMode_ = "r+b";
-         opMode_ = opSeek;
+ void BasicIo::readOrThrow(byte* buf, size_t rcount, ErrorCode err) {
+   const size_t nread = read(buf, rcount);
+   enforce(nread == rcount, err);
+@@ -165,7 +223,11 @@ int FileIo::Impl::switchMode(OpMode opMode) {
+   }
+   openMode_ = "r+b";
+   opMode_ = opSeek;
 +#if defined(__MINGW__) || (defined(WIN32) && !defined(__CYGWIN__))
-+        fp_ = win32_fopen(path_.c_str(), openMode_.c_str());
++  fp_ = win32_fopen(path_.c_str(), openMode_.c_str());
 +#else
-         fp_ = std::fopen(path_.c_str(), openMode_.c_str());
+   fp_ = std::fopen(path_.c_str(), openMode_.c_str());
 +#endif
-         if (!fp_) return 1;
-         return std::fseek(fp_, offset, SEEK_SET);
-     } // FileIo::Impl::switchMode
-@@ -534,7 +596,11 @@ namespace Exiv2 {
-         close();
-         p_->openMode_ = mode;
-         p_->opMode_ = Impl::opSeek;
+   if (!fp_)
+     return 1;
+   return std::fseek(fp_, offset, SEEK_SET);
+@@ -491,7 +553,11 @@ int FileIo::open(const std::string& mode) {
+   close();
+   p_->openMode_ = mode;
+   p_->opMode_ = Impl::opSeek;
 +#if defined(__MINGW__) || (defined(WIN32) && !defined(__CYGWIN__))
-+        p_->fp_ = win32_fopen(path().c_str(), mode.c_str());
++  p_->fp_ = win32_fopen(path().c_str(), mode.c_str());
 +#else
-         p_->fp_ = ::fopen(path().c_str(), mode.c_str());
+   p_->fp_ = ::fopen(path().c_str(), mode.c_str());
 +#endif
-         if (!p_->fp_)
-             return 1;
-         return 0;
+   if (!p_->fp_)
+     return 1;
+   return 0;
