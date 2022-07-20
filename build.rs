@@ -13,7 +13,7 @@ fn main() {
     #[cfg(windows)]
     {
         let stack_size = std::env::var("STACK_SIZE").unwrap_or("4194304".to_string());
-        let stack_size = stack_size.parse::<usize>().unwrap();
+        let stack_size = parse_size::parse_size(stack_size).unwrap();
         println!("cargo:rerun-if-env-changed=STACK_SIZE");
         #[cfg(target_env = "msvc")]
         println!("cargo:rustc-link-arg=/STACK:{}", stack_size);
