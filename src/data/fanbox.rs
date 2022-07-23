@@ -1,7 +1,9 @@
 #[cfg(feature = "exif")]
 use super::exif::ExifDataSource;
 use crate::ext::json::ToJson2;
+#[cfg(feature = "exif")]
 use crate::opt::author_name_filter::AuthorFiler;
+#[cfg(feature = "exif")]
 use crate::opthelper::get_helper;
 use crate::pixiv_link::PixivID;
 use crate::pixiv_link::ToPixivID;
