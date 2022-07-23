@@ -9,10 +9,12 @@ use crate::opt::proxy::check_proxy;
 use crate::opt::size::parse_u32_size;
 #[cfg(feature = "server")]
 use crate::server::cors::parse_cors_entries;
+#[cfg(feature = "ugoira")]
+use crate::ugoira::X264Profile;
 use json::JsonValue;
 #[cfg(feature = "server")]
 use std::net::SocketAddr;
-#[cfg(feature = "server")]
+#[cfg(any(feature = "server", feature = "ugoira"))]
 use std::str::FromStr;
 
 pub fn get_settings_list() -> Vec<SettingDes> {
@@ -43,8 +45,10 @@ pub fn get_settings_list() -> Vec<SettingDes> {
         SettingDes::new("max-download-tasks", gettext("The maximum number of tasks to download files at the same time."), JsonValueType::Number, Some(check_nozero_usize)).unwrap(),
         SettingDes::new("download-multiple-posts", gettext("Download multiple posts/artworks at the same time."), JsonValueType::Boolean, None).unwrap(),
         SettingDes::new("max-download-post-tasks", gettext("The maximum number of tasks to download posts/artworks at the same time."), JsonValueType::Number, Some(check_nozero_usize)).unwrap(),
-        #[cfg(feature = "ugora")]
+        #[cfg(feature = "ugoira")]
         SettingDes::new("force-yuv420p", gettext("Force yuv420p as output pixel format when converting ugoira(GIF) to video."), JsonValueType::Boolean, None).unwrap(),
+        #[cfg(feature = "ugoira")]
+        SettingDes::new("x264-profile", gettext("The x264 profile when converting ugoira(GIF) to video."), JsonValueType::Str, Some(check_x264_profile)).unwrap(),
     ]
 }
 
@@ -98,6 +102,14 @@ fn check_nonempty_str(obj: &JsonValue) -> bool {
 fn check_user_or_not(obj: &JsonValue) -> bool {
     let r = UseOrNot::from_json(obj);
     r.is_ok()
+}
+
+#[cfg(feature = "ugoira")]
+fn check_x264_profile(obj: &JsonValue) -> bool {
+    match obj.as_str() {
+        Some(profile) => X264Profile::from_str(profile).is_ok(),
+        None => false,
+    }
 }
 
 #[test]

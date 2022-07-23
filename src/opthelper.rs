@@ -15,6 +15,8 @@ use crate::server::cors::parse_cors_entries;
 #[cfg(feature = "server")]
 use crate::server::cors::CorsEntry;
 use crate::settings::SettingStore;
+#[cfg(feature = "ugoira")]
+use crate::ugoira::X264Profile;
 use std::convert::TryFrom;
 #[cfg(feature = "server")]
 use std::net::IpAddr;
@@ -389,6 +391,22 @@ impl OptHelper {
                 .unwrap();
         }
         false
+    }
+
+    #[cfg(feature = "ugoira")]
+    /// Return the x264 profile when converting ugoira(GIF) to video.
+    pub fn x264_profile(&self) -> X264Profile {
+        match self.opt.get_ref().x264_profile {
+            Some(r) => {
+                return r;
+            }
+            None => {}
+        }
+        if self.settings.get_ref().have("x264-profile") {
+            let v = self.settings.get_ref().get("server").unwrap();
+            return X264Profile::from_str(v.as_str().unwrap()).unwrap();
+        }
+        X264Profile::default()
     }
 }
 

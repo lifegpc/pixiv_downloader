@@ -8,6 +8,7 @@ use crate::ext::rawhandle::ToRawHandle;
 use crate::ext::try_err::TryErr;
 use crate::gettext;
 use std::convert::AsRef;
+use std::convert::TryFrom;
 use std::default::Default;
 use std::ffi::CStr;
 use std::ffi::OsStr;
@@ -22,6 +23,7 @@ use std::os::raw::c_int;
 use std::os::raw::c_void;
 #[cfg(test)]
 use std::path::Path;
+use std::str::FromStr;
 use std::str::Utf8Error;
 
 const UGOIRA_OK: c_int = _ugoira::UGOIRA_OK as c_int;
@@ -366,6 +368,80 @@ impl ToRawHandle<_ugoira::UgoiraFrame> for UgoiraFrames {
 impl ToRawHandle<_ugoira::AVDictionary> for AVDict {
     unsafe fn to_raw_handle(&self) -> *mut _ugoira::AVDictionary {
         self.m as *mut _ugoira::AVDictionary
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+/// H.264 profile
+pub enum X264Profile {
+    /// Selected by x264.
+    Auto,
+    /// No interlaced, No lossless.
+    Baseline,
+    /// No lossless.
+    Main,
+    /// No lossless.
+    High,
+    /// No lossless. Support for bit depth 8-10.
+    High10,
+    /// No lossless. Support for bit depth 8-10. Support for 4:2:0/4:2:2 chroma subsampling.
+    High422,
+    /// No lossless. Support for bit depth 8-10. Support for 4:2:0/4:2:2/4:4:4 chroma subsampling.
+    High444,
+}
+
+impl X264Profile {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            X264Profile::Auto => "",
+            X264Profile::Baseline => "baseline",
+            X264Profile::Main => "main",
+            X264Profile::High => "high",
+            X264Profile::High10 => "high10",
+            X264Profile::High422 => "high422",
+            X264Profile::High444 => "high444",
+        }
+    }
+
+    #[inline]
+    pub fn is_auto(&self) -> bool {
+        matches!(self, X264Profile::Auto)
+    }
+}
+
+impl AsRef<str> for X264Profile {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl Default for X264Profile {
+    fn default() -> Self {
+        X264Profile::Auto
+    }
+}
+
+impl FromStr for X264Profile {
+    type Err = &'static str;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.to_ascii_lowercase();
+        match s.as_str() {
+            "auto" => Ok(X264Profile::Auto),
+            "baseline" => Ok(X264Profile::Baseline),
+            "main" => Ok(X264Profile::Main),
+            "high" => Ok(X264Profile::High),
+            "high10" => Ok(X264Profile::High10),
+            "high422" => Ok(X264Profile::High422),
+            "high444" => Ok(X264Profile::High444),
+            _ => Err(gettext("Unknown H.264 profile.")),
+        }
+    }
+}
+
+impl TryFrom<&str> for X264Profile {
+    type Error = &'static str;
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        X264Profile::from_str(s)
     }
 }
 

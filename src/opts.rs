@@ -3,6 +3,8 @@ use crate::gettext;
 use crate::list::NonTailList;
 use crate::pixiv_link::PixivID;
 use crate::retry_interval::parse_retry_interval_from_str;
+#[cfg(feature = "ugoira")]
+use crate::ugoira::X264Profile;
 use crate::utils::check_file_exists;
 use crate::utils::get_exe_path_else_current;
 use getopts::HasArg;
@@ -101,6 +103,9 @@ pub struct CommandOpts {
     #[cfg(feature = "ugoira")]
     /// Whether to force yuv420p as output pixel format when converting ugoira(GIF) to video.
     pub force_yuv420p: Option<bool>,
+    #[cfg(feature = "ugoira")]
+    /// The x264 profile when converting ugoira(GIF) to video.
+    pub x264_profile: Option<X264Profile>,
 }
 
 impl CommandOpts {
@@ -134,6 +139,8 @@ impl CommandOpts {
             max_download_post_tasks: None,
             #[cfg(feature = "ugoira")]
             force_yuv420p: None,
+            #[cfg(feature = "ugoira")]
+            x264_profile: None,
         }
     }
 
@@ -283,6 +290,19 @@ pub fn parse_nonempty_usize<T: AsRef<str>>(s: Option<T>) -> Result<Option<usize>
             Ok(Some(c.get()))
         }
         None => Ok(None),
+    }
+}
+
+#[cfg(feature = "ugoira")]
+pub fn parse_x264_profile<S: AsRef<str>>(
+    s: Option<S>,
+) -> Result<Option<X264Profile>, &'static str> {
+    match s {
+        Some(s) => {
+            let s = s.as_ref();
+            Ok(Some(X264Profile::from_str(s)?))
+        }
+        None => Ok(Some(X264Profile::default())),
     }
 }
 
@@ -472,6 +492,21 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         )
         .as_str(),
         "yes/no",
+        HasArg::Maybe,
+        getopts::Occur::Optional,
+    );
+    #[cfg(feature = "ugoira")]
+    opts.opt(
+        "",
+        "x264-profile",
+        format!(
+            "{} ({} {})",
+            gettext("The x264 profile when converting ugoira(GIF) to video."),
+            gettext("Default:"),
+            "auto"
+        )
+        .as_str(),
+        "PROFILE",
         HasArg::Maybe,
         getopts::Occur::Optional,
     );
@@ -733,6 +768,25 @@ pub fn parse_cmd() -> Option<CommandOpts> {
                 "{} {}",
                 gettext("Failed to parse <opt>:")
                     .replace("<opt>", "force-yuv420p")
+                    .as_str(),
+                e
+            );
+            return None;
+        }
+    }
+    #[cfg(feature = "ugoira")]
+    match parse_optional_opt(
+        &result,
+        "x264-profile",
+        X264Profile::default(),
+        parse_x264_profile,
+    ) {
+        Ok(r) => re.as_mut().unwrap().x264_profile = r,
+        Err(e) => {
+            println!(
+                "{} {}",
+                gettext("Failed to parse <opt>:")
+                    .replace("<opt>", "x264-profile")
                     .as_str(),
                 e
             );

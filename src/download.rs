@@ -318,6 +318,10 @@ pub async fn download_artwork(
                     if helper.force_yuv420p() {
                         options.set("force_yuv420p", "1", None)?;
                     }
+                    let profile = helper.x264_profile();
+                    if !profile.is_auto() {
+                        options.set("profile", profile.as_str(), None)?;
+                    }
                     let frames = UgoiraFrames::from_json(&ugoira_data["frames"])?;
                     let output_file_name = base.join(format!("{}.mp4", id));
                     convert_ugoira_to_mp4(
