@@ -25,7 +25,7 @@ use std::net::Ipv4Addr;
 #[cfg(feature = "server")]
 use std::net::SocketAddr;
 use std::ops::Deref;
-#[cfg(feature = "server")]
+#[cfg(any(feature = "server", feature = "ugoira"))]
 use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::RwLock;
