@@ -69,18 +69,10 @@ jobs:
       - name: Add index files
         run: |
           echo '<!DOCTYPE HTML><html><head><script>window.location.href="pixiv_downloader/"</script></head><body><a href="pixiv_downloader/">Content Moved</a></body></html>' > target/doc/index.html
-      - name: Package document files
-        run: |
-          tar \
-          --dereference --hard-dereference \
-          --directory target/doc \
-          -cvf ${{ runner.temp }}/artifact.tar \
-          --exclude=.git \
-          --exclude=.github \
-          .
       - name: Upload documents
-        uses: actions/upload-artifact@main
+        uses: actions/upload-pages-artifact@v1
         with:
-          name: github-pages
-          path: ${{ runner.temp }}/artifact.tar
-          retention-days: 31
+          path: target/doc
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@main
