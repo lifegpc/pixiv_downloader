@@ -35,6 +35,7 @@ EXIF_API int exif_image_write_metadata(ExifImage* image);
 EXIF_API void free_exif_image(ExifImage* img);
 EXIF_API ExifKey* exif_create_key_by_key(const char* key);
 EXIF_API ExifKey* exif_create_key_by_id(uint16_t id, const char* group_name);
+EXIF_API ExifKey* exif_create_key_by_another(ExifKey* key);
 EXIF_API char* exif_get_key_key(ExifKey* key);
 EXIF_API char* exif_get_key_family_name(ExifKey* key);
 EXIF_API char* exif_get_key_group_name(ExifKey* key);

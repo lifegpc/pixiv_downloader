@@ -130,6 +130,16 @@ impl Drop for ExifKey {
     }
 }
 
+impl Clone for ExifKey {
+    fn clone(&self) -> Self {
+        let key = unsafe { _exif::exif_create_key_by_another(self.key) };
+        if key.is_null() {
+            panic!("Out of memory.");
+        }
+        Self { key }
+    }
+}
+
 impl ToRawHandle<_exif::ExifKey> for ExifKey {
     unsafe fn to_raw_handle(&self) -> *mut _exif::ExifKey {
         self.key
@@ -782,6 +792,8 @@ fn test_exif_key() {
     assert!(k2.is_ok());
     let k2 = k2.unwrap();
     assert_eq!(Some(String::from("Exif.Image.XPTitle")), k2.key());
+    let k3 = k2.clone();
+    assert_eq!(Some(String::from("Exif.Image.XPTitle")), k3.key());
 }
 
 #[test]

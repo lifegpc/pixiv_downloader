@@ -95,6 +95,19 @@ end:
     return nullptr;
 }
 
+ExifKey* exif_create_key_by_another(ExifKey* key) {
+    if (!key) return nullptr;
+    ExifKey* k = new ExifKey;
+    if (!k) return nullptr;
+    Exiv2::ExifKey* ek = new Exiv2::ExifKey(*(key->key));
+    if (!ek) {
+        delete k;
+        return nullptr;
+    }
+    k->key = ek;
+    return k;
+}
+
 char* exif_get_key_key(ExifKey* key) {
     if (!key || !key->key) return nullptr;
     auto s = key->key->key();
