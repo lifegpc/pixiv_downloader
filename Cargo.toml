@@ -22,7 +22,7 @@ html_parser = "0.6.3"
 http = "0.2"
 http-content-range = "0.1"
 hyper = { version="0.14", features = ["server"], optional = true }
-indicatif = "0.17.0-rc.11"
+indicatif = "0.17.0"
 int-enum = "0.4"
 itertools = "0.10"
 json = "0.12"
