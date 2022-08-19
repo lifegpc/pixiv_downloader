@@ -11,7 +11,7 @@ atty = "0.2"
 c_fixed_string = { version = "0.2", optional = true }
 cfg-if = "1"
 chrono = "0.4"
-dateparser = "0.1.6"
+dateparser = "0.1.7"
 derive_more = "0.99"
 fancy-regex = "0.10"
 flagset = { version = "0.4", optional = true }
