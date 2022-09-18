@@ -1334,6 +1334,7 @@ dependencies = [
  "async-trait",
  "atty",
  "bindgen",
+ "bytes",
  "c_fixed_string",
  "cfg-if 1.0.0",
  "chrono",

@@ -2,6 +2,7 @@ pub mod config;
 #[cfg(feature = "db_sqlite")]
 pub mod sqlite;
 pub mod traits;
+pub mod user;
 
 pub use config::check_db_config;
 pub use config::PixivDownloaderDbConfig;
@@ -10,6 +11,7 @@ pub use config::PixivDownloaderSqliteConfig;
 #[cfg(feature = "db_sqlite")]
 pub use sqlite::{PixivDownloaderSqlite, SqliteError};
 pub use traits::PixivDownloaderDb;
+pub use user::User;
 pub type PixivDownloaderDbError = Box<dyn std::fmt::Display + Send + Sync>;
 
 use crate::{get_helper, gettext};

@@ -1,9 +1,11 @@
 use super::super::{
-    PixivDownloaderDb, PixivDownloaderDbConfig, PixivDownloaderDbError, PixivDownloaderSqliteConfig,
+    PixivDownloaderDb, PixivDownloaderDbConfig, PixivDownloaderDbError,
+    PixivDownloaderSqliteConfig, User,
 };
 use super::SqliteError;
+use bytes::BytesMut;
 use futures_util::lock::Mutex;
-use rusqlite::{Connection, OpenFlags, Transaction};
+use rusqlite::{Connection, OpenFlags, OptionalExtension, Transaction};
 use std::collections::HashMap;
 
 const AUTHORS_TABLE: &'static str = "CREATE TABLE authors (
@@ -169,6 +171,23 @@ impl PixivDownloaderSqlite {
         Ok(tables)
     }
 
+    async fn _get_user(&self, id: u64) -> Result<Option<User>, SqliteError> {
+        let con = self.db.lock().await;
+        Ok(con
+            .query_row("SELECT * FROM users WHERE id = ?;", [id], |row| {
+                let password: Vec<u8> = row.get(3)?;
+                let password: &[u8] = &password;
+                Ok(User {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                    username: row.get(2)?,
+                    password: BytesMut::from(password),
+                    is_admin: row.get(4)?,
+                })
+            })
+            .optional()?)
+    }
+
     async fn _read_version(&self) -> Result<Option<[u8; 4]>, SqliteError> {
         let con = self.db.lock().await;
         let mut stmt = con.prepare("SELECT v1, v2, v3, v4 FROM version WHERE id='main';")?;
@@ -218,6 +237,10 @@ impl PixivDownloaderDb for PixivDownloaderSqlite {
             }
             _ => panic!("Config mismatched."),
         }
+    }
+
+    async fn get_user(&self, id: u64) -> Result<Option<User>, PixivDownloaderDbError> {
+        Ok(self._get_user(id).await?)
     }
 
     async fn init(&self) -> Result<(), PixivDownloaderDbError> {
