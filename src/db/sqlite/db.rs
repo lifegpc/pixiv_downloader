@@ -3,7 +3,7 @@ use super::super::{
 };
 use super::SqliteError;
 use futures_util::lock::Mutex;
-use rusqlite::{Connection, OpenFlags};
+use rusqlite::{Connection, OpenFlags, Transaction};
 use std::collections::HashMap;
 
 const AUTHORS_TABLE: &'static str = "CREATE TABLE authors (
@@ -52,6 +52,19 @@ id INT,
 lang TEXT,
 translated TEXT,
 );";
+const TOKEN_TABLE: &'static str = "CREATE TABLE token (
+user_id INT,
+token TEXT,
+created_at DATETIME,
+expired_at DATETIME,
+);";
+const USERS_TABLE: &'static str = "CREATE TABLE users (
+id INT,
+name TEXT,
+username TEXT,
+password TEXT,
+PRIMARY KEY (id)
+);";
 const VERSION_TABLE: &'static str = "CREATE TABLE version (
 id TEXT,
 v1 INT,
@@ -60,7 +73,7 @@ v3 INT,
 v4 INT,
 PRIMARY KEY (id)
 );";
-const VERSION: [u8; 4] = [1, 0, 0, 0];
+const VERSION: [u8; 4] = [1, 0, 0, 1];
 
 pub struct PixivDownloaderSqlite {
     db: Mutex<Connection>,
@@ -84,37 +97,59 @@ impl PixivDownloaderSqlite {
         if db_version > VERSION {
             return Err(SqliteError::DatabaseVersionTooNew);
         }
+        if db_version < VERSION {
+            {
+                let mut lock = self.db.lock().await;
+                let tx = lock.transaction()?;
+                if db_version < [1, 0, 0, 1] {
+                    tx.execute(TOKEN_TABLE, [])?;
+                    tx.execute(USERS_TABLE, [])?;
+                }
+                self._write_version(&tx)?;
+                tx.commit()?;
+            }
+            self.vacuum().await?;
+        }
         Ok(true)
     }
 
     /// Create tables
     async fn _create_table(&self) -> Result<(), SqliteError> {
         let tables = self._get_exists_table().await?;
+        let mut lock = self.db.lock().await;
+        let t = lock.transaction()?;
         if !tables.contains_key("version") {
-            self.db.lock().await.execute(VERSION_TABLE, [])?;
-            self._write_version().await?;
+            t.execute(VERSION_TABLE, [])?;
+            self._write_version(&t)?;
         }
         if !tables.contains_key("authors") {
-            self.db.lock().await.execute(AUTHORS_TABLE, [])?;
+            t.execute(AUTHORS_TABLE, [])?;
         }
         if !tables.contains_key("files") {
-            self.db.lock().await.execute(FILES_TABLE, [])?;
+            t.execute(FILES_TABLE, [])?;
         }
         if !tables.contains_key("pixiv_artwork_tags") {
-            self.db.lock().await.execute(PIXIV_ARTWORK_TAGS_TABLE, [])?;
+            t.execute(PIXIV_ARTWORK_TAGS_TABLE, [])?;
         }
         if !tables.contains_key("pixiv_artworks") {
-            self.db.lock().await.execute(PIXIV_ARTWORKS_TABLE, [])?;
+            t.execute(PIXIV_ARTWORKS_TABLE, [])?;
         }
         if !tables.contains_key("pixiv_files") {
-            self.db.lock().await.execute(PIXIV_FILES_TABLE, [])?;
+            t.execute(PIXIV_FILES_TABLE, [])?;
         }
         if !tables.contains_key("tags") {
-            self.db.lock().await.execute(TAGS_TABLE, [])?;
+            t.execute(TAGS_TABLE, [])?;
         }
         if !tables.contains_key("tags_i18n") {
-            self.db.lock().await.execute(TAGS_I18N_TABLE, [])?;
+            t.execute(TAGS_I18N_TABLE, [])?;
         }
+        if !tables.contains_key("token") {
+            t.execute(TOKEN_TABLE, [])?;
+        }
+        if !tables.contains_key("users") {
+            t.execute(USERS_TABLE, [])?;
+        }
+        t.commit()?;
         Ok(())
     }
 
@@ -141,9 +176,8 @@ impl PixivDownloaderSqlite {
         }
     }
 
-    async fn _write_version(&self) -> Result<(), SqliteError> {
-        let con = self.db.lock().await;
-        let mut stmt = con.prepare(
+    fn _write_version<'a>(&self, ts: &Transaction<'a>) -> Result<(), SqliteError> {
+        let mut stmt = ts.prepare(
             "INSERT OR REPLACE INTO INTO version (id, v1, v2, v3, v4) VALUES ('main', ?, ?, ?, ?);",
         )?;
         stmt.execute([VERSION[0], VERSION[1], VERSION[2], VERSION[3]])?;
