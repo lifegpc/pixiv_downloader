@@ -195,8 +195,44 @@ impl Debug for FanboxArticleUrlEmbedBlock {
     }
 }
 
+pub struct FanboxArticleHeaderBlock {
+    pub data: JsonValue,
+}
+
+impl FanboxArticleHeaderBlock {
+    #[inline]
+    /// Create a new instance
+    pub fn new(data: &JsonValue) -> Self {
+        Self { data: data.clone() }
+    }
+
+    #[inline]
+    pub fn text(&self) -> Option<&str> {
+        self.data["text"].as_str()
+    }
+}
+
+impl CheckUnknown for FanboxArticleHeaderBlock {
+    fn check_unknown(&self) -> Result<(), FanboxAPIError> {
+        check_json_keys!(
+            "type",
+            "text"+,
+        );
+        Ok(())
+    }
+}
+
+impl Debug for FanboxArticleHeaderBlock {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("FanboxArticleHeaderBlock")
+            .field("text", &self.text())
+            .finish_non_exhaustive()
+    }
+}
+
 #[derive(proc_macros::CheckUnknown, Debug)]
 pub enum FanboxArticleBlock {
+    Header(FanboxArticleHeaderBlock),
     Image(FanboxArticleImageBlock),
     Paragraph(FanboxArticleParagraphBlock),
     UrlEmbed(FanboxArticleUrlEmbedBlock),
@@ -209,6 +245,7 @@ impl FanboxArticleBlock {
     pub fn new(data: &JsonValue) -> Self {
         match data["type"].as_str() {
             Some(t) => match t {
+                "header" => Self::Header(FanboxArticleHeaderBlock::new(data)),
                 "image" => Self::Image(FanboxArticleImageBlock::new(data)),
                 "p" => Self::Paragraph(FanboxArticleParagraphBlock::new(data)),
                 "url_embed" => Self::UrlEmbed(FanboxArticleUrlEmbedBlock::new(data)),
