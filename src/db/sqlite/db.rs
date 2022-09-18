@@ -27,7 +27,7 @@ PRIMARY KEY (id)
 );";
 const PIXIV_ARTWORK_TAGS_TABLE: &'static str = "CREATE TABLE pixiv_artwork_tags (
 id INT,
-tag_id INT,
+tag_id INT
 );";
 const PIXIV_ARTWORKS_TABLE: &'static str = "CREATE TABLE pixiv_artworks (
 id INT,
@@ -35,12 +35,12 @@ title TEXT,
 author TEXT,
 uid INT,
 description TEXT,
-count INT,
+count INT
 );";
 const PIXIV_FILES_TABLE: &'static str = "CREATE TABLE pixiv_files (
 id INT,
 file_id INT,
-page INT,
+page INT
 );";
 const TAGS_TABLE: &'static str = "CREATE TABLE tags (
 id INT,
@@ -50,13 +50,13 @@ PRIMARY KEY (id)
 const TAGS_I18N_TABLE: &'static str = "CREATE TABLE tags_i18n (
 id INT,
 lang TEXT,
-translated TEXT,
+translated TEXT
 );";
 const TOKEN_TABLE: &'static str = "CREATE TABLE token (
 user_id INT,
 token TEXT,
 created_at DATETIME,
-expired_at DATETIME,
+expired_at DATETIME
 );";
 const USERS_TABLE: &'static str = "CREATE TABLE users (
 id INT,
@@ -178,7 +178,7 @@ impl PixivDownloaderSqlite {
 
     fn _write_version<'a>(&self, ts: &Transaction<'a>) -> Result<(), SqliteError> {
         let mut stmt = ts.prepare(
-            "INSERT OR REPLACE INTO INTO version (id, v1, v2, v3, v4) VALUES ('main', ?, ?, ?, ?);",
+            "INSERT OR REPLACE INTO version (id, v1, v2, v3, v4) VALUES ('main', ?, ?, ?, ?);",
         )?;
         stmt.execute([VERSION[0], VERSION[1], VERSION[2], VERSION[3]])?;
         Ok(())
