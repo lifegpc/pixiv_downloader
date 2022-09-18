@@ -104,9 +104,9 @@ jobs:
     - name: Check Out
       uses: actions/checkout@v2
     - name: Build
-      run: cargo build --features server -vv
+      run: cargo build --features server,db_sqlite -vv
     - name: Run tests
-      run: cargo test --features server --verbose -- --show-output
+      run: cargo test --features server,db_sqlite --verbose -- --show-output
   build-all:
     runs-on: ubuntu-latest
     steps:

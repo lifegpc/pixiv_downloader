@@ -19,6 +19,8 @@ mod _ugoira;
 mod avdict;
 mod cookies;
 mod data;
+#[cfg(feature = "db")]
+mod db;
 mod download;
 mod downloader;
 mod dur;
