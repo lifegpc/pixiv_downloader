@@ -1331,6 +1331,7 @@ name = "pixiv_downloader"
 version = "0.0.1"
 dependencies = [
  "RustyXML",
+ "anyhow",
  "async-trait",
  "atty",
  "bindgen",

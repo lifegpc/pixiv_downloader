@@ -12,14 +12,14 @@ pub use config::PixivDownloaderSqliteConfig;
 pub use sqlite::{PixivDownloaderSqlite, SqliteError};
 pub use traits::PixivDownloaderDb;
 pub use user::User;
-pub type PixivDownloaderDbError = Box<dyn std::fmt::Display + Send + Sync>;
+pub type PixivDownloaderDbError = anyhow::Error;
 
 use crate::{get_helper, gettext};
 
 #[cfg(feature = "db_sqlite")]
 impl From<SqliteError> for PixivDownloaderDbError {
     fn from(e: SqliteError) -> Self {
-        Box::new(e)
+        PixivDownloaderDbError::msg(e)
     }
 }
 
@@ -30,7 +30,7 @@ compile_error!("No database backend is enabled.");
 pub fn open_database() -> Result<Box<dyn PixivDownloaderDb + Send + Sync>, PixivDownloaderDbError> {
     let cfg = get_helper().db();
     if cfg.is_none() {
-        return Err(Box::new(String::from(gettext(
+        return Err(PixivDownloaderDbError::msg(String::from(gettext(
             "No database configuration provided.",
         ))));
     }
@@ -40,7 +40,9 @@ pub fn open_database() -> Result<Box<dyn PixivDownloaderDb + Send + Sync>, Pixiv
             return Ok(Box::new(PixivDownloaderSqlite::new(&cfg)?));
         }
     }
-    Err(Box::new(String::from(gettext("Unknown database type."))))
+    Err(PixivDownloaderDbError::msg(String::from(gettext(
+        "Unknown database type.",
+    ))))
 }
 
 /// Open the database and initialize it

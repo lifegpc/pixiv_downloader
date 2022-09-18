@@ -6,6 +6,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anyhow = { version = "1.0", optional = true }
 async-trait = { version = "0.1", optional = true }
 atty = "0.2"
 bytes = { version = "1.2", optional = true }
@@ -47,7 +48,7 @@ cmake = { version = "0.1", optional = true }
 [features]
 all = ["db", "db_sqlite", "exif", "ugoira", "server"]
 avdict = ["bindgen", "cmake", "flagset"]
-db = ["bytes"]
+db = ["anyhow", "bytes"]
 db_all = ["db", "db_sqlite"]
 db_sqlite = ["rusqlite"]
 exif = ["bindgen", "c_fixed_string", "cmake", "link-cplusplus", "utf16string"]

@@ -1,17 +1,17 @@
-use super::preclude::*;
+use super::super::preclude::*;
 
-pub struct VersionContext {
+pub struct AuthStatusContext {
     ctx: Arc<ServerContext>,
 }
 
-impl VersionContext {
+impl AuthStatusContext {
     pub fn new(ctx: Arc<ServerContext>) -> Self {
         Self { ctx }
     }
 }
 
 #[async_trait]
-impl ResponseJsonFor<Body> for VersionContext {
+impl ResponseJsonFor<Body> for AuthStatusContext {
     async fn response_json(
         &self,
         req: Request<Body>,
@@ -26,25 +26,26 @@ impl ResponseJsonFor<Body> for VersionContext {
             OPTIONS,
             POST,
         );
-        Ok(builder.body(json::object! {"version": [0, 0, 1, 0]})?)
+        let has_root_user = self.ctx.db.get_user(0).await?.is_some();
+        Ok(builder.body(json::object! {"has_root_user": has_root_user})?)
     }
 }
 
-pub struct VersionRoute {
+pub struct AuthStatusRoute {
     regex: Regex,
 }
 
-impl VersionRoute {
+impl AuthStatusRoute {
     pub fn new() -> Self {
         Self {
-            regex: Regex::new(r"^(/+api)?/+version(/.*)?$").unwrap(),
+            regex: Regex::new(r"^(/+api)?/+auth(/+status(/.*)?)?$").unwrap(),
         }
     }
 }
 
-impl MatchRoute<Body, Body> for VersionRoute {
+impl MatchRoute<Body, Body> for AuthStatusRoute {
     fn get_route(&self, ctx: Arc<ServerContext>) -> Box<ResponseForType> {
-        Box::new(VersionContext::new(ctx))
+        Box::new(AuthStatusContext::new(ctx))
     }
 
     fn match_route(&self, req: &http::Request<Body>) -> bool {

@@ -17,6 +17,8 @@ pub enum PixivDownloaderError {
     Fanbox(crate::fanbox::error::FanboxAPIError),
     #[cfg(feature = "avdict")]
     AVDict(crate::avdict::AVDictError),
+    #[cfg(feature = "db")]
+    DbError(crate::db::PixivDownloaderDbError),
 }
 
 impl From<&str> for PixivDownloaderError {

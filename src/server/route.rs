@@ -1,3 +1,4 @@
+use super::auth::*;
 use super::context::ServerContext;
 use super::traits::MatchRoute;
 use super::traits::ResponseFor;
@@ -17,6 +18,7 @@ impl ServerRoutes {
     pub fn new() -> Self {
         let mut routes: Vec<Box<RouteType>> = Vec::new();
         routes.push(Box::new(VersionRoute::new()));
+        routes.push(Box::new(AuthStatusRoute::new()));
         Self { routes }
     }
 
