@@ -1,0 +1,12 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "https://github.com/lifegpc/pixiv_downloader/raw/master/doc/api/auth/status.zh_CN.json",
+    "title": "服务器验证状态",
+    "type": "object",
+    "properties": {
+        "has_root_user": {
+            "type": "boolean",
+            "description": "是否存在根用户，如不存在，添加用户无需鉴权"
+        }
+    }
+}

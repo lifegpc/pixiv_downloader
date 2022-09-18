@@ -3,5 +3,5 @@
 * route: `/version` or `/api/version`
 * method: `GET` or `POST`
 * auth: Not needed
-* [Example](version.example.json)
-* [JSON schema](version.json)
+* [Example](version.example.json) of the response
+* [JSON schema](version.json) of the response
