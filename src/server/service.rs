@@ -64,9 +64,9 @@ pub struct PixivDownloaderMakeSvc {
 }
 
 impl PixivDownloaderMakeSvc {
-    pub fn new() -> Self {
+    pub async fn new() -> Self {
         Self {
-            context: Arc::new(ServerContext::default()),
+            context: Arc::new(ServerContext::default().await),
             routes: Arc::new(ServerRoutes::new()),
         }
     }
@@ -90,8 +90,8 @@ impl<T> Service<T> for PixivDownloaderMakeSvc {
 }
 
 /// Start the server
-pub fn start_server(
+pub async fn start_server(
     addr: &SocketAddr,
 ) -> Result<Server<AddrIncoming, PixivDownloaderMakeSvc>, hyper::Error> {
-    Ok(Server::try_bind(addr)?.serve(PixivDownloaderMakeSvc::new()))
+    Ok(Server::try_bind(addr)?.serve(PixivDownloaderMakeSvc::new().await))
 }

@@ -137,7 +137,7 @@ impl Main {
             #[cfg(feature = "server")]
             Command::Server => {
                 let addr = get_helper().server();
-                match server::service::start_server(&addr) {
+                match server::service::start_server(&addr).await {
                     Ok(server) => {
                         println!("Listening on http://{}", addr);
                         match server.await {

@@ -40,3 +40,11 @@ pub fn open_database() -> Result<Box<dyn PixivDownloaderDb + Send + Sync>, Pixiv
     }
     Err(Box::new(String::from(gettext("Unknown database type."))))
 }
+
+/// Open the database and initialize it
+pub async fn open_and_init_database(
+) -> Result<Box<dyn PixivDownloaderDb + Send + Sync>, PixivDownloaderDbError> {
+    let db = open_database()?;
+    db.init().await?;
+    Ok(db)
+}
