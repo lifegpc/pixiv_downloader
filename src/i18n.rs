@@ -3,6 +3,12 @@ use gettext::Catalog;
 use std::fs::File;
 
 pub fn get_lang() -> String {
+    match std::env::var("PIXIV_DOWNLOADER_LANG") {
+        Ok(lang) => {
+            return lang;
+        }
+        Err(_) => {}
+    }
     let lan = std::env::var("LANG");
     match lan {
         Ok(l) => {
