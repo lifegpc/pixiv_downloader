@@ -1,3 +1,5 @@
+#[cfg(feature = "db")]
+use crate::db::check_db_config;
 use crate::ext::json::FromJson;
 use crate::ext::use_or_not::UseOrNot;
 use crate::gettext;
@@ -49,6 +51,8 @@ pub fn get_settings_list() -> Vec<SettingDes> {
         SettingDes::new("force-yuv420p", gettext("Force yuv420p as output pixel format when converting ugoira(GIF) to video."), JsonValueType::Boolean, None).unwrap(),
         #[cfg(feature = "ugoira")]
         SettingDes::new("x264-profile", gettext("The x264 profile when converting ugoira(GIF) to video."), JsonValueType::Str, Some(check_x264_profile)).unwrap(),
+        #[cfg(feature = "db")]
+        SettingDes::new("db", gettext("Database settings."), JsonValueType::Object, Some(check_db_config)).unwrap(),
     ]
 }
 

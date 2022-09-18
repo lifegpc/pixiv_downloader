@@ -7,5 +7,5 @@ pub trait PixivDownloaderDb {
         cfg: &R,
     ) -> Result<Self, PixivDownloaderDbError>
     where
-        Self: Sized;
+        Self: Sized + Send + Sync;
 }

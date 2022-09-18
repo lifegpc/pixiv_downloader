@@ -1,3 +1,5 @@
+#[cfg(feature = "db")]
+use crate::db::PixivDownloaderDbConfig;
 use crate::ext::json::FromJson;
 use crate::ext::replace::ReplaceWith2;
 use crate::ext::rw_lock::GetRwLock;
@@ -71,6 +73,16 @@ impl OptHelper {
     #[inline]
     pub fn cors_entries(&self) -> Vec<CorsEntry> {
         self._cors_entries.get_ref().clone()
+    }
+
+    #[cfg(feature = "db")]
+    /// Return the config of the database
+    pub fn db(&self) -> PixivDownloaderDbConfig {
+        if self.settings.get_ref().have("db") {
+            PixivDownloaderDbConfig::new(&self.settings.get_ref().get("db").unwrap()).unwrap()
+        } else {
+            PixivDownloaderDbConfig::default()
+        }
     }
 
     /// Whether to download multiple posts/artworks at the same time.
