@@ -191,7 +191,10 @@ impl Debug for FanboxArticleUrlEmbedMap {
 fanbox_api_test!(test_html_card, {
     match client.get_post_info(4135937).await {
         Some(post) => {
-            assert_eq!(post.title(), Some("第255話 夏の新刊入稿しました！ジュエハキャラバンの話"));
+            assert_eq!(
+                post.title(),
+                Some("第255話 夏の新刊入稿しました！ジュエハキャラバンの話")
+            );
             assert_eq!(post.creator_id(), Some("shiratamaco"));
             println!("{:#?}", post);
             match post.check_unknown() {

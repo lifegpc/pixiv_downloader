@@ -1,0 +1,3 @@
+ignore = [
+    "src/settings_list.rs",
+]

@@ -28,14 +28,17 @@ fn main() {
             create_dir(&utils_build_path).unwrap();
         }
         let mut config = cmake::Config::new("utils");
-        config.define("CMAKE_INSTALL_PREFIX", out_path.to_str().unwrap())
+        config
+            .define("CMAKE_INSTALL_PREFIX", out_path.to_str().unwrap())
             .out_dir(utils_build_path)
             .define("ENABLE_ICONV", "OFF")
             .define("ENABLE_STANDALONE", "ON")
             .define("ENABLE_CXX17", "ON")
             .define("INSTALL_DEP_FILES", "ON");
         #[cfg(all(windows, target_env = "msvc"))]
-        config.define("CMAKE_BUILD_TYPE", "Release").generator("Ninja");
+        config
+            .define("CMAKE_BUILD_TYPE", "Release")
+            .generator("Ninja");
         config.build();
         let dep_path = out_path.join("utils_dep.txt");
         let mut f = File::open(dep_path).unwrap();
@@ -65,10 +68,13 @@ fn main() {
             create_dir(&avdict_build_path).unwrap();
         }
         let mut config = cmake::Config::new("avdict");
-        config.define("CMAKE_INSTALL_PREFIX", out_path.to_str().unwrap())
+        config
+            .define("CMAKE_INSTALL_PREFIX", out_path.to_str().unwrap())
             .out_dir(avdict_build_path);
         #[cfg(all(windows, target_env = "msvc"))]
-        config.define("CMAKE_BUILD_TYPE", "Release").generator("Ninja");
+        config
+            .define("CMAKE_BUILD_TYPE", "Release")
+            .generator("Ninja");
         config.build();
         println!("cargo:rustc-link-search=native={}/lib", out_path.display());
         let dep_path = out_path.join("avdict_dep.txt");
@@ -113,11 +119,14 @@ fn main() {
             create_dir(&exif_build_path).unwrap();
         }
         let mut config = cmake::Config::new("exif");
-        config.define("CMAKE_INSTALL_PREFIX", out_path.to_str().unwrap())
+        config
+            .define("CMAKE_INSTALL_PREFIX", out_path.to_str().unwrap())
             .out_dir(exif_build_path)
             .define("UTILS_LIBRARY", utils_build_path.to_str().unwrap());
         #[cfg(all(windows, target_env = "msvc"))]
-        config.define("CMAKE_BUILD_TYPE", "Release").generator("Ninja");
+        config
+            .define("CMAKE_BUILD_TYPE", "Release")
+            .generator("Ninja");
         config.build();
         println!("cargo:rustc-link-search=native={}/lib", out_path.display());
         let dep_path = out_path.join("exif_dep.txt");
@@ -163,11 +172,14 @@ fn main() {
             create_dir(&ugoira_build_path).unwrap();
         }
         let mut config = cmake::Config::new("ugoira");
-        config.define("CMAKE_INSTALL_PREFIX", out_path.to_str().unwrap())
+        config
+            .define("CMAKE_INSTALL_PREFIX", out_path.to_str().unwrap())
             .out_dir(ugoira_build_path)
             .define("UTILS_LIBRARY", utils_build_path.to_str().unwrap());
         #[cfg(all(windows, target_env = "msvc"))]
-        config.define("CMAKE_BUILD_TYPE", "Release").generator("Ninja");
+        config
+            .define("CMAKE_BUILD_TYPE", "Release")
+            .generator("Ninja");
         config.build();
         println!("cargo:rustc-link-search=native={}/lib", out_path.display());
         let dep_path = out_path.join("ugoira_dep.txt");
