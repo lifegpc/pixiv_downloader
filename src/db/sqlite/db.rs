@@ -63,6 +63,7 @@ id INT,
 name TEXT,
 username TEXT,
 password TEXT,
+is_admin BOOLEAN,
 PRIMARY KEY (id)
 );";
 const VERSION_TABLE: &'static str = "CREATE TABLE version (
@@ -73,7 +74,7 @@ v3 INT,
 v4 INT,
 PRIMARY KEY (id)
 );";
-const VERSION: [u8; 4] = [1, 0, 0, 1];
+const VERSION: [u8; 4] = [1, 0, 0, 2];
 
 pub struct PixivDownloaderSqlite {
     db: Mutex<Connection>,
@@ -104,6 +105,9 @@ impl PixivDownloaderSqlite {
                 if db_version < [1, 0, 0, 1] {
                     tx.execute(TOKEN_TABLE, [])?;
                     tx.execute(USERS_TABLE, [])?;
+                }
+                if db_version < [1, 0, 0, 2] {
+                    tx.execute("ALTER TABLE users ADD is_admin BOOLEAN;", [])?;
                 }
                 self._write_version(&tx)?;
                 tx.commit()?;
