@@ -43,7 +43,12 @@ int exif_image_read_metadata(ExifImage* image) {
 
 int exif_image_set_exif_data(ExifImage* image, ExifData* data) {
     if (!image || !data) return 1;
-    image->image->setExifData(data->data);
+    try {
+        image->image->setExifData(data->data);
+    } catch (std::exception& e) {
+        printf("%s\n", e.what());
+        return 1;
+    }
     return 0;
 }
 
