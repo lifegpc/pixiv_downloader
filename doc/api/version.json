@@ -1,0 +1,17 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "https://github.com/lifegpc/pixiv_downloader/raw/master/doc/api/version.json",
+    "title": "Server version",
+    "type": "object",
+    "properties": {
+        "version": {
+            "description": "The version of the API",
+            "type": "array",
+            "items": {
+                "type": "integer"
+            },
+            "maxItems": 4,
+            "minItems": 4
+        }
+    }
+}
