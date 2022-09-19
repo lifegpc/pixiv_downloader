@@ -2,6 +2,7 @@ pub mod config;
 #[cfg(feature = "db_sqlite")]
 pub mod sqlite;
 pub mod traits;
+#[cfg(feature = "server")]
 pub mod user;
 
 pub use config::check_db_config;
@@ -11,6 +12,7 @@ pub use config::PixivDownloaderSqliteConfig;
 #[cfg(feature = "db_sqlite")]
 pub use sqlite::{PixivDownloaderSqlite, SqliteError};
 pub use traits::PixivDownloaderDb;
+#[cfg(feature = "server")]
 pub use user::User;
 pub type PixivDownloaderDbError = anyhow::Error;
 

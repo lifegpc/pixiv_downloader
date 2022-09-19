@@ -1,6 +1,7 @@
+#[cfg(feature = "server")]
+use super::super::User;
 use super::super::{
-    PixivDownloaderDb, PixivDownloaderDbConfig, PixivDownloaderDbError,
-    PixivDownloaderSqliteConfig, User,
+    PixivDownloaderDb, PixivDownloaderDbConfig, PixivDownloaderDbError, PixivDownloaderSqliteConfig,
 };
 use super::SqliteError;
 use bytes::BytesMut;
@@ -171,6 +172,7 @@ impl PixivDownloaderSqlite {
         Ok(tables)
     }
 
+    #[cfg(feature = "server")]
     async fn _get_user(&self, id: u64) -> Result<Option<User>, SqliteError> {
         let con = self.db.lock().await;
         Ok(con
@@ -239,6 +241,7 @@ impl PixivDownloaderDb for PixivDownloaderSqlite {
         }
     }
 
+    #[cfg(feature = "server")]
     async fn get_user(&self, id: u64) -> Result<Option<User>, PixivDownloaderDbError> {
         Ok(self._get_user(id).await?)
     }

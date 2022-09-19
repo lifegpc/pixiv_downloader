@@ -1,5 +1,6 @@
 use super::PixivDownloaderDbConfig;
 use super::PixivDownloaderDbError;
+#[cfg(feature = "server")]
 use super::User;
 
 #[async_trait]
@@ -11,6 +12,7 @@ pub trait PixivDownloaderDb {
     ) -> Result<Self, PixivDownloaderDbError>
     where
         Self: Sized + Send + Sync;
+    #[cfg(feature = "server")]
     /// Get a user by ID
     /// * `id`: The user's ID
     async fn get_user(&self, id: u64) -> Result<Option<User>, PixivDownloaderDbError>;
