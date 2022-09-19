@@ -1,8 +1,12 @@
 use super::traits::GetRequestParams;
 use crate::error::PixivDownloaderError;
-use bytes::BytesMut;
+use crate::ext::try_err::TryErr;
+use crate::gettext;
+use bytes::{Buf, BytesMut};
 use hyper::{body::HttpBody, Body, Request};
+use multipart::server::{Multipart, ReadEntryResult};
 use std::collections::HashMap;
+use std::io::Read;
 
 pub struct RequestParams {
     pub params: HashMap<String, Vec<String>>,
@@ -31,7 +35,9 @@ impl GetRequestParams for Request<Body> {
             params = urlparse::parse_qs(query);
         }
         if let Some(ct) = self.headers().get(hyper::header::CONTENT_TYPE) {
-            if ct == "application/x-www-form-urlencoded" {
+            let ct = ct.to_str()?.to_owned();
+            let cts = ct.to_lowercase();
+            if cts == "application/x-www-form-urlencoded" {
                 let mut body = BytesMut::new();
                 loop {
                     if let Some(d) = self.body_mut().data().await {
@@ -49,6 +55,48 @@ impl GetRequestParams for Request<Body> {
                         }
                         None => {
                             params.insert(k, v);
+                        }
+                    }
+                }
+            } else if cts.starts_with("multipart/form-data") {
+                let mut body = BytesMut::new();
+                loop {
+                    if let Some(d) = self.body_mut().data().await {
+                        body.extend_from_slice(&d?);
+                    } else {
+                        break;
+                    }
+                }
+                let mut r = body.reader();
+                let boundary = ct
+                    .find("boundary=")
+                    .try_err(gettext("Failed to find boundary."))?;
+                let boundary = &ct[boundary + 9..];
+                let params2 = Multipart::with_body(&mut r, boundary);
+                let mut entry = params2.into_entry();
+                loop {
+                    match entry {
+                        ReadEntryResult::Entry(mut data) => {
+                            if data.is_text() {
+                                let mut s = String::new();
+                                data.data.read_to_string(&mut s)?;
+                                let name = data.headers.name.to_string();
+                                match params.get_mut(&name) {
+                                    Some(l) => {
+                                        l.push(s);
+                                    }
+                                    None => {
+                                        params.insert(name, vec![s]);
+                                    }
+                                }
+                            }
+                            entry = data.next_entry();
+                        }
+                        ReadEntryResult::End(_) => {
+                            break;
+                        }
+                        ReadEntryResult::Error(_, e) => {
+                            return Err(PixivDownloaderError::from(e));
                         }
                     }
                 }
