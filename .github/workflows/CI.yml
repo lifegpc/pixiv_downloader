@@ -107,6 +107,15 @@ jobs:
       run: cargo build --features server,db_sqlite -vv
     - name: Run tests
       run: cargo test --features server,db_sqlite --verbose -- --show-output
+  build-db-all:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check Out
+      uses: actions/checkout@v2
+    - name: Build
+      run: cargo build --features db_all -vv
+    - name: Run tests
+      run: cargo test --features db_all --verbose -- --show-output
   build-all:
     runs-on: ubuntu-latest
     steps:
