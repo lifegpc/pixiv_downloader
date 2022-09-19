@@ -13,5 +13,6 @@
             "maxItems": 4,
             "minItems": 4
         }
-    }
+    },
+    "required": ["version"]
 }

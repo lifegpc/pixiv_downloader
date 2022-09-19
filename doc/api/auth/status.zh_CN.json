@@ -8,5 +8,6 @@
             "type": "boolean",
             "description": "是否存在根用户，如不存在，添加用户无需鉴权"
         }
-    }
+    },
+    "required": ["has_root_user"]
 }
