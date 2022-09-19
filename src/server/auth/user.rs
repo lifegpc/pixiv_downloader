@@ -1,4 +1,5 @@
 use super::super::preclude::*;
+use crate::ext::json::ToJson2;
 
 #[derive(Clone, Debug)]
 /// Action to perform on a user.
@@ -20,6 +21,21 @@ impl AuthUserContext {
             action,
             is_restful,
         }
+    }
+
+    async fn handle(&self, mut req: Request<Body>) -> JSONResult {
+        let root_user = self.ctx.db.get_user(0).await?;
+        let params = req.get_params().await?;
+        if root_user.is_some() {
+            // # TODO auth
+        }
+        match &self.action {
+            Some(act) => {}
+            None => {
+                panic!("No action specified for AuthUserContext.");
+            }
+        }
+        Ok(json::object! {})
     }
 }
 
@@ -53,13 +69,7 @@ impl ResponseJsonFor<Body> for AuthUserContext {
             );
             builder
         };
-        match &self.action {
-            Some(act) => {}
-            None => {
-                panic!("No action specified for AuthUserContext.");
-            }
-        }
-        Ok(builder.body(json::object! {})?)
+        Ok(builder.body(self.handle(req).await.to_json2())?)
     }
 }
 

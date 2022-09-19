@@ -3,6 +3,8 @@ pub mod auth;
 pub mod context;
 /// CORS Handle
 pub mod cors;
+/// Get params from request
+pub mod params;
 /// Predefined includes
 pub mod preclude;
 /// Base result type for JSON response

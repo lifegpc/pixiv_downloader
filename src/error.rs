@@ -19,6 +19,8 @@ pub enum PixivDownloaderError {
     AVDict(crate::avdict::AVDictError),
     #[cfg(feature = "db")]
     DbError(crate::db::PixivDownloaderDbError),
+    #[cfg(feature = "server")]
+    FromUtf8Error(std::string::FromUtf8Error),
 }
 
 impl From<&str> for PixivDownloaderError {

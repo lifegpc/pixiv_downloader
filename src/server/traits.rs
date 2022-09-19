@@ -1,4 +1,5 @@
 use super::context::ServerContext;
+use super::params::RequestParams;
 use crate::error::PixivDownloaderError;
 use hyper::Body;
 use hyper::Request;
@@ -25,6 +26,13 @@ pub trait ResponseJsonFor<T> {
         &self,
         req: Request<T>,
     ) -> Result<Response<JsonValue>, PixivDownloaderError>;
+}
+
+#[async_trait]
+/// Get params from request
+pub trait GetRequestParams {
+    /// Get params from request
+    async fn get_params(&mut self) -> Result<RequestParams, PixivDownloaderError>;
 }
 
 #[async_trait]

@@ -1,6 +1,6 @@
-use json::JsonValue;
-
 use crate::ext::json::ToJson2;
+use crate::gettext;
+use json::JsonValue;
 
 #[derive(Clone, Debug)]
 /// Error information of a request
@@ -29,6 +29,26 @@ impl From<(i32, String, Option<JsonValue>)> for JSONError {
             code,
             msg,
             debug_msg,
+        }
+    }
+}
+
+impl From<crate::db::PixivDownloaderDbError> for JSONError {
+    fn from(e: crate::db::PixivDownloaderDbError) -> Self {
+        Self {
+            code: -1001,
+            msg: format!("{} {}", gettext("Failed to operate the database:"), e),
+            debug_msg: Some(format!("{:?}", e).to_json2()),
+        }
+    }
+}
+
+impl From<crate::error::PixivDownloaderError> for JSONError {
+    fn from(e: crate::error::PixivDownloaderError) -> Self {
+        Self {
+            code: -500,
+            msg: format!("{}", e),
+            debug_msg: Some(format!("{:?}", e).to_json2()),
         }
     }
 }
