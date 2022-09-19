@@ -5,6 +5,8 @@ pub mod context;
 pub mod cors;
 /// Predefined includes
 pub mod preclude;
+/// Base result type for JSON response
+pub mod result;
 /// Routes
 pub mod route;
 /// Services

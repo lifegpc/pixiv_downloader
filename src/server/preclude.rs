@@ -1,4 +1,5 @@
 pub use super::context::ServerContext;
+pub use super::result::JSONResult;
 pub use super::route::ResponseForType;
 pub use super::traits::{MatchRoute, ResponseFor, ResponseJsonFor};
 pub use crate::error::PixivDownloaderError;
