@@ -7,8 +7,11 @@ use json::JsonValue;
 use std::sync::Arc;
 
 pub trait MatchRoute<T, R> {
-    fn get_route(&self, ctx: Arc<ServerContext>) -> Box<dyn ResponseFor<T, R> + Send + Sync>;
-    fn match_route(&self, req: &Request<T>) -> bool;
+    fn match_route(
+        &self,
+        ctx: &Arc<ServerContext>,
+        req: &Request<T>,
+    ) -> Option<Box<dyn ResponseFor<T, R> + Send + Sync>>;
 }
 
 #[async_trait]

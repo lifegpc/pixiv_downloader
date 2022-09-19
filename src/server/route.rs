@@ -19,6 +19,7 @@ impl ServerRoutes {
         let mut routes: Vec<Box<RouteType>> = Vec::new();
         routes.push(Box::new(VersionRoute::new()));
         routes.push(Box::new(AuthStatusRoute::new()));
+        routes.push(Box::new(AuthUserRoute::new()));
         Self { routes }
     }
 
@@ -28,8 +29,9 @@ impl ServerRoutes {
         ctx: &Arc<ServerContext>,
     ) -> Option<Box<ResponseForType>> {
         for i in self.routes.iter() {
-            if i.match_route(req) {
-                return Some(i.get_route(Arc::clone(ctx)));
+            match i.match_route(&ctx, req) {
+                Some(r) => return Some(r),
+                None => {}
             }
         }
         None

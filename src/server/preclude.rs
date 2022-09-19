@@ -4,6 +4,7 @@ pub use super::route::ResponseForType;
 pub use super::traits::{MatchRoute, ResponseFor, ResponseJsonFor};
 pub use crate::error::PixivDownloaderError;
 pub use hyper::Body;
+pub use hyper::Method;
 pub use hyper::Request;
 pub use hyper::Response;
 pub use json::JsonValue;

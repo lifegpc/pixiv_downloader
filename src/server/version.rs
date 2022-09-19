@@ -43,11 +43,15 @@ impl VersionRoute {
 }
 
 impl MatchRoute<Body, Body> for VersionRoute {
-    fn get_route(&self, ctx: Arc<ServerContext>) -> Box<ResponseForType> {
-        Box::new(VersionContext::new(ctx))
-    }
-
-    fn match_route(&self, req: &http::Request<Body>) -> bool {
-        self.regex.is_match(req.uri().path())
+    fn match_route(
+        &self,
+        ctx: &Arc<ServerContext>,
+        req: &http::Request<Body>,
+    ) -> Option<Box<ResponseForType>> {
+        if self.regex.is_match(req.uri().path()) {
+            Some(Box::new(VersionContext::new(Arc::clone(ctx))))
+        } else {
+            None
+        }
     }
 }
