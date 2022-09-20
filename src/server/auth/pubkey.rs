@@ -22,19 +22,20 @@ impl RSAKey {
     }
 
     pub fn decrypt(&self, data: &[u8]) -> Result<BytesMut, openssl::error::ErrorStack> {
-        let tosize = data.len();
+        let tosize = self.key.size() as usize;
         let mut buf = BytesMut::with_capacity(tosize);
         buf.resize(tosize, 0);
-        let mut i = 0;
-        let mut real = 0;
-        while i < tosize {
-            let i2 = i + self.key.size() as usize;
-            real += self
-                .key
-                .private_decrypt(&data[i..i2], &mut buf[i..i2], Padding::PKCS1)?;
-            i = i2;
-        }
+        let real = self.key.private_decrypt(&data, &mut buf, Padding::PKCS1)?;
         buf.truncate(real);
+        Ok(buf)
+    }
+
+    #[cfg(test)]
+    pub fn encrypt(&self, data: &[u8]) -> Result<BytesMut, openssl::error::ErrorStack> {
+        let tosize = self.key.size() as usize;
+        let mut buf = BytesMut::with_capacity(tosize);
+        buf.resize(tosize, 0);
+        self.key.public_encrypt(&data, &mut buf, Padding::PKCS1)?;
         Ok(buf)
     }
 
@@ -119,4 +120,19 @@ impl MatchRoute<Body, Body> for AuthPubkeyRoute {
             None
         }
     }
+}
+
+#[test]
+fn test_rsa_decrypt() {
+    let key = RSAKey::new().unwrap();
+    let data = b"Hello, world!";
+    let enc = key.encrypt(data).unwrap();
+    let dec = key.decrypt(&enc).unwrap();
+    assert_eq!(data, &dec[..]);
+    let mut data = BytesMut::with_capacity(256);
+    data.resize(256, 0);
+    openssl::rand::rand_bytes(&mut data).unwrap();
+    let enc = key.encrypt(&data).unwrap();
+    let dec = key.decrypt(&enc).unwrap();
+    assert_eq!(data, dec);
 }
