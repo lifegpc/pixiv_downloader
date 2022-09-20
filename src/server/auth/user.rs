@@ -1,6 +1,6 @@
 use super::super::preclude::*;
 use crate::ext::json::ToJson2;
-use crate::ext::try_err::TryErr;
+use crate::ext::try_err::{TryErr, TryErr3};
 use crate::gettext;
 
 #[derive(Clone, Debug)]
@@ -40,6 +40,11 @@ impl AuthUserContext {
                     let username = params
                         .get("username")
                         .try_err((2, gettext("No username specified.")))?;
+                    let password = params
+                        .get("password")
+                        .try_err((3, gettext("No password specified.")))?;
+                    let password = base64::decode(password)
+                        .try_err3(4, gettext("Failed to decode password with base64:"))?;
                     Ok(json::object! {})
                 }
             },

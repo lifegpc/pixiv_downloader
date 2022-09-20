@@ -1,3 +1,6 @@
+#[cfg(feature = "server")]
+use crate::server::result::JSONError;
+
 /// Try with custom error message
 pub trait TryErr2<T, E> {
     /// try with custom error message
@@ -8,6 +11,15 @@ pub trait TryErr2<T, E> {
 pub trait TryErr<T, E> {
     /// try with custom error message
     fn try_err(self, err: E) -> Result<T, E>;
+}
+
+#[cfg(feature = "server")]
+/// A quick way to return detailed JSON error
+pub trait TryErr3<T> {
+    /// A quick way to return detailed JSON error
+    /// * `code` - error code
+    /// * `msg` - error message
+    fn try_err3<S: AsRef<str> + ?Sized>(self, code: i32, msg: &S) -> Result<T, JSONError>;
 }
 
 impl<T: ToOwned + ToOwned<Owned = T>, E> TryErr2<T, E> for Option<T> {
@@ -43,6 +55,23 @@ impl<E> TryErr<(), E> for bool {
             Ok(())
         } else {
             Err(err)
+        }
+    }
+}
+
+#[cfg(feature = "server")]
+impl<T, E> TryErr3<T> for Result<T, E>
+where
+    E: std::fmt::Debug + std::fmt::Display,
+{
+    fn try_err3<S: AsRef<str> + ?Sized>(self, code: i32, msg: &S) -> Result<T, JSONError> {
+        match self {
+            Ok(v) => Ok(v),
+            Err(e) => Err(JSONError::from((
+                code,
+                format!("{} {}", msg.as_ref(), e),
+                format!("{:?}", e),
+            ))),
         }
     }
 }

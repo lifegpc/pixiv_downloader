@@ -59,23 +59,43 @@ where
     }
 }
 
+impl<S, V> From<(i32, &S, &V)> for JSONError
+where
+    S: AsRef<str> + ?Sized,
+    V: AsRef<str> + ?Sized,
+{
+    fn from((code, msg, debug_msg): (i32, &S, &V)) -> Self {
+        Self {
+            code,
+            msg: msg.as_ref().to_owned(),
+            debug_msg: Some(debug_msg.as_ref().to_json2()),
+        }
+    }
+}
+
+impl From<(i32, String, String)> for JSONError {
+    fn from((code, msg, debug_msg): (i32, String, String)) -> Self {
+        Self {
+            code,
+            msg,
+            debug_msg: Some(debug_msg.to_json2()),
+        }
+    }
+}
+
 impl From<crate::db::PixivDownloaderDbError> for JSONError {
     fn from(e: crate::db::PixivDownloaderDbError) -> Self {
-        Self {
-            code: -1001,
-            msg: format!("{} {}", gettext("Failed to operate the database:"), e),
-            debug_msg: Some(format!("{:?}", e).to_json2()),
-        }
+        Self::from((
+            -1001,
+            format!("{} {}", gettext("Failed to operate the database:"), e),
+            format!("{:?}", e),
+        ))
     }
 }
 
 impl From<crate::error::PixivDownloaderError> for JSONError {
     fn from(e: crate::error::PixivDownloaderError) -> Self {
-        Self {
-            code: -500,
-            msg: format!("{}", e),
-            debug_msg: Some(format!("{:?}", e).to_json2()),
-        }
+        Self::from((-500, format!("{}", e), format!("{:?}", e)))
     }
 }
 

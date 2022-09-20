@@ -1,5 +1,5 @@
 use super::super::preclude::*;
-use crate::ext::{json::ToJson2, try_err::TryErr};
+use crate::ext::{json::ToJson2, try_err::TryErr3};
 use crate::gettext;
 use bytes::BytesMut;
 use chrono::{DateTime, Utc};
@@ -59,18 +59,17 @@ impl AuthPubkeyContext {
             Some(key) => {
                 if key.is_too_old() {
                     *rsa_key =
-                        Some(RSAKey::new().try_err((1, gettext("Failed to generate RSA key.")))?);
+                        Some(RSAKey::new().try_err3(1, gettext("Failed to generate RSA key:"))?);
                 }
             }
             None => {
-                *rsa_key =
-                    Some(RSAKey::new().try_err((1, gettext("Failed to generate RSA key.")))?);
+                *rsa_key = Some(RSAKey::new().try_err3(1, gettext("Failed to generate RSA key:"))?);
             }
         }
         let rsa_key = rsa_key.as_ref().unwrap();
-        let key = rsa_key.key.public_key_to_pem().try_err((2, gettext("Failed to serializes the public key into a PEM-encoded SubjectPublicKeyInfo structure")))?;
+        let key = rsa_key.key.public_key_to_pem().try_err3(2, gettext("Failed to serializes the public key into a PEM-encoded SubjectPublicKeyInfo structure:"))?;
         Ok(json::object! {
-            "key": String::from_utf8(key).try_err((3, gettext("Failed to encode pem with UTF-8.")))?,
+            "key": String::from_utf8(key).try_err3(3, gettext("Failed to encode pem with UTF-8:"))?,
             "generated_time": rsa_key.generated_time.timestamp(),
         })
     }
