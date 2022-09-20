@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: pixiv_downloader\n"
-"POT-Creation-Date: 2022-07-15 17:43+0800\n"
-"PO-Revision-Date: 2022-07-15 19:01+0800\n"
+"POT-Creation-Date: 2022-09-20 17:35+0800\n"
+"PO-Revision-Date: 2022-09-20 17:49+0800\n"
 "Last-Translator: lifegpc <g1710431395@gmail.com>\n"
 "Language-Team: \n"
 "Language: zh_CN\n"
@@ -35,16 +35,16 @@ msgstr "键 <key> 对应的值缺失："
 msgid "Failed to recognize type:"
 msgstr "无法识别类型："
 
-#: src/avdict.rs:51 src/ugoira.rs:58
+#: src/avdict.rs:51 src/ugoira.rs:60
 msgid "Failed to decode string with UTF-8:"
 msgstr "无法用 UTF-8 解码字符串："
 
-#: src/avdict.rs:72 src/ugoira.rs:116 src/ugoira.rs:154 src/ugoira.rs:195
-#: src/ugoira.rs:296
+#: src/avdict.rs:72 src/ugoira.rs:118 src/ugoira.rs:156 src/ugoira.rs:197
+#: src/ugoira.rs:298
 msgid "Out of memory."
 msgstr "内存溢出。"
 
-#: src/avdict.rs:88 src/ugoira.rs:170 src/ugoira.rs:225
+#: src/avdict.rs:88 src/ugoira.rs:172 src/ugoira.rs:227
 msgid "Failed to get error message:"
 msgstr "无法获取错误消息："
 
@@ -124,125 +124,205 @@ msgstr "无法写入文件："
 msgid "Failed to unescape string:"
 msgstr "无法反转义字符串："
 
-#: src/download.rs:45 src/fanbox_api.rs:105 src/pixiv_web.rs:68
+#: src/db/config.rs:36 src/db/mod.rs:46
+msgid "Unknown database type."
+msgstr "未知的数据库类型。"
+
+#: src/db/config.rs:37
+msgid "Missing field:"
+msgstr "缺少参数："
+
+#: src/db/mod.rs:36
+msgid "No database configuration provided."
+msgstr "找不到数据库配置。"
+
+#: src/download.rs:56 src/fanbox_api.rs:105 src/pixiv_web.rs:67
 msgid "Failed to initialize pixiv web api client."
 msgstr "无法初始化 Pixiv 网页 API 客户端。"
 
-#: src/download.rs:52
-msgid "Warning: Web api client not logined, some future may not work."
+#: src/download.rs:63
+msgid "Warning: Web api client not logged in, some future may not work."
 msgstr "警告：Web API 客户端未登录，一些功能可能无法工作。"
 
-#: src/download.rs:61
-msgid "Failed to download artwork:"
-msgstr "无法下载插图："
-
-#: src/download.rs:74
+#: src/download.rs:77 src/download.rs:98
 msgid "Failed to initialize fanbox api client."
 msgstr "无法初始化 Fanbox API 客户端。"
 
-#: src/download.rs:81
-msgid "Warning: Fanbox client is not logined."
+#: src/download.rs:84 src/download.rs:105
+msgid "Warning: Fanbox client is not logged in."
 msgstr "警告：Fanbox 客户端未登录。"
 
-#: src/download.rs:87
+#: src/download.rs:136
 msgid "Failed to download post:"
 msgstr "无法下载投稿："
 
-#: src/download.rs:116 src/download.rs:237
+#: src/download.rs:161 src/download.rs:302
 msgid "Failed to get file name from url:"
 msgstr "无法从 URL 获取文件名："
 
-#: src/download.rs:138 src/download.rs:157 src/download.rs:405
-#: src/download.rs:424
+#: src/download.rs:183 src/download.rs:202 src/download.rs:514
+#: src/download.rs:533
 msgid "Failed to add exif data to image:"
 msgstr "无法往图片增加 EXIF 数据："
 
-#: src/download.rs:146 src/download.rs:255 src/download.rs:413
+#: src/download.rs:191 src/download.rs:477 src/download.rs:522
 msgid "Failed to get error message."
 msgstr "无法获取错误消息。"
 
-#: src/download.rs:186
+#: src/download.rs:230
 msgid "Failed to get artwork's data."
 msgstr "无法获取插图数据。"
 
-#: src/download.rs:192
+#: src/download.rs:236
 msgid "Failed to get page count."
 msgstr "无法获取页数。"
 
-#: src/download.rs:199
+#: src/download.rs:243
 msgid "Failed to get pages' data."
 msgstr "无法获取每页数据。"
 
-#: src/download.rs:214
+#: src/download.rs:258
 msgid "Failed to save metadata to JSON file."
 msgstr "无法将元数据保存到 JSON 文件。"
 
-#: src/download.rs:231
+#: src/download.rs:275
 msgid "Failed to get ugoira's data."
 msgstr "无法获取动图数据。"
 
-#: src/download.rs:234
+#: src/download.rs:278
 msgid "Can not find source link for ugoira."
 msgstr "无法获取动图的链接。"
 
-#: src/download.rs:268
+#: src/download.rs:292
+msgid "No finished task."
+msgstr "没有已完成的任务。"
+
+#: src/download.rs:311
 msgid "Warning: Failed to generate video's metadata:"
 msgstr "警告：无法生成视频元数据："
 
-#: src/download.rs:287
+#: src/download.rs:337
 msgid "Converted <src> -> <dest>"
 msgstr "已转换 <src> -> <dest>"
 
-#: src/download.rs:298
+#: src/download.rs:348
 msgid "Warning: Unknown illust type:"
 msgstr "警告：未知的插图类型："
 
-#: src/download.rs:304
+#: src/download.rs:354
 msgid "Warning: Failed to get illust's type."
 msgstr "警告：无法获取插图类型。"
 
-#: src/download.rs:317 src/download.rs:346 src/download.rs:363
+#: src/download.rs:367 src/download.rs:403 src/download.rs:436
 msgid "Failed to get original picture's link."
 msgstr "无法获取原图链接。"
 
-#: src/download.rs:393 src/downloader/helper.rs:54
+#: src/download.rs:449
+msgid "No tasks finished."
+msgstr "没有已完成的任务。"
+
+#: src/download.rs:502 src/downloader/helper.rs:55
 msgid "Failed to get file name from url."
 msgstr "无法从 URL 获取文件名。"
 
-#: src/download.rs:443
+#: src/download.rs:551
 msgid "Failed to get post info."
 msgstr "无法获取投稿信息。"
 
-#: src/download.rs:453
+#: src/download.rs:561
 msgid "Warning: Post info contains unknown data:"
 msgstr "警告：投稿信息包含未知数据："
 
-#: src/download.rs:460
+#: src/download.rs:568
 msgid "Failed to check the post is restricted or not."
 msgstr "无法检测投稿是否被限制。"
 
-#: src/download.rs:462
+#: src/download.rs:570
 msgid "Warning: This article is restricted."
 msgstr "警告：该投稿已被限制。"
 
-#: src/download.rs:482
+#: src/download.rs:594 src/download.rs:836
 msgid "Failed to save post data to file."
 msgstr "无法将投稿数据保存到文件。"
 
-#: src/download.rs:489
-msgid "Failed to get the body of image post."
-msgstr "无法获取图片投稿的主体。"
+#: src/download.rs:605
+msgid "Failed to get image map from article."
+msgstr "无法从文章获取 image map。"
 
-#: src/download.rs:492
-msgid "Failed to get images from the image post."
-msgstr "无法从图片投稿获取图片。"
+#: src/download.rs:608
+msgid "Failed to get blocks from article."
+msgstr "无法从文章获取 blocks。"
 
-#: src/download.rs:501
+#: src/download.rs:611
+msgid "Failed to get embed url map from article."
+msgstr "无法从文章获取 embed url map。"
+
+#: src/download.rs:623
+msgid "Failed to get image id from block."
+msgstr "无法从 block 获取 image id。"
+
+#: src/download.rs:625
+msgid "Failed get image information from image map."
+msgstr "无法从 image map 获取图片信息。"
+
+#: src/download.rs:628 src/download.rs:723
 msgid "Can not get original url for image"
 msgstr "无法获取图片的原始画质链接"
 
-#: src/download.rs:516
+#: src/download.rs:647
+msgid "Failed to get embed url id from block"
+msgstr "无法从 block 获取 embed url id"
+
+#: src/download.rs:649
+msgid "Failed to get embed url from url embed map."
+msgstr "无法从 url embed map 获取embed url。"
+
+#: src/download.rs:654
+msgid "Failed to get creator's profile."
+msgstr "无法获取画师的个人资料。"
+
+#: src/download.rs:687
+msgid "Failed to get the body of file post."
+msgstr "无法获取文件投稿的主体。"
+
+#: src/download.rs:690
+msgid "Failed to get files from file post."
+msgstr "无法从文件投稿获取文件。"
+
+#: src/download.rs:694
+msgid "Failed to get url of the file."
+msgstr "无法获取文件的 URL。"
+
+#: src/download.rs:711
+msgid "Failed to get the body of image post."
+msgstr "无法获取图片投稿的主体。"
+
+#: src/download.rs:714
+msgid "Failed to get images from the image post."
+msgstr "无法从图片投稿获取图片。"
+
+#: src/download.rs:741
 msgid "Unrecognized post type."
+msgstr "无法识别的投稿类型。"
+
+#: src/download.rs:784
+msgid "Failed to get creator's id."
+msgstr "无法获取画师的 ID。"
+
+#: src/download.rs:798
+msgid "Failed to get creator's information."
+msgstr "无法获取画师信息。"
+
+#: src/download.rs:810
+msgid "Warning: Creator's info contains unknown data:"
+msgstr "警告：画师个人信息包含未知数据："
+
+#: src/download.rs:868
+msgid "Can not get image url."
+msgstr "无法获取图片地址。"
+
+#: src/download.rs:885
+msgid "Unrecognized profile item type."
 msgstr "无法识别的投稿类型。"
 
 #: src/downloader/downloader.rs:227
@@ -344,13 +424,13 @@ msgid "Failed to parse value."
 msgstr "无法解析值。"
 
 #: src/ext/use_or_not.rs:76 src/opt/author_name_filter.rs:48
-#: src/retry_interval.rs:24 src/ugoira.rs:308
+#: src/retry_interval.rs:24 src/ugoira.rs:310
 msgid "Failed to get JSON object."
 msgstr "无法获取 JSON 对象。"
 
 #: src/ext/use_or_not.rs:82 src/opt/author_name_filter.rs:50
 #: src/opt/author_name_filter.rs:131 src/retry_interval.rs:59
-#: src/retry_interval.rs:63 src/ugoira.rs:310 src/ugoira.rs:315
+#: src/retry_interval.rs:63 src/ugoira.rs:312 src/ugoira.rs:317
 msgid "Unsupported JSON type."
 msgstr "不支持的 JSON 类型。"
 
@@ -499,156 +579,180 @@ msgstr "无法解析代理："
 msgid "Failed to parse proxy list."
 msgstr "无法解析代理列表。"
 
-#: src/opts.rs:148
+#: src/opts.rs:169
 msgid "Warning: The specified config file not found."
 msgstr "警告：没有找到指定的设置文件。"
 
-#: src/opts.rs:173
+#: src/opts.rs:194
 msgid "Usage:"
 msgstr "使用方法："
 
-#: src/opts.rs:175
+#: src/opts.rs:196
 msgid "Download an artwork"
 msgstr "下载一个作品"
 
-#: src/opts.rs:177
+#: src/opts.rs:198
 msgid "Fix the config file"
 msgstr "修复设置文件"
 
-#: src/opts.rs:179
+#: src/opts.rs:200
 msgid "Print all available settings"
 msgstr "打印所有可用的设置"
 
-#: src/opts.rs:186
+#: src/opts.rs:207
 msgid "Run as a server"
 msgstr "作为服务器启动"
 
-#: src/opts.rs:219
+#: src/opts.rs:240
 msgid "Invalid boolean value:"
 msgstr "无效的布尔值："
 
-#: src/opts.rs:290
+#: src/opts.rs:336
 msgid "Print help message."
 msgstr "打印帮助信息。"
 
-#: src/opts.rs:294
+#: src/opts.rs:340
 msgid "The location of config file."
 msgstr "设置文件的位置。"
 
-#: src/opts.rs:300 src/settings_list.rs:21
+#: src/opts.rs:346 src/settings_list.rs:25
 msgid "The location of cookies file. Used for web API."
 msgstr "cookies 文件的位置。用于网页 API。"
 
-#: src/opts.rs:306 src/settings_list.rs:22
+#: src/opts.rs:352 src/settings_list.rs:26
 msgid "The language of translated tags."
 msgstr "翻译后的标签语言。"
 
-#: src/opts.rs:309
+#: src/opts.rs:355
 msgid "Verbose logging."
 msgstr "启用详细内容输出。"
 
-#: src/opts.rs:310
+#: src/opts.rs:356
 msgid "Overwrite existing file."
 msgstr "覆盖已有文件。"
 
-#: src/opts.rs:311
+#: src/opts.rs:357
 msgid "Skip overwrite existing file."
 msgstr "跳过覆盖已有文件。"
 
-#: src/opts.rs:315 src/settings_list.rs:23
+#: src/opts.rs:361 src/settings_list.rs:27
 msgid "Max retry count if request failed."
 msgstr "请求失败时最大重试次数。"
 
-#: src/opts.rs:321 src/settings_list.rs:24
+#: src/opts.rs:367 src/settings_list.rs:28
 msgid "The interval (in seconds) between two retries."
 msgstr "两次尝试的间隔时间（单位：秒）。"
 
-#: src/opts.rs:324 src/settings_list.rs:25
+#: src/opts.rs:370 src/settings_list.rs:29
 msgid "Use data from webpage first."
 msgstr "优先使用来自网页的数据。"
 
-#: src/opts.rs:329 src/settings_list.rs:28
+#: src/opts.rs:375 src/settings_list.rs:32
 msgid ""
 "Add/Update exif information to image files even when overwrite are disabled."
 msgstr "添加或更新图片的 EXIF 信息，即使不覆盖图片文件。"
 
-#: src/opts.rs:334 src/settings_list.rs:30
+#: src/opts.rs:380 src/settings_list.rs:34
 msgid "Whether to enable progress bar."
 msgstr "是否启用进度条。"
 
-#: src/opts.rs:342 src/settings_list.rs:31
-msgid "Download multiple images at the same time."
-msgstr "同时下载多张图片。"
+#: src/opts.rs:388 src/settings_list.rs:35
+msgid "Download multiple files at the same time."
+msgstr "同时下载多张文件。"
 
-#: src/opts.rs:343 src/opts.rs:369
+#: src/opts.rs:389 src/opts.rs:415 src/opts.rs:447 src/opts.rs:461
+#: src/opts.rs:475 src/opts.rs:490 src/opts.rs:505
 msgid "Default:"
 msgstr "默认："
 
-#: src/opts.rs:354 src/settings_list.rs:32
+#: src/opts.rs:400 src/settings_list.rs:36
 msgid "Max retry count if download failed."
 msgstr "下载失败时最大重试次数。"
 
-#: src/opts.rs:360 src/settings_list.rs:33
+#: src/opts.rs:406 src/settings_list.rs:37
 msgid "The interval (in seconds) between two retries when downloading files."
 msgstr "下载文件时两次尝试的间隔时间（单位：秒）。"
 
-#: src/opts.rs:368 src/settings_list.rs:34
+#: src/opts.rs:414 src/settings_list.rs:38
 msgid "Whether to enable multiple threads download."
 msgstr "是否启用多线程下载。"
 
-#: src/opts.rs:380 src/settings_list.rs:35
+#: src/opts.rs:426 src/settings_list.rs:39
 msgid "Max retry count of each part when downloading in multiple thread mode."
 msgstr "多线程下载时的每个分片的最大重试次数。"
 
-#: src/opts.rs:386 src/settings_list.rs:36
-msgid "The maximun threads when downloading file."
-msgstr "下载时的最大线程数。"
+#: src/opts.rs:432 src/settings_list.rs:40
+msgid "The maximum threads when downloading file."
+msgstr "下载文件时的最大线程数。"
 
-#: src/opts.rs:392 src/settings_list.rs:37
+#: src/opts.rs:438 src/settings_list.rs:41
 msgid "The size of the each part when downloading file."
 msgstr "下载时的分片大小。"
 
-#: src/opts.rs:408
+#: src/opts.rs:446 src/settings_list.rs:47
+msgid "The maximum number of tasks to download files at the same time."
+msgstr "最大同时下载的文件个数。"
+
+#: src/opts.rs:460 src/settings_list.rs:48
+msgid "Download multiple posts/artworks at the same time."
+msgstr "同时下载多个投稿。"
+
+#: src/opts.rs:474 src/settings_list.rs:49
+msgid ""
+"The maximum number of tasks to download posts/artworks at the same time."
+msgstr "最大同时下载的投稿个数。"
+
+#: src/opts.rs:489 src/settings_list.rs:51
+msgid ""
+"Force yuv420p as output pixel format when converting ugoira(GIF) to video."
+msgstr "当将 GIF (ugoira) 转为视频时，强制使用 yuv420p 作为输出像素格式。"
+
+#: src/opts.rs:504 src/settings_list.rs:53
+msgid "The x264 profile when converting ugoira(GIF) to video."
+msgstr "当将 GIF (ugoira) 转为视频时，使用的 x264 profile。"
+
+#: src/opts.rs:526
 msgid "Unknown command."
 msgstr "未知指令。"
 
-#: src/opts.rs:418
+#: src/opts.rs:536
 msgid "Failed to parse ID:"
 msgstr "无法解析 ID："
 
-#: src/opts.rs:424
+#: src/opts.rs:542
 msgid "No URL or ID specified."
 msgstr "没有指定网址或 ID。"
 
-#: src/opts.rs:432
+#: src/opts.rs:550
 msgid "No detailed command specified."
 msgstr "没有指定更详细的指令。"
 
-#: src/opts.rs:445
+#: src/opts.rs:563
 msgid "Unknown config subcommand."
 msgstr "未知的 config 子指令。"
 
-#: src/opts.rs:457
+#: src/opts.rs:575
 msgid "Failed to parse address:"
 msgstr "无法解析地址："
 
-#: src/opts.rs:496 src/opts.rs:551 src/opts.rs:573
+#: src/opts.rs:614 src/opts.rs:669 src/opts.rs:691
 msgid "Failed to parse retry count:"
 msgstr "无法解析重试次数："
 
-#: src/opts.rs:506 src/opts.rs:561
+#: src/opts.rs:624 src/opts.rs:679
 msgid "Failed to parse retry interval:"
 msgstr "无法解析间隔时间："
 
-#: src/opts.rs:524 src/opts.rs:538 src/opts.rs:582
+#: src/opts.rs:642 src/opts.rs:656 src/opts.rs:700 src/opts.rs:731
+#: src/opts.rs:742 src/opts.rs:755 src/opts.rs:769 src/opts.rs:788
 msgid "Failed to parse <opt>:"
 msgstr "无法解析 <opt> ："
 
-#: src/opts.rs:595
+#: src/opts.rs:713
 msgid "Failed to parse max threads:"
 msgstr "无法解析最大线程数："
 
-#: src/opts.rs:604
+#: src/opts.rs:722
 msgid "Failed to parse part size:"
 msgstr "无法解析分片大小："
 
@@ -664,61 +768,83 @@ msgstr "在解析中发生了一些错误："
 msgid "There are some nodes still in stack:"
 msgstr "堆栈中依旧有一些节点："
 
-#: src/parser/metadata.rs:56 src/pixiv_web.rs:133
+#: src/parser/metadata.rs:56 src/pixiv_web.rs:132
 msgid "Failed to parse JSON:"
 msgstr "无法解析 JSON："
 
-#: src/pixiv_web.rs:86 src/pixiv_web.rs:93
+#: src/pixiv_web.rs:85 src/pixiv_web.rs:92
 msgid "Failed to get main page:"
 msgstr "无法获取主页："
 
-#: src/pixiv_web.rs:101
+#: src/pixiv_web.rs:100
 msgid "Failed to parse main page."
 msgstr "无法解析主页。"
 
-#: src/pixiv_web.rs:107
+#: src/pixiv_web.rs:106
 msgid "Main page's data:"
 msgstr "主页的数据："
 
-#: src/pixiv_web.rs:124
+#: src/pixiv_web.rs:123
 msgid "Network error:"
 msgstr "网络错误："
 
-#: src/pixiv_web.rs:143
+#: src/pixiv_web.rs:142
 msgid "Failed to detect error."
 msgstr "检测 error 字段失败。"
 
-#: src/pixiv_web.rs:177
-msgid "Failed to download image:"
-msgstr "无法下载图片："
-
-#: src/pixiv_web.rs:201 src/pixiv_web.rs:246
+#: src/pixiv_web.rs:181 src/pixiv_web.rs:226
 msgid "Artwork's data:"
 msgstr "作品数据："
 
-#: src/pixiv_web.rs:225 src/pixiv_web.rs:232
+#: src/pixiv_web.rs:205 src/pixiv_web.rs:212
 msgid "Failed to get artwork page:"
 msgstr "无法获取作品页："
 
-#: src/pixiv_web.rs:240
+#: src/pixiv_web.rs:220
 msgid "Failed to parse artwork page."
 msgstr "无法解析作品页。"
 
-#: src/pixiv_web.rs:271
+#: src/pixiv_web.rs:251
 msgid "Artwork's page data:"
 msgstr "作品页面数据："
 
-#: src/pixiv_web.rs:296
+#: src/pixiv_web.rs:280
 msgid "Ugoira's data:"
 msgstr "动图数据："
 
-#: src/pixiv_web.rs:325
+#: src/pixiv_web.rs:309
 msgid "Warning: Failed to save cookies file:"
 msgstr "警告：无法保存 cookies 文件："
 
 #: src/retry_interval.rs:38 src/retry_interval.rs:54
 msgid "Failed to parse JSON number."
 msgstr "无法解析 JSON 数字。"
+
+#: src/server/auth/pubkey.rs:61 src/server/auth/pubkey.rs:66
+msgid "Failed to generate RSA key."
+msgstr "无法生成 RSA 密钥。"
+
+#: src/server/auth/pubkey.rs:70
+msgid ""
+"Failed to serializes the public key into a PEM-encoded SubjectPublicKeyInfo "
+"structure"
+msgstr "无法将公钥序列化至 PEM 编码的 SubjectPublicKeyInfo 结构"
+
+#: src/server/auth/pubkey.rs:72
+msgid "Failed to encode pem with UTF-8."
+msgstr "无法将 pem 编码为 UTF-8。"
+
+#: src/server/auth/user.rs:39
+msgid "No user's name specified."
+msgstr "没有指定用户的名字。"
+
+#: src/server/auth/user.rs:42
+msgid "No username specified."
+msgstr "没有指定用户名。"
+
+#: src/server/context.rs:19
+msgid "Failed to open database:"
+msgstr "无法打开数据库："
 
 #: src/server/cors.rs:44 src/server/cors.rs:215
 msgid "port not found."
@@ -739,6 +865,14 @@ msgstr "对象不是数组。"
 #: src/server/cors.rs:225
 msgid "hostname not found."
 msgstr "找不到主机名。"
+
+#: src/server/params.rs:93
+msgid "Failed to find boundary."
+msgstr "无法找到 boundary。"
+
+#: src/server/result.rs:66
+msgid "Failed to operate the database:"
+msgstr "无法操作数据库："
 
 #: src/settings.rs:29
 msgid "Multiple type"
@@ -780,91 +914,99 @@ msgstr "无法将设置转换为 JSON 对象。"
 msgid "Failed to flush file:"
 msgstr "无法刷新文件缓冲区："
 
-#: src/settings_list.rs:20
+#: src/settings_list.rs:24
 msgid "Pixiv's refresh tokens. Used to login."
 msgstr "Pixiv 的 refresh tokens。用于登录。"
 
-#: src/settings_list.rs:26
+#: src/settings_list.rs:30
 msgid "Remove the part which after these parttens."
 msgstr "移除匹配的部分。"
 
-#: src/settings_list.rs:29
+#: src/settings_list.rs:33
 msgid "Progress bar's template. See <here> for more informations."
 msgstr "进度条模板。更多信息见 <here> 。"
 
-#: src/settings_list.rs:38
+#: src/settings_list.rs:42
 msgid "Proxy settings."
 msgstr "代理设置。"
 
-#: src/settings_list.rs:40
+#: src/settings_list.rs:44
 msgid "Server address."
 msgstr "服务器地址。"
 
-#: src/settings_list.rs:42
+#: src/settings_list.rs:46
 msgid "The domains allowed to send CORS requests."
 msgstr "允许发出 CORS 请求的域名。"
 
-#: src/ugoira.rs:111
+#: src/settings_list.rs:55
+msgid "Database settings."
+msgstr "数据库设置。"
+
+#: src/ugoira.rs:113
 msgid "Arguments have null pointers."
 msgstr "参数包含空指针。"
 
-#: src/ugoira.rs:112
+#: src/ugoira.rs:114
 msgid "Invalid max fps."
 msgstr "无效的最大帧率。"
 
-#: src/ugoira.rs:113
+#: src/ugoira.rs:115
 msgid "Invalid frames."
 msgstr "无效的帧信息。"
 
-#: src/ugoira.rs:114
+#: src/ugoira.rs:116
 msgid "Invalid crf."
 msgstr "无效的 CRF。"
 
-#: src/ugoira.rs:115
+#: src/ugoira.rs:117
 msgid "Can not remove output file."
 msgstr "无法删除输出文件。"
 
-#: src/ugoira.rs:117
+#: src/ugoira.rs:119
 msgid "No video stream available in the file."
 msgstr "文件中不存在视频流。"
 
-#: src/ugoira.rs:118
+#: src/ugoira.rs:120
 msgid "No available decoder."
 msgstr "没有可用的解码器。"
 
-#: src/ugoira.rs:119
+#: src/ugoira.rs:121
 msgid "No available encoder."
 msgstr "没有可用的编码器。"
 
-#: src/ugoira.rs:120
+#: src/ugoira.rs:122
 msgid "Failed to open output file."
 msgstr "无法打开输出文件。"
 
-#: src/ugoira.rs:121
+#: src/ugoira.rs:123
 msgid "Unable to scale image."
 msgstr "无法处理图片。"
 
-#: src/ugoira.rs:122
+#: src/ugoira.rs:124
 msgid "Unknown error."
 msgstr "未知错误。"
 
-#: src/ugoira.rs:191
+#: src/ugoira.rs:193
 msgid "No error."
 msgstr "无错误。"
 
-#: src/ugoira.rs:292
+#: src/ugoira.rs:294
 msgid "Delay should be greater than 0."
 msgstr "延迟需要大于 0 。"
 
-#: src/ugoira.rs:317
+#: src/ugoira.rs:319
 msgid "File is needed."
 msgstr "需要文件。"
 
-#: src/ugoira.rs:318
+#: src/ugoira.rs:320
 msgid "Delay is needed."
 msgstr "需要延迟。"
 
-#: src/ugoira.rs:393 src/ugoira.rs:397
+#: src/ugoira.rs:436
+msgid "Unknown H.264 profile."
+msgstr "未知的 H.264 Profile。"
+
+#: src/ugoira.rs:469 src/ugoira.rs:473
 msgid "Failed to convert path."
 msgstr "无法转换路径。"
 
@@ -912,21 +1054,27 @@ msgstr "正在进行第 <count> 次重试。"
 msgid "Error when request:"
 msgstr "请求时发生错误："
 
-#: src/main.rs:77
+#: src/main.rs:80
 msgid "Failed to save config file:"
 msgstr "无法保存设置文件："
 
-#: src/main.rs:88
+#: src/main.rs:91
 msgid "All available settings:"
 msgstr "所有可用的设置："
 
-#: src/main.rs:120
+#: src/main.rs:123
 msgid "Can not read config file:"
 msgstr "无法读取设置文件："
 
-#: src/main.rs:148
+#: src/main.rs:151
 msgid "Failed to start the server:"
 msgstr "无法启动服务器："
+
+#~ msgid "Failed to download artwork:"
+#~ msgstr "无法下载插图："
+
+#~ msgid "Failed to download image:"
+#~ msgstr "无法下载图片："
 
 #~ msgid "Downloaded ugoira:"
 #~ msgstr "已下载动图："

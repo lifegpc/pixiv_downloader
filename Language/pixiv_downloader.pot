@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: pixiv_downloader\n"
-"POT-Creation-Date: 2022-07-15 17:43+0800\n"
+"POT-Creation-Date: 2022-09-20 17:35+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -35,16 +35,16 @@ msgstr ""
 msgid "Failed to recognize type:"
 msgstr ""
 
-#: src/avdict.rs:51 src/ugoira.rs:58
+#: src/avdict.rs:51 src/ugoira.rs:60
 msgid "Failed to decode string with UTF-8:"
 msgstr ""
 
-#: src/avdict.rs:72 src/ugoira.rs:116 src/ugoira.rs:154 src/ugoira.rs:195
-#: src/ugoira.rs:296
+#: src/avdict.rs:72 src/ugoira.rs:118 src/ugoira.rs:156 src/ugoira.rs:197
+#: src/ugoira.rs:298
 msgid "Out of memory."
 msgstr ""
 
-#: src/avdict.rs:88 src/ugoira.rs:170 src/ugoira.rs:225
+#: src/avdict.rs:88 src/ugoira.rs:172 src/ugoira.rs:227
 msgid "Failed to get error message:"
 msgstr ""
 
@@ -124,125 +124,205 @@ msgstr ""
 msgid "Failed to unescape string:"
 msgstr ""
 
-#: src/download.rs:45 src/fanbox_api.rs:105 src/pixiv_web.rs:68
+#: src/db/config.rs:36 src/db/mod.rs:46
+msgid "Unknown database type."
+msgstr ""
+
+#: src/db/config.rs:37
+msgid "Missing field:"
+msgstr ""
+
+#: src/db/mod.rs:36
+msgid "No database configuration provided."
+msgstr ""
+
+#: src/download.rs:56 src/fanbox_api.rs:105 src/pixiv_web.rs:67
 msgid "Failed to initialize pixiv web api client."
 msgstr ""
 
-#: src/download.rs:52
-msgid "Warning: Web api client not logined, some future may not work."
+#: src/download.rs:63
+msgid "Warning: Web api client not logged in, some future may not work."
 msgstr ""
 
-#: src/download.rs:61
-msgid "Failed to download artwork:"
-msgstr ""
-
-#: src/download.rs:74
+#: src/download.rs:77 src/download.rs:98
 msgid "Failed to initialize fanbox api client."
 msgstr ""
 
-#: src/download.rs:81
-msgid "Warning: Fanbox client is not logined."
+#: src/download.rs:84 src/download.rs:105
+msgid "Warning: Fanbox client is not logged in."
 msgstr ""
 
-#: src/download.rs:87
+#: src/download.rs:136
 msgid "Failed to download post:"
 msgstr ""
 
-#: src/download.rs:116 src/download.rs:237
+#: src/download.rs:161 src/download.rs:302
 msgid "Failed to get file name from url:"
 msgstr ""
 
-#: src/download.rs:138 src/download.rs:157 src/download.rs:405
-#: src/download.rs:424
+#: src/download.rs:183 src/download.rs:202 src/download.rs:514
+#: src/download.rs:533
 msgid "Failed to add exif data to image:"
 msgstr ""
 
-#: src/download.rs:146 src/download.rs:255 src/download.rs:413
+#: src/download.rs:191 src/download.rs:477 src/download.rs:522
 msgid "Failed to get error message."
 msgstr ""
 
-#: src/download.rs:186
+#: src/download.rs:230
 msgid "Failed to get artwork's data."
 msgstr ""
 
-#: src/download.rs:192
+#: src/download.rs:236
 msgid "Failed to get page count."
 msgstr ""
 
-#: src/download.rs:199
+#: src/download.rs:243
 msgid "Failed to get pages' data."
 msgstr ""
 
-#: src/download.rs:214
+#: src/download.rs:258
 msgid "Failed to save metadata to JSON file."
 msgstr ""
 
-#: src/download.rs:231
+#: src/download.rs:275
 msgid "Failed to get ugoira's data."
 msgstr ""
 
-#: src/download.rs:234
+#: src/download.rs:278
 msgid "Can not find source link for ugoira."
 msgstr ""
 
-#: src/download.rs:268
+#: src/download.rs:292
+msgid "No finished task."
+msgstr ""
+
+#: src/download.rs:311
 msgid "Warning: Failed to generate video's metadata:"
 msgstr ""
 
-#: src/download.rs:287
+#: src/download.rs:337
 msgid "Converted <src> -> <dest>"
 msgstr ""
 
-#: src/download.rs:298
+#: src/download.rs:348
 msgid "Warning: Unknown illust type:"
 msgstr ""
 
-#: src/download.rs:304
+#: src/download.rs:354
 msgid "Warning: Failed to get illust's type."
 msgstr ""
 
-#: src/download.rs:317 src/download.rs:346 src/download.rs:363
+#: src/download.rs:367 src/download.rs:403 src/download.rs:436
 msgid "Failed to get original picture's link."
 msgstr ""
 
-#: src/download.rs:393 src/downloader/helper.rs:54
+#: src/download.rs:449
+msgid "No tasks finished."
+msgstr ""
+
+#: src/download.rs:502 src/downloader/helper.rs:55
 msgid "Failed to get file name from url."
 msgstr ""
 
-#: src/download.rs:443
+#: src/download.rs:551
 msgid "Failed to get post info."
 msgstr ""
 
-#: src/download.rs:453
+#: src/download.rs:561
 msgid "Warning: Post info contains unknown data:"
 msgstr ""
 
-#: src/download.rs:460
+#: src/download.rs:568
 msgid "Failed to check the post is restricted or not."
 msgstr ""
 
-#: src/download.rs:462
+#: src/download.rs:570
 msgid "Warning: This article is restricted."
 msgstr ""
 
-#: src/download.rs:482
+#: src/download.rs:594 src/download.rs:836
 msgid "Failed to save post data to file."
 msgstr ""
 
-#: src/download.rs:489
-msgid "Failed to get the body of image post."
+#: src/download.rs:605
+msgid "Failed to get image map from article."
 msgstr ""
 
-#: src/download.rs:492
-msgid "Failed to get images from the image post."
+#: src/download.rs:608
+msgid "Failed to get blocks from article."
 msgstr ""
 
-#: src/download.rs:501
+#: src/download.rs:611
+msgid "Failed to get embed url map from article."
+msgstr ""
+
+#: src/download.rs:623
+msgid "Failed to get image id from block."
+msgstr ""
+
+#: src/download.rs:625
+msgid "Failed get image information from image map."
+msgstr ""
+
+#: src/download.rs:628 src/download.rs:723
 msgid "Can not get original url for image"
 msgstr ""
 
-#: src/download.rs:516
+#: src/download.rs:647
+msgid "Failed to get embed url id from block"
+msgstr ""
+
+#: src/download.rs:649
+msgid "Failed to get embed url from url embed map."
+msgstr ""
+
+#: src/download.rs:654
+msgid "Failed to get creator's profile."
+msgstr ""
+
+#: src/download.rs:687
+msgid "Failed to get the body of file post."
+msgstr ""
+
+#: src/download.rs:690
+msgid "Failed to get files from file post."
+msgstr ""
+
+#: src/download.rs:694
+msgid "Failed to get url of the file."
+msgstr ""
+
+#: src/download.rs:711
+msgid "Failed to get the body of image post."
+msgstr ""
+
+#: src/download.rs:714
+msgid "Failed to get images from the image post."
+msgstr ""
+
+#: src/download.rs:741
 msgid "Unrecognized post type."
+msgstr ""
+
+#: src/download.rs:784
+msgid "Failed to get creator's id."
+msgstr ""
+
+#: src/download.rs:798
+msgid "Failed to get creator's information."
+msgstr ""
+
+#: src/download.rs:810
+msgid "Warning: Creator's info contains unknown data:"
+msgstr ""
+
+#: src/download.rs:868
+msgid "Can not get image url."
+msgstr ""
+
+#: src/download.rs:885
+msgid "Unrecognized profile item type."
 msgstr ""
 
 #: src/downloader/downloader.rs:227
@@ -344,13 +424,13 @@ msgid "Failed to parse value."
 msgstr ""
 
 #: src/ext/use_or_not.rs:76 src/opt/author_name_filter.rs:48
-#: src/retry_interval.rs:24 src/ugoira.rs:308
+#: src/retry_interval.rs:24 src/ugoira.rs:310
 msgid "Failed to get JSON object."
 msgstr ""
 
 #: src/ext/use_or_not.rs:82 src/opt/author_name_filter.rs:50
 #: src/opt/author_name_filter.rs:131 src/retry_interval.rs:59
-#: src/retry_interval.rs:63 src/ugoira.rs:310 src/ugoira.rs:315
+#: src/retry_interval.rs:63 src/ugoira.rs:312 src/ugoira.rs:317
 msgid "Unsupported JSON type."
 msgstr ""
 
@@ -499,155 +579,177 @@ msgstr ""
 msgid "Failed to parse proxy list."
 msgstr ""
 
-#: src/opts.rs:148
+#: src/opts.rs:169
 msgid "Warning: The specified config file not found."
 msgstr ""
 
-#: src/opts.rs:173
+#: src/opts.rs:194
 msgid "Usage:"
 msgstr ""
 
-#: src/opts.rs:175
+#: src/opts.rs:196
 msgid "Download an artwork"
 msgstr ""
 
-#: src/opts.rs:177
+#: src/opts.rs:198
 msgid "Fix the config file"
 msgstr ""
 
-#: src/opts.rs:179
+#: src/opts.rs:200
 msgid "Print all available settings"
 msgstr ""
 
-#: src/opts.rs:186
+#: src/opts.rs:207
 msgid "Run as a server"
 msgstr ""
 
-#: src/opts.rs:219
+#: src/opts.rs:240
 msgid "Invalid boolean value:"
 msgstr ""
 
-#: src/opts.rs:290
+#: src/opts.rs:336
 msgid "Print help message."
 msgstr ""
 
-#: src/opts.rs:294
+#: src/opts.rs:340
 msgid "The location of config file."
 msgstr ""
 
-#: src/opts.rs:300 src/settings_list.rs:21
+#: src/opts.rs:346 src/settings_list.rs:25
 msgid "The location of cookies file. Used for web API."
 msgstr ""
 
-#: src/opts.rs:306 src/settings_list.rs:22
+#: src/opts.rs:352 src/settings_list.rs:26
 msgid "The language of translated tags."
 msgstr ""
 
-#: src/opts.rs:309
+#: src/opts.rs:355
 msgid "Verbose logging."
 msgstr ""
 
-#: src/opts.rs:310
+#: src/opts.rs:356
 msgid "Overwrite existing file."
 msgstr ""
 
-#: src/opts.rs:311
+#: src/opts.rs:357
 msgid "Skip overwrite existing file."
 msgstr ""
 
-#: src/opts.rs:315 src/settings_list.rs:23
+#: src/opts.rs:361 src/settings_list.rs:27
 msgid "Max retry count if request failed."
 msgstr ""
 
-#: src/opts.rs:321 src/settings_list.rs:24
+#: src/opts.rs:367 src/settings_list.rs:28
 msgid "The interval (in seconds) between two retries."
 msgstr ""
 
-#: src/opts.rs:324 src/settings_list.rs:25
+#: src/opts.rs:370 src/settings_list.rs:29
 msgid "Use data from webpage first."
 msgstr ""
 
-#: src/opts.rs:329 src/settings_list.rs:28
+#: src/opts.rs:375 src/settings_list.rs:32
 msgid "Add/Update exif information to image files even when overwrite are disabled."
 msgstr ""
 
-#: src/opts.rs:334 src/settings_list.rs:30
+#: src/opts.rs:380 src/settings_list.rs:34
 msgid "Whether to enable progress bar."
 msgstr ""
 
-#: src/opts.rs:342 src/settings_list.rs:31
-msgid "Download multiple images at the same time."
+#: src/opts.rs:388 src/settings_list.rs:35
+msgid "Download multiple files at the same time."
 msgstr ""
 
-#: src/opts.rs:343 src/opts.rs:369
+#: src/opts.rs:389 src/opts.rs:415 src/opts.rs:447 src/opts.rs:461
+#: src/opts.rs:475 src/opts.rs:490 src/opts.rs:505
 msgid "Default:"
 msgstr ""
 
-#: src/opts.rs:354 src/settings_list.rs:32
+#: src/opts.rs:400 src/settings_list.rs:36
 msgid "Max retry count if download failed."
 msgstr ""
 
-#: src/opts.rs:360 src/settings_list.rs:33
+#: src/opts.rs:406 src/settings_list.rs:37
 msgid "The interval (in seconds) between two retries when downloading files."
 msgstr ""
 
-#: src/opts.rs:368 src/settings_list.rs:34
+#: src/opts.rs:414 src/settings_list.rs:38
 msgid "Whether to enable multiple threads download."
 msgstr ""
 
-#: src/opts.rs:380 src/settings_list.rs:35
+#: src/opts.rs:426 src/settings_list.rs:39
 msgid "Max retry count of each part when downloading in multiple thread mode."
 msgstr ""
 
-#: src/opts.rs:386 src/settings_list.rs:36
-msgid "The maximun threads when downloading file."
+#: src/opts.rs:432 src/settings_list.rs:40
+msgid "The maximum threads when downloading file."
 msgstr ""
 
-#: src/opts.rs:392 src/settings_list.rs:37
+#: src/opts.rs:438 src/settings_list.rs:41
 msgid "The size of the each part when downloading file."
 msgstr ""
 
-#: src/opts.rs:408
+#: src/opts.rs:446 src/settings_list.rs:47
+msgid "The maximum number of tasks to download files at the same time."
+msgstr ""
+
+#: src/opts.rs:460 src/settings_list.rs:48
+msgid "Download multiple posts/artworks at the same time."
+msgstr ""
+
+#: src/opts.rs:474 src/settings_list.rs:49
+msgid "The maximum number of tasks to download posts/artworks at the same time."
+msgstr ""
+
+#: src/opts.rs:489 src/settings_list.rs:51
+msgid "Force yuv420p as output pixel format when converting ugoira(GIF) to video."
+msgstr ""
+
+#: src/opts.rs:504 src/settings_list.rs:53
+msgid "The x264 profile when converting ugoira(GIF) to video."
+msgstr ""
+
+#: src/opts.rs:526
 msgid "Unknown command."
 msgstr ""
 
-#: src/opts.rs:418
+#: src/opts.rs:536
 msgid "Failed to parse ID:"
 msgstr ""
 
-#: src/opts.rs:424
+#: src/opts.rs:542
 msgid "No URL or ID specified."
 msgstr ""
 
-#: src/opts.rs:432
+#: src/opts.rs:550
 msgid "No detailed command specified."
 msgstr ""
 
-#: src/opts.rs:445
+#: src/opts.rs:563
 msgid "Unknown config subcommand."
 msgstr ""
 
-#: src/opts.rs:457
+#: src/opts.rs:575
 msgid "Failed to parse address:"
 msgstr ""
 
-#: src/opts.rs:496 src/opts.rs:551 src/opts.rs:573
+#: src/opts.rs:614 src/opts.rs:669 src/opts.rs:691
 msgid "Failed to parse retry count:"
 msgstr ""
 
-#: src/opts.rs:506 src/opts.rs:561
+#: src/opts.rs:624 src/opts.rs:679
 msgid "Failed to parse retry interval:"
 msgstr ""
 
-#: src/opts.rs:524 src/opts.rs:538 src/opts.rs:582
+#: src/opts.rs:642 src/opts.rs:656 src/opts.rs:700 src/opts.rs:731
+#: src/opts.rs:742 src/opts.rs:755 src/opts.rs:769 src/opts.rs:788
 msgid "Failed to parse <opt>:"
 msgstr ""
 
-#: src/opts.rs:595
+#: src/opts.rs:713
 msgid "Failed to parse max threads:"
 msgstr ""
 
-#: src/opts.rs:604
+#: src/opts.rs:722
 msgid "Failed to parse part size:"
 msgstr ""
 
@@ -663,60 +765,80 @@ msgstr ""
 msgid "There are some nodes still in stack:"
 msgstr ""
 
-#: src/parser/metadata.rs:56 src/pixiv_web.rs:133
+#: src/parser/metadata.rs:56 src/pixiv_web.rs:132
 msgid "Failed to parse JSON:"
 msgstr ""
 
-#: src/pixiv_web.rs:86 src/pixiv_web.rs:93
+#: src/pixiv_web.rs:85 src/pixiv_web.rs:92
 msgid "Failed to get main page:"
 msgstr ""
 
-#: src/pixiv_web.rs:101
+#: src/pixiv_web.rs:100
 msgid "Failed to parse main page."
 msgstr ""
 
-#: src/pixiv_web.rs:107
+#: src/pixiv_web.rs:106
 msgid "Main page's data:"
 msgstr ""
 
-#: src/pixiv_web.rs:124
+#: src/pixiv_web.rs:123
 msgid "Network error:"
 msgstr ""
 
-#: src/pixiv_web.rs:143
+#: src/pixiv_web.rs:142
 msgid "Failed to detect error."
 msgstr ""
 
-#: src/pixiv_web.rs:177
-msgid "Failed to download image:"
-msgstr ""
-
-#: src/pixiv_web.rs:201 src/pixiv_web.rs:246
+#: src/pixiv_web.rs:181 src/pixiv_web.rs:226
 msgid "Artwork's data:"
 msgstr ""
 
-#: src/pixiv_web.rs:225 src/pixiv_web.rs:232
+#: src/pixiv_web.rs:205 src/pixiv_web.rs:212
 msgid "Failed to get artwork page:"
 msgstr ""
 
-#: src/pixiv_web.rs:240
+#: src/pixiv_web.rs:220
 msgid "Failed to parse artwork page."
 msgstr ""
 
-#: src/pixiv_web.rs:271
+#: src/pixiv_web.rs:251
 msgid "Artwork's page data:"
 msgstr ""
 
-#: src/pixiv_web.rs:296
+#: src/pixiv_web.rs:280
 msgid "Ugoira's data:"
 msgstr ""
 
-#: src/pixiv_web.rs:325
+#: src/pixiv_web.rs:309
 msgid "Warning: Failed to save cookies file:"
 msgstr ""
 
 #: src/retry_interval.rs:38 src/retry_interval.rs:54
 msgid "Failed to parse JSON number."
+msgstr ""
+
+#: src/server/auth/pubkey.rs:61 src/server/auth/pubkey.rs:66
+msgid "Failed to generate RSA key."
+msgstr ""
+
+#: src/server/auth/pubkey.rs:70
+msgid "Failed to serializes the public key into a PEM-encoded SubjectPublicKeyInfo structure"
+msgstr ""
+
+#: src/server/auth/pubkey.rs:72
+msgid "Failed to encode pem with UTF-8."
+msgstr ""
+
+#: src/server/auth/user.rs:39
+msgid "No user's name specified."
+msgstr ""
+
+#: src/server/auth/user.rs:42
+msgid "No username specified."
+msgstr ""
+
+#: src/server/context.rs:19
+msgid "Failed to open database:"
 msgstr ""
 
 #: src/server/cors.rs:44 src/server/cors.rs:215
@@ -737,6 +859,14 @@ msgstr ""
 
 #: src/server/cors.rs:225
 msgid "hostname not found."
+msgstr ""
+
+#: src/server/params.rs:93
+msgid "Failed to find boundary."
+msgstr ""
+
+#: src/server/result.rs:66
+msgid "Failed to operate the database:"
 msgstr ""
 
 #: src/settings.rs:29
@@ -775,91 +905,99 @@ msgstr ""
 msgid "Failed to flush file:"
 msgstr ""
 
-#: src/settings_list.rs:20
+#: src/settings_list.rs:24
 msgid "Pixiv's refresh tokens. Used to login."
 msgstr ""
 
-#: src/settings_list.rs:26
+#: src/settings_list.rs:30
 msgid "Remove the part which after these parttens."
 msgstr ""
 
-#: src/settings_list.rs:29
+#: src/settings_list.rs:33
 msgid "Progress bar's template. See <here> for more informations."
 msgstr ""
 
-#: src/settings_list.rs:38
+#: src/settings_list.rs:42
 msgid "Proxy settings."
 msgstr ""
 
-#: src/settings_list.rs:40
+#: src/settings_list.rs:44
 msgid "Server address."
 msgstr ""
 
-#: src/settings_list.rs:42
+#: src/settings_list.rs:46
 msgid "The domains allowed to send CORS requests."
 msgstr ""
 
-#: src/ugoira.rs:111
-msgid "Arguments have null pointers."
-msgstr ""
-
-#: src/ugoira.rs:112
-msgid "Invalid max fps."
+#: src/settings_list.rs:55
+msgid "Database settings."
 msgstr ""
 
 #: src/ugoira.rs:113
-msgid "Invalid frames."
+msgid "Arguments have null pointers."
 msgstr ""
 
 #: src/ugoira.rs:114
-msgid "Invalid crf."
+msgid "Invalid max fps."
 msgstr ""
 
 #: src/ugoira.rs:115
-msgid "Can not remove output file."
+msgid "Invalid frames."
+msgstr ""
+
+#: src/ugoira.rs:116
+msgid "Invalid crf."
 msgstr ""
 
 #: src/ugoira.rs:117
-msgid "No video stream available in the file."
-msgstr ""
-
-#: src/ugoira.rs:118
-msgid "No available decoder."
+msgid "Can not remove output file."
 msgstr ""
 
 #: src/ugoira.rs:119
-msgid "No available encoder."
+msgid "No video stream available in the file."
 msgstr ""
 
 #: src/ugoira.rs:120
-msgid "Failed to open output file."
+msgid "No available decoder."
 msgstr ""
 
 #: src/ugoira.rs:121
-msgid "Unable to scale image."
+msgid "No available encoder."
 msgstr ""
 
 #: src/ugoira.rs:122
+msgid "Failed to open output file."
+msgstr ""
+
+#: src/ugoira.rs:123
+msgid "Unable to scale image."
+msgstr ""
+
+#: src/ugoira.rs:124
 msgid "Unknown error."
 msgstr ""
 
-#: src/ugoira.rs:191
+#: src/ugoira.rs:193
 msgid "No error."
 msgstr ""
 
-#: src/ugoira.rs:292
+#: src/ugoira.rs:294
 msgid "Delay should be greater than 0."
 msgstr ""
 
-#: src/ugoira.rs:317
+#: src/ugoira.rs:319
 msgid "File is needed."
 msgstr ""
 
-#: src/ugoira.rs:318
+#: src/ugoira.rs:320
 msgid "Delay is needed."
 msgstr ""
 
-#: src/ugoira.rs:393 src/ugoira.rs:397
+#: src/ugoira.rs:436
+msgid "Unknown H.264 profile."
+msgstr ""
+
+#: src/ugoira.rs:469 src/ugoira.rs:473
 msgid "Failed to convert path."
 msgstr ""
 
@@ -907,18 +1045,18 @@ msgstr ""
 msgid "Error when request:"
 msgstr ""
 
-#: src/main.rs:77
+#: src/main.rs:80
 msgid "Failed to save config file:"
 msgstr ""
 
-#: src/main.rs:88
+#: src/main.rs:91
 msgid "All available settings:"
 msgstr ""
 
-#: src/main.rs:120
+#: src/main.rs:123
 msgid "Can not read config file:"
 msgstr ""
 
-#: src/main.rs:148
+#: src/main.rs:151
 msgid "Failed to start the server:"
 msgstr ""
