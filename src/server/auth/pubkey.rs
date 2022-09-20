@@ -1,8 +1,12 @@
 use super::super::preclude::*;
 use crate::ext::{json::ToJson2, try_err::TryErr};
 use crate::gettext;
+use bytes::BytesMut;
 use chrono::{DateTime, Utc};
-use openssl::{pkey::Private, rsa::Rsa};
+use openssl::{
+    pkey::Private,
+    rsa::{Padding, Rsa},
+};
 
 pub struct RSAKey {
     pub key: Rsa<Private>,
@@ -15,6 +19,23 @@ impl RSAKey {
             key: Rsa::generate(4096)?,
             generated_time: Utc::now(),
         })
+    }
+
+    pub fn decrypt(&self, data: &[u8]) -> Result<BytesMut, openssl::error::ErrorStack> {
+        let tosize = data.len();
+        let mut buf = BytesMut::with_capacity(tosize);
+        buf.resize(tosize, 0);
+        let mut i = 0;
+        let mut real = 0;
+        while i < tosize {
+            let i2 = i + self.key.size() as usize;
+            real += self
+                .key
+                .private_decrypt(&data[i..i2], &mut buf[i..i2], Padding::PKCS1)?;
+            i = i2;
+        }
+        buf.truncate(real);
+        Ok(buf)
     }
 
     pub fn is_too_old(&self) -> bool {
