@@ -31,6 +31,7 @@ json = "0.12"
 lazy_static = "1.4"
 modular-bitfield = "0.11"
 multipart = { features = ["server"], git = 'https://github.com/lifegpc/multipart', optional = true, default-features = false }
+openssl = { version = "0.10", optional = true }
 parse-size = "1"
 proc_macros = { path = "proc_macros" }
 regex = "1"
@@ -53,7 +54,7 @@ db = ["anyhow", "async-trait", "bytes"]
 db_all = ["db", "db_sqlite"]
 db_sqlite = ["rusqlite"]
 exif = ["bindgen", "c_fixed_string", "cmake", "link-cplusplus", "utf16string"]
-server = ["async-trait", "db", "hyper", "multipart"]
+server = ["async-trait", "db", "hyper", "multipart", "openssl"]
 ugoira = ["avdict", "bindgen", "cmake", "link-cplusplus"]
 
 [profile.release-with-debug]

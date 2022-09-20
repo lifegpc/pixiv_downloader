@@ -3,6 +3,10 @@
 * 路径: `/api/auth/status`、 `/auth/status`、 `/api/auth` 或 `/auth`
 * 方法: `GET` 或 `POST`
 * 鉴权: 无需
+## 获取服务器公钥
+* 路径: `/api/auth/pubkey`、 `/auth/pubkey`
+* 方法: `GET` 或 `POST`
+* 鉴权: 无需
 ## 新增用户
 * 路径: `/api/auth/user/add`、 `/auth/user/add`
 * 方法: `GET` 或 `POST`

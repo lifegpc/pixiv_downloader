@@ -20,6 +20,7 @@ impl ServerRoutes {
         routes.push(Box::new(VersionRoute::new()));
         routes.push(Box::new(AuthStatusRoute::new()));
         routes.push(Box::new(AuthUserRoute::new()));
+        routes.push(Box::new(AuthPubkeyRoute::new()));
         Self { routes }
     }
 

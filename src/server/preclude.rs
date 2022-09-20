@@ -1,4 +1,5 @@
 pub use super::context::ServerContext;
+pub use super::params::RequestParams;
 pub use super::result::JSONResult;
 pub use super::route::ResponseForType;
 pub use super::traits::{GetRequestParams, MatchRoute, ResponseFor, ResponseJsonFor};

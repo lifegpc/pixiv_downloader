@@ -1,5 +1,7 @@
 use super::super::preclude::*;
 use crate::ext::json::ToJson2;
+use crate::ext::try_err::TryErr;
+use crate::gettext;
 
 #[derive(Clone, Debug)]
 /// Action to perform on a user.
@@ -30,12 +32,21 @@ impl AuthUserContext {
             // # TODO auth
         }
         match &self.action {
-            Some(act) => {}
+            Some(act) => match act {
+                AuthUserAction::Add => {
+                    let name = params
+                        .get("name")
+                        .try_err((1, gettext("No user's name specified.")))?;
+                    let username = params
+                        .get("username")
+                        .try_err((2, gettext("No username specified.")))?;
+                    Ok(json::object! {})
+                }
+            },
             None => {
                 panic!("No action specified for AuthUserContext.");
             }
         }
-        Ok(json::object! {})
     }
 }
 

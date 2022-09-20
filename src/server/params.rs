@@ -8,16 +8,36 @@ use multipart::server::{Multipart, ReadEntryResult};
 use std::collections::HashMap;
 use std::io::Read;
 
+/// Parameters from request.
 pub struct RequestParams {
+    /// Parameters.
     pub params: HashMap<String, Vec<String>>,
 }
 
+#[allow(dead_code)]
 impl RequestParams {
+    /// Get parameter.
+    /// * `name` - Parameter name.
     pub fn get<S: AsRef<str> + ?Sized>(&self, name: &S) -> Option<&str> {
         match self.params.get(name.as_ref()) {
             Some(v) => {
                 if v.len() > 0 {
                     Some(&v[0])
+                } else {
+                    None
+                }
+            }
+            None => None,
+        }
+    }
+
+    /// Get all parameters with same name.
+    /// * `name` - Parameter name.
+    pub fn get_all<S: AsRef<str> + ?Sized>(&self, name: &S) -> Option<&Vec<String>> {
+        match self.params.get(name.as_ref()) {
+            Some(v) => {
+                if v.len() > 0 {
+                    Some(v)
                 } else {
                     None
                 }

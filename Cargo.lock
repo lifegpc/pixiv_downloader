@@ -1396,6 +1396,7 @@ dependencies = [
  "link-cplusplus",
  "modular-bitfield",
  "multipart",
+ "openssl",
  "parse-size",
  "proc_macros",
  "regex",

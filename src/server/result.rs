@@ -23,11 +23,37 @@ impl From<(i32, String)> for JSONError {
     }
 }
 
+impl<S> From<(i32, &S)> for JSONError
+where
+    S: AsRef<str> + ?Sized,
+{
+    fn from((code, msg): (i32, &S)) -> Self {
+        Self {
+            code,
+            msg: msg.as_ref().to_owned(),
+            debug_msg: None,
+        }
+    }
+}
+
 impl From<(i32, String, Option<JsonValue>)> for JSONError {
     fn from((code, msg, debug_msg): (i32, String, Option<JsonValue>)) -> Self {
         Self {
             code,
             msg,
+            debug_msg,
+        }
+    }
+}
+
+impl<S> From<(i32, &S, Option<JsonValue>)> for JSONError
+where
+    S: AsRef<str> + ?Sized,
+{
+    fn from((code, msg, debug_msg): (i32, &S, Option<JsonValue>)) -> Self {
+        Self {
+            code,
+            msg: msg.as_ref().to_owned(),
             debug_msg,
         }
     }

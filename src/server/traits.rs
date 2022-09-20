@@ -43,7 +43,11 @@ where
 {
     async fn response(&self, req: Request<T>) -> Result<Response<Body>, PixivDownloaderError> {
         let re = self.response_json(req).await?;
-        let (parts, body) = re.into_parts();
+        let (mut parts, body) = re.into_parts();
+        parts.headers.insert(
+            hyper::header::CONTENT_TYPE,
+            "application/json; charset=utf-8".parse()?,
+        );
         Ok(Response::from_parts(parts, Body::from(body.to_string())))
     }
 }
