@@ -8,6 +8,10 @@ use crate::error::PixivDownloaderError;
 use futures_util::lock::Mutex;
 use hyper::{Body, Request, Response};
 use json::JsonValue;
+#[cfg(test)]
+use std::fs::{create_dir, remove_file};
+#[cfg(test)]
+use std::path::Path;
 use std::sync::Arc;
 
 pub struct UnitTestContext {
@@ -61,6 +65,15 @@ impl UnitTestContext {
 #[proc_macros::async_timeout_test(120s)]
 #[tokio::test(flavor = "multi_thread")]
 async fn test() -> Result<(), PixivDownloaderError> {
+    let p = Path::new("./test");
+    if !p.exists() {
+        let re = create_dir("./test");
+        assert!(re.is_ok() || p.exists());
+    }
+    let t = Path::new("./test/server.db");
+    if t.exists() {
+        remove_file(t)?;
+    }
     let ctx = UnitTestContext::new().await;
     version::test(&ctx).await?;
     Ok(())
