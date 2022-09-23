@@ -16,7 +16,7 @@ pub use traits::PixivDownloaderDb;
 pub use user::User;
 pub type PixivDownloaderDbError = anyhow::Error;
 
-use crate::{get_helper, gettext};
+use crate::gettext;
 
 #[cfg(feature = "db_sqlite")]
 impl From<SqliteError> for PixivDownloaderDbError {
@@ -29,8 +29,9 @@ impl From<SqliteError> for PixivDownloaderDbError {
 compile_error!("No database backend is enabled.");
 
 /// Open the database
-pub fn open_database() -> Result<Box<dyn PixivDownloaderDb + Send + Sync>, PixivDownloaderDbError> {
-    let cfg = get_helper().db();
+pub fn open_database(
+    cfg: PixivDownloaderDbConfig,
+) -> Result<Box<dyn PixivDownloaderDb + Send + Sync>, PixivDownloaderDbError> {
     if cfg.is_none() {
         return Err(PixivDownloaderDbError::msg(String::from(gettext(
             "No database configuration provided.",
@@ -49,8 +50,9 @@ pub fn open_database() -> Result<Box<dyn PixivDownloaderDb + Send + Sync>, Pixiv
 
 /// Open the database and initialize it
 pub async fn open_and_init_database(
+    cfg: PixivDownloaderDbConfig,
 ) -> Result<Box<dyn PixivDownloaderDb + Send + Sync>, PixivDownloaderDbError> {
-    let db = open_database()?;
+    let db = open_database(cfg)?;
     db.init().await?;
     Ok(db)
 }

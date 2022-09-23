@@ -361,6 +361,15 @@ pub struct CorsContext {
 }
 
 impl CorsContext {
+    #[cfg(test)]
+    pub fn new(allow_all: bool, entries: Vec<CorsEntry>, hosts: Vec<CorsHost>) -> Self {
+        Self {
+            allow_all,
+            entries,
+            hosts,
+        }
+    }
+
     pub fn matches<T: Clone>(&self, host: T) -> CorsResult
     where
         CorsEntry: PartialEq<T>,

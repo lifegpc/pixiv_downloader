@@ -23,6 +23,8 @@ pub enum PixivDownloaderError {
     FromUtf8Error(std::string::FromUtf8Error),
     #[cfg(feature = "server")]
     ToStrError(http::header::ToStrError),
+    #[cfg(all(feature = "server", feature = "db_sqlite", test))]
+    JSONError(json::Error),
 }
 
 impl From<&str> for PixivDownloaderError {

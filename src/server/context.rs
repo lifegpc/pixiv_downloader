@@ -1,6 +1,7 @@
 use super::auth::RSAKey;
 use super::cors::CorsContext;
 use crate::db::{open_and_init_database, PixivDownloaderDb};
+use crate::get_helper;
 use crate::gettext;
 use futures_util::lock::Mutex;
 
@@ -14,7 +15,7 @@ impl ServerContext {
     pub async fn default() -> Self {
         Self {
             cors: CorsContext::default(),
-            db: match open_and_init_database().await {
+            db: match open_and_init_database(get_helper().db()).await {
                 Ok(db) => db,
                 Err(e) => panic!("{} {}", gettext("Failed to open database:"), e),
             },

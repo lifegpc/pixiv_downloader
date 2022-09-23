@@ -114,7 +114,7 @@ pub fn async_timeout_test(attr: TokenStream, item: TokenStream) -> TokenStream {
             let f = async {
                 #(#stmts)*
             };
-            tokio::time::timeout(dura, f).await.unwrap();
+            tokio::time::timeout(dura, f).await.unwrap()
         }
     };
     stream.into()

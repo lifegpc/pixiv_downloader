@@ -45,6 +45,22 @@ impl AuthUserContext {
                         .try_err((3, gettext("No password specified.")))?;
                     let password = base64::decode(password)
                         .try_err3(4, gettext("Failed to decode password with base64:"))?;
+                    let rsa_key = self.ctx.rsa_key.lock().await;
+                    match *rsa_key {
+                        Some(ref key) => {
+                            if key.is_too_old() {
+                                return Err((
+                                    6,
+                                    gettext("RSA key is too old. A new key should be generated."),
+                                )
+                                    .into());
+                            }
+                            let password = key
+                                .decrypt(&password)
+                                .try_err3(7, gettext("Failed to decrypt password with RSA:"))?;
+                        }
+                        None => return Err((5, gettext("No RSA key found.")).into()),
+                    }
                     Ok(json::object! {})
                 }
             },

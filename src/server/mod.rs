@@ -15,5 +15,7 @@ pub mod route;
 pub mod service;
 /// Traits
 pub mod traits;
+#[cfg(all(test, feature = "db_sqlite"))]
+mod unittest;
 /// Version
 pub mod version;

@@ -1,5 +1,7 @@
 use super::preclude::*;
 
+pub const VERSION: [u8; 4] = [0, 0, 1, 0];
+
 pub struct VersionContext {
     ctx: Arc<ServerContext>,
 }
@@ -26,7 +28,7 @@ impl ResponseJsonFor<Body> for VersionContext {
             OPTIONS,
             POST,
         );
-        Ok(builder.body(json::object! {"version": [0, 0, 1, 0]})?)
+        Ok(builder.body(json::object! {"version": VERSION.to_vec()})?)
     }
 }
 
