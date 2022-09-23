@@ -36,7 +36,7 @@ openssl = { version = "0.10", optional = true }
 parse-size = "1"
 proc_macros = { path = "proc_macros" }
 regex = "1"
-reqwest = { version = "0.11", features = ["brotli", "deflate", "gzip", "rustls-tls", "socks", "stream"] }
+reqwest = { version = "0.11", features = ["brotli", "deflate", "gzip", "socks", "stream"] }
 rusqlite = { version = "0.28", features = ["bundled", "chrono"], optional = true }
 RustyXML = "0.3"
 tokio = { version = "1.21", features = ["rt", "macros", "rt-multi-thread", "time"] }
