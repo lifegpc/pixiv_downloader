@@ -1102,8 +1102,7 @@ dependencies = [
 [[package]]
 name = "native-tls"
 version = "0.2.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fd7e2f3618557f980e0b17e8856252eee3c97fa12c54dff0ca290fb6266ca4a9"
+source = "git+https://github.com/lifegpc/rust-native-tls#8c4fe2aa4186971fc09b60833ca1d0dcaf701604"
 dependencies = [
  "lazy_static",
  "libc",
@@ -1111,7 +1110,6 @@ dependencies = [
  "openssl",
  "openssl-probe",
  "openssl-sys",
- "schannel",
  "security-framework",
  "security-framework-sys",
  "tempfile",
@@ -1653,16 +1651,6 @@ name = "safemem"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ef703b7cb59335eae2eb93ceb664c0eb7ea6bf567079d843e09420219668e072"
-
-[[package]]
-name = "schannel"
-version = "0.1.20"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "88d6731146462ea25d9244b2ed5fd1d716d25c52e4d54aa4fb0f3c4e9854dbe2"
-dependencies = [
- "lazy_static",
- "windows-sys",
-]
 
 [[package]]
 name = "sct"

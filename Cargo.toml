@@ -58,6 +58,9 @@ exif = ["bindgen", "c_fixed_string", "cmake", "link-cplusplus", "utf16string"]
 server = ["async-trait", "base64", "db", "hyper", "multipart", "openssl"]
 ugoira = ["avdict", "bindgen", "cmake", "link-cplusplus"]
 
+[patch.crates-io]
+native-tls = { git = "https://github.com/lifegpc/rust-native-tls" }
+
 [profile.release-with-debug]
 inherits = "release"
 debug = true
