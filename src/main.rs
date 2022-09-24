@@ -133,7 +133,7 @@ impl Main {
                 Ok(_) => {}
                 Err(_) => {
                     let mut cert = utils::get_exe_path_else_current();
-                    cert.push("cert.pem");
+                    cert.set_file_name("cert.pem");
                     if cert.exists() {
                         std::env::set_var("SSL_CERT_FILE", cert);
                     }
