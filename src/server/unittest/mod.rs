@@ -1,3 +1,4 @@
+mod auth;
 mod version;
 
 use super::context::ServerContext;
@@ -76,5 +77,6 @@ async fn test() -> Result<(), PixivDownloaderError> {
     }
     let ctx = UnitTestContext::new().await;
     version::test(&ctx).await?;
+    auth::test(&ctx).await?;
     Ok(())
 }
