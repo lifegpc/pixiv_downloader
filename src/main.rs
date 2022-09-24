@@ -127,6 +127,19 @@ impl Main {
             None => {}
         }
         get_helper().update(cmd.clone(), self.settings.as_ref().unwrap().clone());
+        #[cfg(target_os = "windows")]
+        {
+            match std::env::var("SSL_CERT_FILE") {
+                Ok(_) => {}
+                Err(_) => {
+                    let mut cert = utils::get_exe_path_else_current();
+                    cert.push("cert.pem");
+                    if cert.exists() {
+                        std::env::set_var("SSL_CERT_FILE", cert);
+                    }
+                }
+            }
+        }
         match cmd.cmd {
             Command::Config => {
                 self.deal_config_cmd();
