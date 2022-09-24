@@ -832,9 +832,9 @@ dependencies = [
 
 [[package]]
 name = "iana-time-zone"
-version = "0.1.49"
+version = "0.1.50"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3bbaead50122b06e9a973ac20bc7445074d99ad9a0a0654934876908a9cec82c"
+checksum = "fd911b35d940d2bd0bea0f9100068e5b97b51a1cbe13d13382f132e0365257a0"
 dependencies = [
  "android_system_properties",
  "core-foundation-sys",
@@ -1089,7 +1089,7 @@ dependencies = [
 [[package]]
 name = "native-tls"
 version = "0.2.10"
-source = "git+https://github.com/lifegpc/rust-native-tls#8c4fe2aa4186971fc09b60833ca1d0dcaf701604"
+source = "git+https://github.com/lifegpc/rust-native-tls#bc3a7a9372055dfb34470aa6d9c652ac2d81eefe"
 dependencies = [
  "lazy_static",
  "libc",
@@ -1214,8 +1214,7 @@ checksum = "e82dad04139b71a90c080c8463fe0dc7902db5192d939bd0950f074d014339e1"
 [[package]]
 name = "openssl"
 version = "0.10.41"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "618febf65336490dfcf20b73f885f5651a0c89c64c2d4a8c3662585a70bf5bd0"
+source = "git+https://github.com/lifegpc/rust-openssl#7bae8706680c978748e5f4123787576a54e27c5e"
 dependencies = [
  "bitflags",
  "cfg-if 1.0.0",
@@ -1229,8 +1228,7 @@ dependencies = [
 [[package]]
 name = "openssl-macros"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b501e44f11665960c7e7fcf062c7d96a14ade4aa98116c004b2e37b5be7d736c"
+source = "git+https://github.com/lifegpc/rust-openssl#7bae8706680c978748e5f4123787576a54e27c5e"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1246,8 +1244,7 @@ checksum = "ff011a302c396a5197692431fc1948019154afc178baf7d8e37367442a4601cf"
 [[package]]
 name = "openssl-sys"
 version = "0.9.75"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e5f9bd0c2710541a3cda73d6f9ac4f1b240de4ae261065d309dbe73d9dceb42f"
+source = "git+https://github.com/lifegpc/rust-openssl#7bae8706680c978748e5f4123787576a54e27c5e"
 dependencies = [
  "autocfg",
  "cc",

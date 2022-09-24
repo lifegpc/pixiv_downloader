@@ -59,6 +59,8 @@ server = ["async-trait", "base64", "db", "hyper", "multipart", "openssl"]
 ugoira = ["avdict", "bindgen", "cmake", "link-cplusplus"]
 
 [patch.crates-io]
+openssl = { git = "https://github.com/lifegpc/rust-openssl" }
+openssl-sys = { git = "https://github.com/lifegpc/rust-openssl" }
 native-tls = { git = "https://github.com/lifegpc/rust-native-tls" }
 
 [profile.release-with-debug]

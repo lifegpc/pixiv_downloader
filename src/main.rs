@@ -127,22 +127,6 @@ impl Main {
             None => {}
         }
         get_helper().update(cmd.clone(), self.settings.as_ref().unwrap().clone());
-        match std::env::var("SSL_CERT_FILE") {
-            Ok(s) => {
-                if s.len() == 0 || !std::path::Path::new(&s).exists() {
-                    let cert = utils::get_exe_path_else_current().join("cert.pem");
-                    if cert.exists() {
-                        std::env::set_var("SSL_CERT_FILE", cert);
-                    }
-                }
-            }
-            Err(_) => {
-                let cert = utils::get_exe_path_else_current().join("cert.pem");
-                if cert.exists() {
-                    std::env::set_var("SSL_CERT_FILE", cert);
-                }
-            }
-        }
         match cmd.cmd {
             Command::Config => {
                 self.deal_config_cmd();
