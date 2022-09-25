@@ -1,7 +1,7 @@
 use super::PixivDownloaderDbConfig;
 use super::PixivDownloaderDbError;
 #[cfg(feature = "server")]
-use super::User;
+use super::{Token, User};
 
 #[async_trait]
 pub trait PixivDownloaderDb {
@@ -23,6 +23,10 @@ pub trait PixivDownloaderDb {
         username: &str,
         password: &[u8],
     ) -> Result<User, PixivDownloaderDbError>;
+    #[cfg(feature = "server")]
+    /// Get token by ID
+    /// * `id` - The token ID
+    async fn get_token(&self, id: u64) -> Result<Option<Token>, PixivDownloaderDbError>;
     #[cfg(feature = "server")]
     /// Get a user by ID
     /// * `id`: The user's ID

@@ -27,6 +27,7 @@ pub enum PixivDownloaderError {
     JSONError(json::Error),
     #[cfg(feature = "openssl")]
     OpenSSLError(openssl::error::ErrorStack),
+    ParseIntError(std::num::ParseIntError),
 }
 
 impl From<&str> for PixivDownloaderError {

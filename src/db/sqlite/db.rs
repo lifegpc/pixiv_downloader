@@ -1,8 +1,8 @@
-#[cfg(feature = "server")]
-use super::super::User;
 use super::super::{
     PixivDownloaderDb, PixivDownloaderDbConfig, PixivDownloaderDbError, PixivDownloaderSqliteConfig,
 };
+#[cfg(feature = "server")]
+use super::super::{Token, User};
 use super::SqliteError;
 use bytes::BytesMut;
 use futures_util::lock::Mutex;
@@ -56,10 +56,12 @@ lang TEXT,
 translated TEXT
 );";
 const TOKEN_TABLE: &'static str = "CREATE TABLE token (
+id INT,
 user_id INT,
 token TEXT,
 created_at DATETIME,
-expired_at DATETIME
+expired_at DATETIME,
+PRIMARY KEY (id)
 );";
 const USERS_TABLE: &'static str = "CREATE TABLE users (
 id INT,
@@ -77,13 +79,14 @@ v3 INT,
 v4 INT,
 PRIMARY KEY (id)
 );";
-const VERSION: [u8; 4] = [1, 0, 0, 2];
+const VERSION: [u8; 4] = [1, 0, 0, 3];
 
 pub struct PixivDownloaderSqlite {
     db: Mutex<Connection>,
 }
 
 impl PixivDownloaderSqlite {
+    #[cfg(feature = "server")]
     async fn _add_root_user(
         &self,
         name: &str,
@@ -126,6 +129,10 @@ impl PixivDownloaderSqlite {
                 }
                 if db_version < [1, 0, 0, 2] {
                     tx.execute("ALTER TABLE users ADD is_admin BOOLEAN;", [])?;
+                }
+                if db_version < [1, 0, 0, 3] {
+                    tx.execute("DROP TABLE token;", [])?;
+                    tx.execute(TOKEN_TABLE, [])?;
                 }
                 self._write_version(&tx)?;
                 tx.commit()?;
@@ -185,6 +192,22 @@ impl PixivDownloaderSqlite {
             tables.insert(row.get(0)?, ());
         }
         Ok(tables)
+    }
+
+    #[cfg(feature = "server")]
+    async fn get_token(&self, id: u64) -> Result<Option<Token>, SqliteError> {
+        let con = self.db.lock().await;
+        Ok(con
+            .query_row("SELECT * FROM token WHERE id = ?;", [id], |row| {
+                Ok(Token {
+                    id: row.get(0)?,
+                    user_id: row.get(1)?,
+                    token: row.get(2)?,
+                    created_at: row.get(3)?,
+                    expired_at: row.get(4)?,
+                })
+            })
+            .optional()?)
     }
 
     #[cfg(feature = "server")]
@@ -265,6 +288,11 @@ impl PixivDownloaderDb for PixivDownloaderSqlite {
     ) -> Result<User, PixivDownloaderDbError> {
         self._add_root_user(name, username, password).await?;
         Ok(self.get_user(0).await?.expect("Root user not found:"))
+    }
+
+    #[cfg(feature = "server")]
+    async fn get_token(&self, id: u64) -> Result<Option<Token>, PixivDownloaderDbError> {
+        Ok(self.get_token(id).await?)
     }
 
     #[cfg(feature = "server")]

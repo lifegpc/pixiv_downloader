@@ -37,7 +37,10 @@ impl AuthUserContext {
             .await
             .try_err3(-1002, gettext("Failed to get parameters:"))?;
         if root_user.is_some() {
-            // # TODO auth
+            self.ctx
+                .verify_token(&req, &params)
+                .await
+                .try_err3(-403, gettext("Failed to verify the token:"))?;
         }
         match &self.action {
             Some(act) => match act {
