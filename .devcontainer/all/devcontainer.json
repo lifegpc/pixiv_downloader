@@ -4,6 +4,10 @@
         "dockerfile": "Dockerfile"
     },
     "extensions": [
+        "bungcip.better-toml",
+        "ms-vscode.cpptools",
+        "vadimcn.vscode-lldb",
+        "GitHub.copilot",
         "rust-lang.rust-analyzer"
     ],
     "settings": {
@@ -15,6 +19,18 @@
         "codespaces": {
             "repositories": {
                 "lifegpc/c-utils": {
+                    "permissions": {
+                        "contents": "write",
+                        "workflows": "write"
+                    }
+                },
+                "lifegpc/rust-openssl": {
+                    "permissions": {
+                        "contents": "write",
+                        "workflows": "write"
+                    }
+                },
+                "lifegpc/rust-native-tls": {
                     "permissions": {
                         "contents": "write",
                         "workflows": "write"

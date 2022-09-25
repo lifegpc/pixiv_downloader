@@ -1089,7 +1089,7 @@ dependencies = [
 [[package]]
 name = "native-tls"
 version = "0.2.10"
-source = "git+https://github.com/lifegpc/rust-native-tls#bc3a7a9372055dfb34470aa6d9c652ac2d81eefe"
+source = "git+https://github.com/lifegpc/rust-native-tls#47a870a27b994d7f9617f5e68c6cc3822441b5c2"
 dependencies = [
  "lazy_static",
  "libc",
@@ -1214,7 +1214,7 @@ checksum = "e82dad04139b71a90c080c8463fe0dc7902db5192d939bd0950f074d014339e1"
 [[package]]
 name = "openssl"
 version = "0.10.41"
-source = "git+https://github.com/lifegpc/rust-openssl#7bae8706680c978748e5f4123787576a54e27c5e"
+source = "git+https://github.com/lifegpc/rust-openssl#165669e6f2163e09d1151e4e34d7623f37f6bef2"
 dependencies = [
  "bitflags",
  "cfg-if 1.0.0",
@@ -1228,7 +1228,7 @@ dependencies = [
 [[package]]
 name = "openssl-macros"
 version = "0.1.0"
-source = "git+https://github.com/lifegpc/rust-openssl#7bae8706680c978748e5f4123787576a54e27c5e"
+source = "git+https://github.com/lifegpc/rust-openssl#165669e6f2163e09d1151e4e34d7623f37f6bef2"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1244,7 +1244,7 @@ checksum = "ff011a302c396a5197692431fc1948019154afc178baf7d8e37367442a4601cf"
 [[package]]
 name = "openssl-sys"
 version = "0.9.75"
-source = "git+https://github.com/lifegpc/rust-openssl#7bae8706680c978748e5f4123787576a54e27c5e"
+source = "git+https://github.com/lifegpc/rust-openssl#165669e6f2163e09d1151e4e34d7623f37f6bef2"
 dependencies = [
  "autocfg",
  "cc",
@@ -1414,9 +1414,9 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.43"
+version = "1.0.44"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0a2ca2c61bc9f3d74d2886294ab7b9853abd9c1ad903a3ac7815c58989bb7bab"
+checksum = "7bd7356a8122b6c4a24a82b278680c73357984ca2fc79a0f9fa6dea7dced7c58"
 dependencies = [
  "unicode-ident",
 ]
