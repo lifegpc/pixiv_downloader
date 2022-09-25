@@ -2,6 +2,14 @@ use super::super::preclude::*;
 use crate::ext::json::ToJson2;
 use crate::ext::try_err::{TryErr, TryErr3};
 use crate::gettext;
+use openssl::{hash::MessageDigest, pkcs5::pbkdf2_hmac};
+
+const SALT: [u8; 64] = [
+    14, 169, 19, 53, 220, 112, 183, 235, 112, 165, 131, 132, 68, 29, 167, 65, 150, 219, 121, 212,
+    121, 47, 132, 195, 216, 119, 172, 134, 208, 11, 2, 80, 105, 176, 45, 194, 78, 84, 16, 169, 228,
+    25, 195, 207, 144, 204, 171, 95, 8, 113, 93, 40, 41, 116, 80, 126, 253, 142, 245, 147, 148,
+    136, 121, 220,
+];
 
 #[derive(Clone, Debug)]
 /// Action to perform on a user.
@@ -78,7 +86,15 @@ impl AuthUserContext {
                             let password = key
                                 .decrypt(&password)
                                 .try_err3(7, gettext("Failed to decrypt password with RSA:"))?;
-                            let hashed_password = openssl::sha::sha512(&password);
+                            let mut hashed_password = [0; 64];
+                            pbkdf2_hmac(
+                                &password,
+                                &SALT,
+                                2048,
+                                MessageDigest::sha512(),
+                                &mut hashed_password,
+                            )
+                            .try_err3(11, gettext("Failed to hash password:"))?;
                             if root_user.is_none() {
                                 let user = self
                                     .ctx
