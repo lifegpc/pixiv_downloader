@@ -21,6 +21,7 @@ flagset = { version = "0.4", optional = true }
 futures-util = "0.3"
 getopts = "0.2"
 gettext = "0.4"
+hex = { version = "0.4", optional = true }
 html_parser = "0.6.3"
 http = "0.2"
 http-content-range = "0.1"
@@ -55,7 +56,7 @@ db = ["anyhow", "async-trait", "bytes"]
 db_all = ["db", "db_sqlite"]
 db_sqlite = ["rusqlite"]
 exif = ["bindgen", "c_fixed_string", "cmake", "link-cplusplus", "utf16string"]
-server = ["async-trait", "base64", "db", "hyper", "multipart", "openssl"]
+server = ["async-trait", "base64", "db", "hex", "hyper", "multipart", "openssl"]
 ugoira = ["avdict", "bindgen", "cmake", "link-cplusplus"]
 
 [patch.crates-io]

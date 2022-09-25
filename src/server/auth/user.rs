@@ -36,15 +36,24 @@ impl AuthUserContext {
             .get_params()
             .await
             .try_err3(-1002, gettext("Failed to get parameters:"))?;
-        if root_user.is_some() {
-            self.ctx
-                .verify_token(&req, &params)
-                .await
-                .try_err3(-403, gettext("Failed to verify the token:"))?;
-        }
+        let user = if root_user.is_some() {
+            Some(
+                self.ctx
+                    .verify_token(&req, &params)
+                    .await
+                    .try_err3(-403, gettext("Failed to verify the token:"))?,
+            )
+        } else {
+            None
+        };
         match &self.action {
             Some(act) => match act {
                 AuthUserAction::Add => {
+                    if root_user.is_some() {
+                        if !user.as_ref().expect("User not found:").is_admin {
+                            return Err((9, gettext("Admin privileges required.")).into());
+                        }
+                    }
                     let name = params
                         .get("name")
                         .try_err((1, gettext("No user's name specified.")))?;
