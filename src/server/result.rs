@@ -1,7 +1,6 @@
 use crate::ext::json::ToJson2;
 #[cfg(test)]
 use crate::ext::json::{FromJson, ToJson};
-use crate::gettext;
 use json::JsonValue;
 
 #[derive(Clone, Debug)]
@@ -82,22 +81,6 @@ impl From<(i32, String, String)> for JSONError {
             msg,
             debug_msg: Some(debug_msg.to_json2()),
         }
-    }
-}
-
-impl From<crate::db::PixivDownloaderDbError> for JSONError {
-    fn from(e: crate::db::PixivDownloaderDbError) -> Self {
-        Self::from((
-            -1001,
-            format!("{} {}", gettext("Failed to operate the database:"), e),
-            format!("{:?}", e),
-        ))
-    }
-}
-
-impl From<crate::error::PixivDownloaderError> for JSONError {
-    fn from(e: crate::error::PixivDownloaderError) -> Self {
-        Self::from((-500, format!("{}", e), format!("{:?}", e)))
     }
 }
 

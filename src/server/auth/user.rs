@@ -26,8 +26,16 @@ impl AuthUserContext {
     }
 
     async fn handle(&self, mut req: Request<Body>) -> JSONResult {
-        let root_user = self.ctx.db.get_user(0).await?;
-        let params = req.get_params().await?;
+        let root_user = self
+            .ctx
+            .db
+            .get_user(0)
+            .await
+            .try_err3(-1001, gettext("Failed to operate database:"))?;
+        let params = req
+            .get_params()
+            .await
+            .try_err3(-1002, gettext("Failed to get parameters:"))?;
         if root_user.is_some() {
             // # TODO auth
         }
