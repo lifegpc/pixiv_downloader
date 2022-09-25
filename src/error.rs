@@ -25,6 +25,8 @@ pub enum PixivDownloaderError {
     ToStrError(http::header::ToStrError),
     #[cfg(all(feature = "server", feature = "db_sqlite", test))]
     JSONError(json::Error),
+    #[cfg(feature = "openssl")]
+    OpenSSLError(openssl::error::ErrorStack),
 }
 
 impl From<&str> for PixivDownloaderError {

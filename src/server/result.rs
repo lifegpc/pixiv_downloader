@@ -1,4 +1,6 @@
 use crate::ext::json::ToJson2;
+#[cfg(test)]
+use crate::ext::json::{FromJson, ToJson};
 use crate::gettext;
 use json::JsonValue;
 
@@ -115,6 +117,32 @@ impl ToJson2 for JSONResult {
                 "msg": e.msg.as_str(),
                 "debug_msg": e.debug_msg.clone().unwrap_or(JsonValue::Null),
             },
+        }
+    }
+}
+
+#[cfg(test)]
+impl FromJson for JSONResult {
+    type Err = crate::error::PixivDownloaderError;
+
+    fn from_json<T: ToJson>(value: T) -> Result<Self, <Self as FromJson>::Err> {
+        let value = value.to_json().ok_or("Failed to convert to json")?;
+        let ok = value["ok"].as_bool().ok_or("ok not found.")?;
+        if ok {
+            Ok(Self::Ok(value["result"].clone()))
+        } else {
+            let code = value["code"].as_i32().ok_or("code not found.")?;
+            let msg = value["msg"].as_str().ok_or("msg not found.")?.to_owned();
+            let debug_msg = value["debug_msg"].clone();
+            Ok(Self::Err(JSONError {
+                code,
+                msg,
+                debug_msg: if debug_msg.is_null() {
+                    None
+                } else {
+                    Some(debug_msg)
+                },
+            }))
         }
     }
 }

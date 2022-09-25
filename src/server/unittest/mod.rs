@@ -61,6 +61,52 @@ impl UnitTestContext {
             None => None,
         })
     }
+
+    pub async fn request_json2(
+        &self,
+        uri: &str,
+        params: &JsonValue,
+    ) -> Result<Option<JsonValue>, PixivDownloaderError> {
+        let mut par = Vec::new();
+        for (key, obj) in params.entries() {
+            if let Some(s) = obj.as_str() {
+                par.push(format!(
+                    "{}={}",
+                    urlparse::quote_plus(key, b"")?,
+                    urlparse::quote_plus(s, b"")?
+                ));
+            } else if obj.is_array() {
+                for s in obj.members() {
+                    if let Some(s) = s.as_str() {
+                        par.push(format!(
+                            "{}={}",
+                            urlparse::quote_plus(key, b"")?,
+                            urlparse::quote_plus(s, b"")?
+                        ));
+                    } else {
+                        par.push(format!(
+                            "{}={}",
+                            urlparse::quote_plus(key, b"")?,
+                            urlparse::quote_plus(&(s.dump()), b"")?
+                        ));
+                    }
+                }
+            } else {
+                par.push(format!(
+                    "{}={}",
+                    urlparse::quote_plus(key, b"")?,
+                    urlparse::quote_plus(&(obj.dump()), b"")?
+                ));
+            }
+        }
+        let par = par.join("&");
+        let req = Request::builder()
+            .method("POST")
+            .uri(uri)
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .body(Body::from(par))?;
+        self.request_json(req).await
+    }
 }
 
 #[proc_macros::async_timeout_test(120s)]
