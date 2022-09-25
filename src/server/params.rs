@@ -31,6 +31,49 @@ impl RequestParams {
         }
     }
 
+    /// Get parameter and return it as boolean.
+    /// * `name` - Parameter name.
+    pub fn get_bool<S: AsRef<str> + ?Sized>(
+        &self,
+        name: &S,
+    ) -> Result<Option<bool>, PixivDownloaderError> {
+        match self.get(name) {
+            Some(v) => {
+                let v = v.trim();
+                if v == "true" {
+                    Ok(Some(true))
+                } else if v == "false" {
+                    Ok(Some(false))
+                } else {
+                    match v.parse::<i64>() {
+                        Ok(v) => return Ok(Some(v != 0)),
+                        Err(_) => {}
+                    }
+                    Err(gettext("Invalid boolean value.").into())
+                }
+            }
+            None => Ok(None),
+        }
+    }
+
+    /// Get parameter and return it as [u64].
+    /// * `name` - Parameter name.
+    pub fn get_u64<S: AsRef<str> + ?Sized>(
+        &self,
+        name: &S,
+    ) -> Result<Option<u64>, PixivDownloaderError> {
+        match self.get(name) {
+            Some(v) => {
+                let v = v.trim();
+                match v.parse::<u64>() {
+                    Ok(v) => Ok(Some(v)),
+                    Err(_) => Err(gettext("Invalid unsigned 64bit integer value.").into()),
+                }
+            }
+            None => Ok(None),
+        }
+    }
+
     /// Get all parameters with same name.
     /// * `name` - Parameter name.
     pub fn get_all<S: AsRef<str> + ?Sized>(&self, name: &S) -> Option<&Vec<String>> {

@@ -88,7 +88,42 @@ impl AuthUserContext {
                                     .try_err3(8, gettext("Failed to add user to database:"))?;
                                 Ok(user.to_json2())
                             } else {
-                                Ok(json::object! {})
+                                let mut is_admin = params
+                                    .get_bool("is_admin")
+                                    .try_err3(
+                                        9,
+                                        &gettext("Failed to parse <opt>:")
+                                            .replace("<opt>", "is_admin"),
+                                    )?
+                                    .unwrap_or(false);
+                                let id = params.get_u64("id").try_err3(
+                                    10,
+                                    &gettext("Failed to parse <opt>:").replace("<opt>", "id"),
+                                )?;
+                                match id {
+                                    Some(id) => {
+                                        if id == 0 {
+                                            is_admin = true;
+                                        }
+                                        let user = self
+                                            .ctx
+                                            .db
+                                            .set_user(
+                                                id,
+                                                name,
+                                                username,
+                                                &hashed_password,
+                                                is_admin,
+                                            )
+                                            .await
+                                            .try_err3(
+                                                12,
+                                                gettext("Failed to set user in database:"),
+                                            )?;
+                                        Ok(user.to_json2())
+                                    }
+                                    None => Ok(json::object! {}),
+                                }
                             }
                         }
                         None => return Err((5, gettext("No RSA key found.")).into()),

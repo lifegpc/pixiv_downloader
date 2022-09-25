@@ -228,6 +228,28 @@ impl PixivDownloaderSqlite {
             .optional()?)
     }
 
+    #[cfg(feature = "server")]
+    async fn _get_user_by_username(&self, username: &str) -> Result<Option<User>, SqliteError> {
+        let con = self.db.lock().await;
+        Ok(con
+            .query_row(
+                "SELECT * FROM users WHERE username = ?;",
+                [username],
+                |row| {
+                    let password: Vec<u8> = row.get(3)?;
+                    let password: &[u8] = &password;
+                    Ok(User {
+                        id: row.get(0)?,
+                        name: row.get(1)?,
+                        username: row.get(2)?,
+                        password: BytesMut::from(password),
+                        is_admin: row.get(4)?,
+                    })
+                },
+            )
+            .optional()?)
+    }
+
     async fn _read_version(&self) -> Result<Option<[u8; 4]>, SqliteError> {
         let con = self.db.lock().await;
         let mut stmt = con.prepare("SELECT v1, v2, v3, v4 FROM version WHERE id='main';")?;
@@ -236,6 +258,81 @@ impl PixivDownloaderSqlite {
             Ok(Some([row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?]))
         } else {
             Ok(None)
+        }
+    }
+
+    #[cfg(feature = "server")]
+    async fn _set_user(
+        &self,
+        id: u64,
+        name: &str,
+        username: &str,
+        password: &[u8],
+        is_admin: bool,
+    ) -> Result<User, SqliteError> {
+        let con = self.db.lock().await;
+        let has_user = con
+            .query_row("SELECT * FROM users WHERE id = ?;", [id], |_| Ok(()))
+            .optional()
+            .is_ok();
+        let has_username = con
+            .query_row(
+                "SELECT * FROM users WHERE username = ?;",
+                [username],
+                |row| {
+                    if has_user {
+                        let uid: u64 = row.get(0)?;
+                        Ok(uid != id)
+                    } else {
+                        Ok(true)
+                    }
+                },
+            )
+            .optional()?
+            .unwrap_or(false);
+        if !has_user {
+            if has_username {
+                Err(SqliteError::UserNameAlreadyExists)
+            } else {
+                con.execute(
+                    "INSERT INTO users (name, username, password, is_admin) VALUES (?, ?, ?, ?);",
+                    (name, username, password, is_admin),
+                )?;
+                Ok(con.query_row(
+                    "SELECT * FROM users WHERE username = ?;",
+                    [username],
+                    |row| {
+                        let password: Vec<u8> = row.get(3)?;
+                        let password: &[u8] = &password;
+                        Ok(User {
+                            id: row.get(0)?,
+                            name: row.get(1)?,
+                            username: row.get(2)?,
+                            password: BytesMut::from(password),
+                            is_admin: row.get(4)?,
+                        })
+                    },
+                )?)
+            }
+        } else {
+            if has_username {
+                Err(SqliteError::UserNameAlreadyExists)
+            } else {
+                con.execute("INSERT OR REPLACE INTO users (id, name, username, password, is_admin) VALUES (?, ?, ?, ?, ?);", (id, name, username, password, is_admin))?;
+                Ok(
+                    con.query_row("SELECT * FROM users WHERE id = ?;", [id], |row| {
+                        let password: Vec<u8> = row.get(3)?;
+                        let password: &[u8] = &password;
+                        Ok(User {
+                            id: row.get(0)?,
+                            name: row.get(1)?,
+                            username: row.get(2)?,
+                            password: BytesMut::from(password),
+                            is_admin: row.get(4)?,
+                        })
+                    })?,
+                )
+            }
         }
     }
 
@@ -300,10 +397,32 @@ impl PixivDownloaderDb for PixivDownloaderSqlite {
         Ok(self._get_user(id).await?)
     }
 
+    #[cfg(feature = "server")]
+    async fn get_user_by_username(
+        &self,
+        username: &str,
+    ) -> Result<Option<User>, PixivDownloaderDbError> {
+        Ok(self._get_user_by_username(username).await?)
+    }
+
     async fn init(&self) -> Result<(), PixivDownloaderDbError> {
         if !self._check_database().await? {
             self._create_table().await?;
         }
         Ok(())
+    }
+
+    #[cfg(feature = "server")]
+    async fn set_user(
+        &self,
+        id: u64,
+        name: &str,
+        username: &str,
+        password: &[u8],
+        is_admin: bool,
+    ) -> Result<User, PixivDownloaderDbError> {
+        Ok(self
+            ._set_user(id, name, username, password, is_admin)
+            .await?)
     }
 }

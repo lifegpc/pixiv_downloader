@@ -31,6 +31,31 @@ pub trait PixivDownloaderDb {
     /// Get a user by ID
     /// * `id`: The user's ID
     async fn get_user(&self, id: u64) -> Result<Option<User>, PixivDownloaderDbError>;
+    #[cfg(feature = "server")]
+    /// Get a user by username
+    /// * `username`: The user's username
+    async fn get_user_by_username(
+        &self,
+        username: &str,
+    ) -> Result<Option<User>, PixivDownloaderDbError>;
     /// Initialize the database (create tables, migrate data, etc.)
     async fn init(&self) -> Result<(), PixivDownloaderDbError>;
+    #[cfg(feature = "server")]
+    /// Set a user's information by ID
+    /// * `id`: The user's ID
+    /// * `name`: The user's name
+    /// * `username`: The user's username
+    /// * `password`: The user's hashed password
+    /// * `is_admin`: Whether the user is an admin
+    /// # Note
+    /// If the user does not exist, a new user will be created and `id` must not be applied.  
+    /// If the user's `username` is taked by another user, the operation must failed.
+    async fn set_user(
+        &self,
+        id: u64,
+        name: &str,
+        username: &str,
+        password: &[u8],
+        is_admin: bool,
+    ) -> Result<User, PixivDownloaderDbError>;
 }

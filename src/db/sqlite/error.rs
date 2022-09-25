@@ -2,4 +2,5 @@
 pub enum SqliteError {
     DbError(rusqlite::Error),
     DatabaseVersionTooNew,
+    UserNameAlreadyExists,
 }
