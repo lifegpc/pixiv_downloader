@@ -58,10 +58,21 @@ impl AuthUserContext {
                             let password = key
                                 .decrypt(&password)
                                 .try_err3(7, gettext("Failed to decrypt password with RSA:"))?;
+                            let hashed_password = openssl::sha::sha512(&password);
+                            if root_user.is_none() {
+                                let user = self
+                                    .ctx
+                                    .db
+                                    .add_root_user(name, username, &hashed_password)
+                                    .await
+                                    .try_err3(8, gettext("Failed to add user to database:"))?;
+                                Ok(user.to_json2())
+                            } else {
+                                Ok(json::object! {})
+                            }
                         }
                         None => return Err((5, gettext("No RSA key found.")).into()),
                     }
-                    Ok(json::object! {})
                 }
             },
             None => {

@@ -84,6 +84,21 @@ pub struct PixivDownloaderSqlite {
 }
 
 impl PixivDownloaderSqlite {
+    async fn _add_root_user(
+        &self,
+        name: &str,
+        username: &str,
+        password: &[u8],
+    ) -> Result<(), PixivDownloaderDbError> {
+        let mut db = self.db.lock().await;
+        let tx = db.transaction()?;
+        tx.execute(
+            "INSERT OR REPLACE INTO users VALUES (0, ?, ?, ?, true);",
+            (name, username, password),
+        )?;
+        tx.commit()?;
+        Ok(())
+    }
     /// Check if the database needed create all tables.
     async fn _check_database(&self) -> Result<bool, SqliteError> {
         let tables = self._get_exists_table().await?;
@@ -239,6 +254,17 @@ impl PixivDownloaderDb for PixivDownloaderSqlite {
             }
             _ => panic!("Config mismatched."),
         }
+    }
+
+    #[cfg(feature = "server")]
+    async fn add_root_user(
+        &self,
+        name: &str,
+        username: &str,
+        password: &[u8],
+    ) -> Result<User, PixivDownloaderDbError> {
+        self._add_root_user(name, username, password).await?;
+        Ok(self.get_user(0).await?.expect("Root user not found:"))
     }
 
     #[cfg(feature = "server")]

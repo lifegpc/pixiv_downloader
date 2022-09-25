@@ -13,6 +13,17 @@ pub trait PixivDownloaderDb {
     where
         Self: Sized + Send + Sync;
     #[cfg(feature = "server")]
+    /// Add root user to database.
+    /// * `name` - User name
+    /// * `username` - Unique user name
+    /// * `password` - Hashed password
+    async fn add_root_user(
+        &self,
+        name: &str,
+        username: &str,
+        password: &[u8],
+    ) -> Result<User, PixivDownloaderDbError>;
+    #[cfg(feature = "server")]
     /// Get a user by ID
     /// * `id`: The user's ID
     async fn get_user(&self, id: u64) -> Result<Option<User>, PixivDownloaderDbError>;

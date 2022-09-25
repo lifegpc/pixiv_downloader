@@ -4,10 +4,7 @@ use crate::ext::json::FromJson;
 use crate::server::result::JSONResult;
 use bytes::BytesMut;
 use hyper::{Body, Request};
-use openssl::{
-    pkey::Public,
-    rsa::{Padding, Rsa},
-};
+use openssl::rsa::{Padding, Rsa};
 
 /// Test authentification methods
 /// Returns token
@@ -40,5 +37,14 @@ pub async fn test(ctx: &UnitTestContext) -> Result<BytesMut, PixivDownloaderErro
         .await?
         .unwrap();
     let result = JSONResult::from_json(re)?.expect("Failed to add user:");
+    assert_eq!(
+        result,
+        json::object! {
+            "id": 0,
+            "name": "test",
+            "username": "test",
+            "is_admin": true,
+        }
+    );
     Ok(BytesMut::new())
 }
