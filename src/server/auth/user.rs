@@ -31,7 +31,7 @@ impl AuthUserContext {
             .db
             .get_user(0)
             .await
-            .try_err3(-1001, gettext("Failed to operate database:"))?;
+            .try_err3(-1001, gettext("Failed to operate the database:"))?;
         let params = req
             .get_params()
             .await
@@ -120,7 +120,20 @@ impl ResponseJsonFor<Body> for AuthUserContext {
             );
             builder
         };
-        Ok(builder.body(self.handle(req).await.to_json2())?)
+        let re = self.handle(req).await;
+        let builder = match &re {
+            Ok(_) => builder,
+            Err(err) => {
+                if err.code <= -400 && err.code >= -600 {
+                    builder.status((-err.code) as u16)
+                } else if err.code < 0 {
+                    builder.status(500)
+                } else {
+                    builder
+                }
+            }
+        };
+        Ok(builder.body(re.to_json2())?)
     }
 }
 
