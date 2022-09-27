@@ -12,3 +12,8 @@
 * 方法: `GET` 或 `POST`
 * RESTful: `PUT /api/auth/user` 或 `PUT /auth/user`
 * 鉴权: 一般需要（如服务器状态内的`has_root_user`为`false`则无需鉴权）
+## 获取Token
+* 路径: `/api/auth/token/add`、 `/auth/token/add`
+* 方法: `GET` 或 `POST`
+* RESTful: `PUT /api/auth/token` 或 `PUT /auth/token`
+* 鉴权：不需要

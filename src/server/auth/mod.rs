@@ -1,9 +1,11 @@
 pub mod pubkey;
 pub mod status;
+pub mod token;
 pub mod user;
 
 pub use pubkey::{AuthPubkeyContext, AuthPubkeyRoute, RSAKey};
 pub use status::{AuthStatusContext, AuthStatusRoute};
+pub use token::{AuthTokenContext, AuthTokenRoute};
 pub use user::{AuthUserContext, AuthUserRoute};
 
 const PASSWORD_SALT: [u8; 64] = [
