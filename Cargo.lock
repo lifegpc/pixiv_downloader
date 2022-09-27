@@ -1219,8 +1219,8 @@ checksum = "e82dad04139b71a90c080c8463fe0dc7902db5192d939bd0950f074d014339e1"
 
 [[package]]
 name = "openssl"
-version = "0.10.41"
-source = "git+https://github.com/lifegpc/rust-openssl#165669e6f2163e09d1151e4e34d7623f37f6bef2"
+version = "0.10.42"
+source = "git+https://github.com/lifegpc/rust-openssl#bbabb92c382f042b6719a523a63b2ce0ed5bb827"
 dependencies = [
  "bitflags",
  "cfg-if 1.0.0",
@@ -1234,7 +1234,7 @@ dependencies = [
 [[package]]
 name = "openssl-macros"
 version = "0.1.0"
-source = "git+https://github.com/lifegpc/rust-openssl#165669e6f2163e09d1151e4e34d7623f37f6bef2"
+source = "git+https://github.com/lifegpc/rust-openssl#bbabb92c382f042b6719a523a63b2ce0ed5bb827"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1249,8 +1249,8 @@ checksum = "ff011a302c396a5197692431fc1948019154afc178baf7d8e37367442a4601cf"
 
 [[package]]
 name = "openssl-sys"
-version = "0.9.75"
-source = "git+https://github.com/lifegpc/rust-openssl#165669e6f2163e09d1151e4e34d7623f37f6bef2"
+version = "0.9.76"
+source = "git+https://github.com/lifegpc/rust-openssl#bbabb92c382f042b6719a523a63b2ce0ed5bb827"
 dependencies = [
  "autocfg",
  "cc",
