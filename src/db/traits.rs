@@ -24,6 +24,21 @@ pub trait PixivDownloaderDb {
         password: &[u8],
     ) -> Result<User, PixivDownloaderDbError>;
     #[cfg(feature = "server")]
+    /// Add a new user to database.
+    /// * `name` - User name
+    /// * `username` - Unique user name
+    /// * `password` - Hashed password
+    /// * `is_admin` - Whether the user is an admin
+    /// # Note
+    /// If username already exists, this function must be failed.
+    async fn add_user(
+        &self,
+        name: &str,
+        username: &str,
+        password: &[u8],
+        is_admin: bool,
+    ) -> Result<User, PixivDownloaderDbError>;
+    #[cfg(feature = "server")]
     /// Get token by ID
     /// * `id` - The token ID
     async fn get_token(&self, id: u64) -> Result<Option<Token>, PixivDownloaderDbError>;

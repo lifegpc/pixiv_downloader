@@ -102,6 +102,20 @@ impl PixivDownloaderSqlite {
         tx.commit()?;
         Ok(())
     }
+
+    fn _add_user(
+        tx: &Transaction,
+        name: &str,
+        username: &str,
+        password: &[u8],
+        is_admin: bool,
+    ) -> Result<(), SqliteError> {
+        tx.execute(
+            "INSERT INTO users (name, username, password, is_admin) VALUES (?, ?, ?, ?);",
+            (name, username, password, is_admin),
+        )?;
+        Ok(())
+    }
     /// Check if the database needed create all tables.
     async fn _check_database(&self) -> Result<bool, SqliteError> {
         let tables = self._get_exists_table().await?;
@@ -385,6 +399,29 @@ impl PixivDownloaderDb for PixivDownloaderSqlite {
     ) -> Result<User, PixivDownloaderDbError> {
         self._add_root_user(name, username, password).await?;
         Ok(self.get_user(0).await?.expect("Root user not found:"))
+    }
+
+    #[cfg(feature = "server")]
+    async fn add_user(
+        &self,
+        name: &str,
+        username: &str,
+        password: &[u8],
+        is_admin: bool,
+    ) -> Result<User, PixivDownloaderDbError> {
+        if self.get_user_by_username(username).await?.is_some() {
+            return Err(SqliteError::UserNameAlreadyExists.into());
+        }
+        {
+            let mut db = self.db.lock().await;
+            let tx = db.transaction()?;
+            Self::_add_user(&tx, name, username, password, is_admin)?;
+            tx.commit()?;
+        }
+        Ok(self
+            .get_user_by_username(username)
+            .await?
+            .expect("User not found:"))
     }
 
     #[cfg(feature = "server")]

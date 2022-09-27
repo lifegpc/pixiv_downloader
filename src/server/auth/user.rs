@@ -1,15 +1,9 @@
 use super::super::preclude::*;
+use super::{PASSWORD_ITER, PASSWORD_SALT};
 use crate::ext::json::ToJson2;
 use crate::ext::try_err::{TryErr, TryErr3};
 use crate::gettext;
 use openssl::{hash::MessageDigest, pkcs5::pbkdf2_hmac};
-
-const SALT: [u8; 64] = [
-    14, 169, 19, 53, 220, 112, 183, 235, 112, 165, 131, 132, 68, 29, 167, 65, 150, 219, 121, 212,
-    121, 47, 132, 195, 216, 119, 172, 134, 208, 11, 2, 80, 105, 176, 45, 194, 78, 84, 16, 169, 228,
-    25, 195, 207, 144, 204, 171, 95, 8, 113, 93, 40, 41, 116, 80, 126, 253, 142, 245, 147, 148,
-    136, 121, 220,
-];
 
 #[derive(Clone, Debug)]
 /// Action to perform on a user.
@@ -89,8 +83,8 @@ impl AuthUserContext {
                             let mut hashed_password = [0; 64];
                             pbkdf2_hmac(
                                 &password,
-                                &SALT,
-                                2048,
+                                &PASSWORD_SALT,
+                                PASSWORD_ITER,
                                 MessageDigest::sha512(),
                                 &mut hashed_password,
                             )
@@ -138,7 +132,18 @@ impl AuthUserContext {
                                             )?;
                                         Ok(user.to_json2())
                                     }
-                                    None => Ok(json::object! {}),
+                                    None => {
+                                        let user = self
+                                            .ctx
+                                            .db
+                                            .add_user(name, username, &hashed_password, is_admin)
+                                            .await
+                                            .try_err3(
+                                                12,
+                                                gettext("Failed to add user to database:"),
+                                            )?;
+                                        Ok(user.to_json2())
+                                    }
                                 }
                             }
                         }
@@ -191,6 +196,8 @@ impl ResponseJsonFor<Body> for AuthUserContext {
                     builder.status((-err.code) as u16)
                 } else if err.code < 0 {
                     builder.status(500)
+                } else if err.code > 0 {
+                    builder.status(400)
                 } else {
                     builder
                 }
