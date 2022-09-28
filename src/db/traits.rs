@@ -2,6 +2,7 @@ use super::PixivDownloaderDbConfig;
 use super::PixivDownloaderDbError;
 #[cfg(feature = "server")]
 use super::{Token, User};
+use chrono::{DateTime, Utc};
 
 #[async_trait]
 pub trait PixivDownloaderDb {
@@ -23,6 +24,21 @@ pub trait PixivDownloaderDb {
         username: &str,
         password: &[u8],
     ) -> Result<User, PixivDownloaderDbError>;
+    #[cfg(feature = "server")]
+    /// Add a new token
+    /// * `user_id` - The user ID
+    /// * `token` - The token
+    /// * `created_at` - The token's expiration time
+    /// * `expired_at` - The token's creation time
+    /// # Note
+    /// if a token with the same user_id already exists, must return None
+    async fn add_token(
+        &self,
+        user_id: u64,
+        token: &[u8; 64],
+        created_at: &DateTime<Utc>,
+        expired_at: &DateTime<Utc>,
+    ) -> Result<Option<Token>, PixivDownloaderDbError>;
     #[cfg(feature = "server")]
     /// Add a new user to database.
     /// * `name` - User name

@@ -103,7 +103,7 @@ impl ServerContext {
             par.insert(k, v);
         }
         let mut sha = openssl::sha::Sha512::new();
-        sha.update(token.token.as_bytes());
+        sha.update(&token.token);
         for (k, v) in par {
             for v in v {
                 sha.update(k.as_bytes());

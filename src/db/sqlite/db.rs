@@ -5,6 +5,7 @@ use super::super::{
 use super::super::{Token, User};
 use super::SqliteError;
 use bytes::BytesMut;
+use chrono::{DateTime, Utc};
 use futures_util::lock::Mutex;
 use rusqlite::{Connection, OpenFlags, OptionalExtension, Transaction};
 use std::collections::HashMap;
@@ -56,12 +57,11 @@ lang TEXT,
 translated TEXT
 );";
 const TOKEN_TABLE: &'static str = "CREATE TABLE token (
-id INT,
+id INTEGER PRIMARY KEY AUTOINCREMENT,
 user_id INT,
 token TEXT,
 created_at DATETIME,
-expired_at DATETIME,
-PRIMARY KEY (id)
+expired_at DATETIME
 );";
 const USERS_TABLE: &'static str = "CREATE TABLE users (
 id INT,
@@ -100,6 +100,20 @@ impl PixivDownloaderSqlite {
             (name, username, password),
         )?;
         tx.commit()?;
+        Ok(())
+    }
+
+    fn _add_token(
+        tx: &Transaction,
+        user_id: u64,
+        token: &[u8; 64],
+        created_at: &DateTime<Utc>,
+        expired_at: &DateTime<Utc>,
+    ) -> Result<(), SqliteError> {
+        tx.execute(
+            "INSERT INTO token (user_id, token, created_at, expired_at) VALUES (?, ?, ?, ?);",
+            (user_id, token, created_at, expired_at),
+        )?;
         Ok(())
     }
 
@@ -221,6 +235,30 @@ impl PixivDownloaderSqlite {
                     expired_at: row.get(4)?,
                 })
             })
+            .optional()?)
+    }
+
+    #[cfg(feature = "server")]
+    async fn _get_token_by_user_id_and_token(
+        &self,
+        user_id: u64,
+        token: &[u8; 64],
+    ) -> Result<Option<Token>, SqliteError> {
+        let con = self.db.lock().await;
+        Ok(con
+            .query_row(
+                "SELECT * FROM token WHERE user_id = ? AND token = ?;",
+                (user_id, token),
+                |row| {
+                    Ok(Token {
+                        id: row.get(0)?,
+                        user_id: row.get(1)?,
+                        token: row.get(2)?,
+                        created_at: row.get(3)?,
+                        expired_at: row.get(4)?,
+                    })
+                },
+            )
             .optional()?)
     }
 
@@ -399,6 +437,30 @@ impl PixivDownloaderDb for PixivDownloaderSqlite {
     ) -> Result<User, PixivDownloaderDbError> {
         self._add_root_user(name, username, password).await?;
         Ok(self.get_user(0).await?.expect("Root user not found:"))
+    }
+
+    #[cfg(feature = "server")]
+    async fn add_token(
+        &self,
+        user_id: u64,
+        token: &[u8; 64],
+        created_at: &DateTime<Utc>,
+        expired_at: &DateTime<Utc>,
+    ) -> Result<Option<Token>, PixivDownloaderDbError> {
+        if self
+            ._get_token_by_user_id_and_token(user_id, token)
+            .await?
+            .is_some()
+        {
+            return Ok(None);
+        }
+        {
+            let mut db = self.db.lock().await;
+            let mut tx = db.transaction()?;
+            Self::_add_token(&mut tx, user_id, token, created_at, expired_at)?;
+            tx.commit()?;
+        }
+        Ok(self._get_token_by_user_id_and_token(user_id, token).await?)
     }
 
     #[cfg(feature = "server")]

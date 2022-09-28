@@ -7,7 +7,7 @@ pub struct Token {
     /// The user ID of the token
     pub user_id: u64,
     /// The token
-    pub token: String,
+    pub token: [u8; 64],
     /// The token's creation time
     pub created_at: DateTime<Utc>,
     /// The token's expiration time

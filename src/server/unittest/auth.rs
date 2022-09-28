@@ -31,7 +31,7 @@ pub async fn test(ctx: &UnitTestContext) -> Result<BytesMut, PixivDownloaderErro
             &json::object! {
                 "username" => "test",
                 "name" => "test",
-                "password" => b64_password,
+                "password" => b64_password.as_str(),
             },
         )
         .await?
@@ -46,5 +46,17 @@ pub async fn test(ctx: &UnitTestContext) -> Result<BytesMut, PixivDownloaderErro
             "is_admin": true,
         }
     );
+    let re = ctx
+        .request_json2(
+            "/auth/token/add",
+            &json::object! {
+                "username": "test",
+                "password": b64_password.as_str(),
+            },
+        )
+        .await?
+        .unwrap();
+    let result = JSONResult::from_json(re)?.expect("Failed to add token:");
+    assert_eq!(Some(0), result["user_id"].as_u64());
     Ok(BytesMut::new())
 }

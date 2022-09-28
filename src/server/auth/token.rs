@@ -73,7 +73,26 @@ impl AuthTokenContext {
                     if pass != &hashed_password {
                         return Err((9, gettext("Wrong password.")).into());
                     }
-                    Ok(json::object! {})
+                    let mut token = [0; 64];
+                    openssl::rand::rand_bytes(&mut token)
+                        .try_err3(-1003, gettext("Failed to generate token:"))?;
+                    let created_at = chrono::Utc::now();
+                    let expired_at = created_at + chrono::Duration::days(30);
+                    let token = loop {
+                        if let Some(token) = self
+                            .ctx
+                            .db
+                            .add_token(user.id, &token, &created_at, &expired_at)
+                            .await
+                            .try_err3(-1001, gettext("Failed to operate the database:"))?
+                        {
+                            break token;
+                        }
+                    };
+                    let b64token = base64::encode(&token.token);
+                    Ok(
+                        json::object! { "id": token.id, "user_id": token.user_id, "token": b64token, "created_at": token.created_at.timestamp(), "expired_at": token.expired_at.timestamp() },
+                    )
                 }
             },
             None => {
