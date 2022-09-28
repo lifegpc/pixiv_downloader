@@ -9,6 +9,7 @@ use crate::error::PixivDownloaderError;
 use futures_util::lock::Mutex;
 use hyper::{Body, Request, Response};
 use json::JsonValue;
+use std::collections::BTreeMap;
 #[cfg(test)]
 use std::fs::{create_dir, remove_file};
 #[cfg(test)]
@@ -105,6 +106,53 @@ impl UnitTestContext {
             .uri(uri)
             .header("Content-Type", "application/x-www-form-urlencoded")
             .body(Body::from(par))?;
+        self.request_json(req).await
+    }
+
+    pub async fn request_json2_sign(
+        &self,
+        uri: &str,
+        params: &JsonValue,
+        token: &[u8],
+        token_id: u64,
+    ) -> Result<Option<JsonValue>, PixivDownloaderError> {
+        let mut par = BTreeMap::new();
+        for (key, obj) in params.entries() {
+            if let Some(s) = obj.as_str() {
+                par.insert(key.to_owned(), s.to_owned());
+            } else if obj.is_array() {
+                for s in obj.members() {
+                    if let Some(s) = s.as_str() {
+                        par.insert(key.to_owned(), s.to_owned());
+                    } else {
+                        par.insert(key.to_owned(), s.dump());
+                    }
+                }
+            } else {
+                par.insert(key.to_owned(), obj.dump());
+            }
+        }
+        let mut sha = openssl::sha::Sha512::new();
+        sha.update(token);
+        let mut par2 = Vec::new();
+        for (key, value) in par.iter() {
+            sha.update(key.as_bytes());
+            sha.update(value.as_bytes());
+            par2.push(format!(
+                "{}={}",
+                urlparse::quote_plus(key, b"")?,
+                urlparse::quote_plus(value, b"")?
+            ));
+        }
+        let par2 = par2.join("&");
+        let sign = hex::encode(sha.finish());
+        let req = Request::builder()
+            .method("POST")
+            .uri(uri)
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .header("X-SIGN", sign)
+            .header("X-TOKEN-ID", token_id.to_string())
+            .body(Body::from(par2))?;
         self.request_json(req).await
     }
 }

@@ -11,23 +11,21 @@ use rusqlite::{Connection, OpenFlags, OptionalExtension, Transaction};
 use std::collections::HashMap;
 
 const AUTHORS_TABLE: &'static str = "CREATE TABLE authors (
-id INT,
+id INTEGER PRIMARY KEY AUTOINCREMENT,
 name TEXT,
 creator_id TEXT,
 icon INT,
 big_icon INT,
 background INT,
 comment TEXT,
-webpage TEXT,
-PRIMARY KEY (id)
+webpage TEXT
 );";
 const FILES_TABLE: &'static str = "CREATE TABLE files (
-id INT,
+id INTEGER PRIMARY KEY AUTOINCREMENT,
 path TEXT,
 last_modified DATETIME,
 etag TEXT,
-url TEXT,
-PRIMARY KEY (id)
+url TEXT
 );";
 const PIXIV_ARTWORK_TAGS_TABLE: &'static str = "CREATE TABLE pixiv_artwork_tags (
 id INT,
@@ -47,9 +45,8 @@ file_id INT,
 page INT
 );";
 const TAGS_TABLE: &'static str = "CREATE TABLE tags (
-id INT,
-name TEXT,
-PRIMARY KEY (id)
+id INTEGER PRIMARY KEY AUTOINCREMENT,
+name TEXT
 );";
 const TAGS_I18N_TABLE: &'static str = "CREATE TABLE tags_i18n (
 id INT,
@@ -64,12 +61,11 @@ created_at DATETIME,
 expired_at DATETIME
 );";
 const USERS_TABLE: &'static str = "CREATE TABLE users (
-id INT,
+id INTEGER PRIMARY KEY AUTOINCREMENT,
 name TEXT,
 username TEXT,
 password TEXT,
-is_admin BOOLEAN,
-PRIMARY KEY (id)
+is_admin BOOLEAN
 );";
 const VERSION_TABLE: &'static str = "CREATE TABLE version (
 id TEXT,
@@ -79,7 +75,7 @@ v3 INT,
 v4 INT,
 PRIMARY KEY (id)
 );";
-const VERSION: [u8; 4] = [1, 0, 0, 3];
+const VERSION: [u8; 4] = [1, 0, 0, 4];
 
 pub struct PixivDownloaderSqlite {
     db: Mutex<Connection>,
@@ -161,6 +157,14 @@ impl PixivDownloaderSqlite {
                 if db_version < [1, 0, 0, 3] {
                     tx.execute("DROP TABLE token;", [])?;
                     tx.execute(TOKEN_TABLE, [])?;
+                }
+                if db_version < [1, 0, 0, 4] {
+                    tx.execute("DROP TABLE authors, files, tags, token, users;", [])?;
+                    tx.execute(AUTHORS_TABLE, [])?;
+                    tx.execute(FILES_TABLE, [])?;
+                    tx.execute(TAGS_TABLE, [])?;
+                    tx.execute(TOKEN_TABLE, [])?;
+                    tx.execute(USERS_TABLE, [])?;
                 }
                 self._write_version(&tx)?;
                 tx.commit()?;
