@@ -1,4 +1,8 @@
 use super::super::preclude::*;
+use super::{PASSWORD_ITER, PASSWORD_SALT};
+use crate::ext::try_err::TryErr3;
+use crate::gettext;
+use openssl::{hash::MessageDigest, pkcs5::pbkdf2_hmac};
 
 /// Action to perform about token
 pub enum AuthTokenAction {
@@ -22,7 +26,60 @@ impl AuthTokenContext {
     }
 
     async fn handle(&self, mut req: Request<Body>) -> JSONResult {
-        Ok(json::object! {})
+        let params = req
+            .get_params()
+            .await
+            .try_err3(-1002, gettext("Failed to get parameters:"))?;
+        let username = params
+            .get("username")
+            .ok_or((1, gettext("No username specified.")))?;
+        match &self.action {
+            Some(s) => match s {
+                AuthTokenAction::Add => {
+                    let password = params
+                        .get("password")
+                        .ok_or((2, gettext("No password specified.")))?;
+                    let password = base64::decode(password)
+                        .try_err3(3, gettext("Failed to decode password with base64:"))?;
+                    let rsa_key = self.ctx.rsa_key.lock().await;
+                    let key = rsa_key.as_ref().ok_or((4, gettext("No RSA key found.")))?;
+                    if key.is_too_old() {
+                        return Err((
+                            5,
+                            gettext("RSA key is too old. A new key should be generated."),
+                        )
+                            .into());
+                    }
+                    let password = key
+                        .decrypt(&password)
+                        .try_err3(6, gettext("Failed to decrypt password with RSA:"))?;
+                    let mut hashed_password = [0; 64];
+                    pbkdf2_hmac(
+                        &password,
+                        &PASSWORD_SALT,
+                        PASSWORD_ITER,
+                        MessageDigest::sha512(),
+                        &mut hashed_password,
+                    )
+                    .try_err3(7, gettext("Failed to hash password:"))?;
+                    let user = self
+                        .ctx
+                        .db
+                        .get_user_by_username(username)
+                        .await
+                        .try_err3(-1001, gettext("Failed to operate the database:"))?
+                        .ok_or((8, gettext("User not found.")))?;
+                    let pass: &[u8] = &user.password;
+                    if pass != &hashed_password {
+                        return Err((9, gettext("Wrong password.")).into());
+                    }
+                    Ok(json::object! {})
+                }
+            },
+            None => {
+                panic!("No action specified for AuthTokenContext.");
+            }
+        }
     }
 }
 
