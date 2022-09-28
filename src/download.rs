@@ -13,7 +13,6 @@ use crate::downloader::DownloaderHelper;
 use crate::downloader::DownloaderResult;
 use crate::downloader::LocalFile;
 use crate::error::PixivDownloaderError;
-use crate::ext::any::AsAny;
 use crate::ext::try_err::TryErr;
 use crate::fanbox::article::block::FanboxArticleBlock;
 use crate::fanbox::article::url_embed::FanboxArticleUrlEmbed;
@@ -40,7 +39,6 @@ use std::fs::create_dir_all;
 use std::ops::Deref;
 use std::path::PathBuf;
 use std::sync::Arc;
-use tokio::task::JoinHandle;
 
 impl Main {
     pub async fn download(&mut self) -> i32 {
@@ -122,20 +120,16 @@ impl Main {
         let mut re = 0;
         tasks.join().await;
         let tasks = tasks.take_finished_tasks();
-        for mut task in tasks {
-            let task = task.as_any_mut();
-            if let Some(task) = task.downcast_mut::<JoinHandle<Result<(), PixivDownloaderError>>>()
-            {
-                let result = match task.await {
-                    Ok(result) => result,
-                    Err(e) => Err(PixivDownloaderError::from(e)),
-                };
-                match result {
-                    Ok(_) => {}
-                    Err(e) => {
-                        println!("{} {}", gettext("Failed to download post:"), e);
-                        re = 1;
-                    }
+        for task in tasks {
+            let result = match task.await {
+                Ok(result) => result,
+                Err(e) => Err(PixivDownloaderError::from(e)),
+            };
+            match result {
+                Ok(_) => {}
+                Err(e) => {
+                    println!("{} {}", gettext("Failed to download post:"), e);
+                    re = 1;
                 }
             }
         }
@@ -290,10 +284,6 @@ pub async fn download_artwork(
                 tasks.join().await;
                 let mut tasks = tasks.take_finished_tasks();
                 let task = tasks.get_mut(0).try_err(gettext("No finished task."))?;
-                let task = task.as_any_mut();
-                let task = task
-                    .downcast_mut::<JoinHandle<Result<(), PixivDownloaderError>>>()
-                    .try_err("Failed to downcast task.")?;
                 task.await??;
                 #[cfg(feature = "ugoira")]
                 {
@@ -381,16 +371,13 @@ pub async fn download_artwork(
         }
         tasks.join().await;
         let tasks = tasks.take_finished_tasks();
-        for mut task in tasks {
-            let t = task.as_any_mut();
-            if let Some(task) = t.downcast_mut::<JoinHandle<Result<(), PixivDownloaderError>>>() {
-                let r = task.await;
-                let r = match r {
-                    Ok(r) => r,
-                    Err(e) => Err(PixivDownloaderError::from(e)),
-                };
-                concat_pixiv_downloader_error!(re, r);
-            }
+        for task in tasks {
+            let r = task.await;
+            let r = match r {
+                Ok(r) => r,
+                Err(e) => Err(PixivDownloaderError::from(e)),
+            };
+            concat_pixiv_downloader_error!(re, r);
         }
         return re;
     } else if pages_data.is_some() {
@@ -415,16 +402,13 @@ pub async fn download_artwork(
         }
         let mut re = Ok(());
         let tasks = tasks.take_finished_tasks();
-        for mut task in tasks {
-            let t = task.as_any_mut();
-            if let Some(task) = t.downcast_mut::<JoinHandle<Result<(), PixivDownloaderError>>>() {
-                let r = task.await;
-                let r = match r {
-                    Ok(r) => r,
-                    Err(e) => Err(PixivDownloaderError::from(e)),
-                };
-                concat_pixiv_downloader_error!(re, r);
-            }
+        for task in tasks {
+            let r = task.await;
+            let r = match r {
+                Ok(r) => r,
+                Err(e) => Err(PixivDownloaderError::from(e)),
+            };
+            concat_pixiv_downloader_error!(re, r);
         }
         return re;
     } else {
@@ -447,10 +431,6 @@ pub async fn download_artwork(
         tasks.join().await;
         let mut tasks = tasks.take_finished_tasks();
         let task = tasks.get_mut(0).try_err(gettext("No tasks finished."))?;
-        let task = task.as_any_mut();
-        let task = task
-            .downcast_mut::<JoinHandle<Result<(), PixivDownloaderError>>>()
-            .try_err("Failed to downcast the result.")?;
         task.await??;
     }
     Ok(())
@@ -744,29 +724,23 @@ pub async fn download_fanbox_post(
     }
     tasks.join().await;
     let tasks = tasks.take_finished_tasks();
-    for mut task in tasks {
-        let task = task.as_any_mut();
-        if let Some(task) = task.downcast_mut::<JoinHandle<Result<(), PixivDownloaderError>>>() {
-            let r = task.await;
-            let r = match r {
-                Ok(r) => r,
-                Err(e) => Err(PixivDownloaderError::from(e)),
-            };
-            concat_pixiv_downloader_error!(re, r);
-        }
+    for task in tasks {
+        let r = task.await;
+        let r = match r {
+            Ok(r) => r,
+            Err(e) => Err(PixivDownloaderError::from(e)),
+        };
+        concat_pixiv_downloader_error!(re, r);
     }
     ptasks.join().await;
     let ptasks = ptasks.take_finished_tasks();
-    for mut task in ptasks {
-        let task = task.as_any_mut();
-        if let Some(task) = task.downcast_mut::<JoinHandle<Result<(), PixivDownloaderError>>>() {
-            let r = task.await;
-            let r = match r {
-                Ok(r) => r,
-                Err(e) => Err(PixivDownloaderError::from(e)),
-            };
-            concat_pixiv_downloader_error!(re, r);
-        }
+    for task in ptasks {
+        let r = task.await;
+        let r = match r {
+            Ok(r) => r,
+            Err(e) => Err(PixivDownloaderError::from(e)),
+        };
+        concat_pixiv_downloader_error!(re, r);
     }
     re
 }
@@ -890,16 +864,13 @@ pub async fn download_fanbox_creator_info(
     tasks.join().await;
     let mut re = Ok(());
     let tasks = tasks.take_finished_tasks();
-    for mut task in tasks {
-        let task = task.as_any_mut();
-        if let Some(task) = task.downcast_mut::<JoinHandle<Result<(), PixivDownloaderError>>>() {
-            let r = task.await;
-            let r = match r {
-                Ok(r) => r,
-                Err(e) => Err(PixivDownloaderError::from(e)),
-            };
-            concat_pixiv_downloader_error!(re, r);
-        }
+    for task in tasks {
+        let r = task.await;
+        let r = match r {
+            Ok(r) => r,
+            Err(e) => Err(PixivDownloaderError::from(e)),
+        };
+        concat_pixiv_downloader_error!(re, r);
     }
     re
 }

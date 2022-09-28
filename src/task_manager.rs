@@ -1,11 +1,9 @@
-use crate::ext::any::AsAny;
 use crate::ext::replace::ReplaceWith;
 use crate::ext::replace::ReplaceWith2;
 use crate::ext::rw_lock::GetRwLock;
 use crate::opthelper::get_helper;
 use futures_util::lock::Mutex;
 use indicatif::MultiProgress;
-use std::any::Any;
 use std::future::Future;
 use std::sync::Arc;
 use std::sync::RwLock;
@@ -19,30 +17,6 @@ lazy_static! {
     static ref TOTAL_POST_TASK_COUNT: Arc<Mutex<usize>> = Arc::new(Mutex::new(0));
     #[doc(hidden)]
     static ref PROGRESS_BAR: Arc<MultiProgress> = Arc::new(MultiProgress::new());
-}
-
-pub trait IsFinished {
-    fn is_finished(&self) -> bool;
-}
-
-impl<T> IsFinished for JoinHandle<T> {
-    fn is_finished(&self) -> bool {
-        self.is_finished()
-    }
-}
-
-pub trait IsFinishedAny: IsFinished + Any {}
-
-impl<T> IsFinishedAny for T where T: IsFinished + Any {}
-
-impl AsAny<dyn Any + Send + Sync + 'static> for Box<dyn IsFinishedAny + Send + Sync> {
-    fn as_any(&self) -> &(dyn Any + Send + Sync + 'static) {
-        self
-    }
-
-    fn as_any_mut(&mut self) -> &mut (dyn Any + Send + Sync + 'static) {
-        self
-    }
 }
 
 pub trait GetMaxCount {
@@ -82,17 +56,17 @@ impl GetMaxCount for MaxDownloadPostTasks {
 }
 
 /// Task manager
-pub struct TaskManager {
+pub struct TaskManager<T> {
     /// Current running task
-    tasks: RwLock<Vec<Box<dyn IsFinishedAny + Send + Sync>>>,
+    tasks: RwLock<Vec<JoinHandle<T>>>,
     /// Finished task
-    finished_tasks: RwLock<Vec<Box<dyn IsFinishedAny + Send + Sync>>>,
+    finished_tasks: RwLock<Vec<JoinHandle<T>>>,
     /// Total task count
     task_count: Arc<Mutex<usize>>,
     max_count: Box<dyn GetMaxCount + Send + Sync>,
 }
 
-impl TaskManager {
+impl<O> TaskManager<O> {
     /// Create a new instance
     pub fn new<T: GetMaxCount + Send + Sync + 'static>(
         task_count: Arc<Mutex<usize>>,
@@ -114,9 +88,8 @@ impl TaskManager {
     /// Add a new task.
     pub async fn add_task<F>(&self, future: F)
     where
-        F: Future + Send + 'static,
+        F: Future<Output = O> + Send + 'static,
         F::Output: Send + 'static,
-        JoinHandle<F::Output>: IsFinishedAny + Send + Sync + 'static,
     {
         let total_count = self.max_count.get_max_count();
         loop {
@@ -136,9 +109,7 @@ impl TaskManager {
                 self.tasks.replace_with2(new_tasks);
                 count.replace_with(new_count);
                 if *count < total_count {
-                    self.tasks
-                        .get_mut()
-                        .push(Box::new(tokio::task::spawn(future)));
+                    self.tasks.get_mut().push(tokio::task::spawn(future));
                     count.replace_with(*count + 1);
                     break;
                 }
@@ -150,9 +121,8 @@ impl TaskManager {
     /// Try add a new task, if queue is full, run future on local thread
     pub async fn add_task_else_run_local<F>(&self, future: F) -> Option<F::Output>
     where
-        F: Future + Send + 'static,
+        F: Future<Output = O> + Send + 'static,
         F::Output: Send + 'static,
-        JoinHandle<F::Output>: IsFinishedAny + Send + Sync + 'static,
     {
         let total_count = self.max_count.get_max_count();
         {
@@ -171,9 +141,7 @@ impl TaskManager {
             self.tasks.replace_with2(new_tasks);
             count.replace_with(new_count);
             if *count < total_count {
-                self.tasks
-                    .get_mut()
-                    .push(Box::new(tokio::task::spawn(future)));
+                self.tasks.get_mut().push(tokio::task::spawn(future));
                 count.replace_with(*count + 1);
                 return None;
             }
@@ -208,7 +176,7 @@ impl TaskManager {
     }
 
     /// Take all finished tasks
-    pub fn take_finished_tasks(&self) -> Vec<Box<dyn IsFinishedAny + Send + Sync>> {
+    pub fn take_finished_tasks(&self) -> Vec<JoinHandle<O>> {
         self.finished_tasks.replace_with2(Vec::new())
     }
 }
@@ -225,7 +193,7 @@ pub fn get_total_post_task_count() -> Arc<Mutex<usize>> {
     Arc::clone(&TOTAL_POST_TASK_COUNT)
 }
 
-impl Default for TaskManager {
+impl<O> Default for TaskManager<O> {
     fn default() -> Self {
         Self::new(get_total_download_task_count(), MaxDownloadTasks::new())
     }
