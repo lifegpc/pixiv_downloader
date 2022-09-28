@@ -1,12 +1,15 @@
 use super::auth::RSAKey;
 use super::cors::CorsContext;
 use super::params::RequestParams;
+use super::result::JSONResult;
 use crate::db::{open_and_init_database, PixivDownloaderDb, User};
 use crate::error::PixivDownloaderError;
+use crate::ext::json::ToJson2;
 use crate::get_helper;
 use crate::gettext;
 use futures_util::lock::Mutex;
-use hyper::{Body, Request};
+use hyper::{http::response::Builder, Body, Request, Response};
+use json::JsonValue;
 use std::collections::BTreeMap;
 
 pub struct ServerContext {
@@ -25,6 +28,28 @@ impl ServerContext {
             },
             rsa_key: Mutex::new(None),
         }
+    }
+
+    pub fn response_json_result(
+        &self,
+        builder: Builder,
+        re: JSONResult,
+    ) -> Result<Response<JsonValue>, PixivDownloaderError> {
+        let builder = match &re {
+            Ok(_) => builder,
+            Err(err) => {
+                if err.code <= -400 && err.code >= -600 {
+                    builder.status((-err.code) as u16)
+                } else if err.code < 0 {
+                    builder.status(500)
+                } else if err.code > 0 {
+                    builder.status(400)
+                } else {
+                    builder
+                }
+            }
+        };
+        Ok(builder.body(re.to_json2())?)
     }
 
     pub async fn verify_token(

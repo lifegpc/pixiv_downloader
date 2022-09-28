@@ -1,5 +1,4 @@
 use super::super::preclude::*;
-use crate::ext::json::ToJson2;
 
 /// Action to perform about token
 pub enum AuthTokenAction {
@@ -58,21 +57,7 @@ impl ResponseJsonFor<Body> for AuthTokenContext {
             builder
         };
         let re = self.handle(req).await;
-        let builder = match &re {
-            Ok(_) => builder,
-            Err(err) => {
-                if err.code <= -400 && err.code >= -600 {
-                    builder.status((-err.code) as u16)
-                } else if err.code < 0 {
-                    builder.status(500)
-                } else if err.code > 0 {
-                    builder.status(400)
-                } else {
-                    builder
-                }
-            }
-        };
-        Ok(builder.body(re.to_json2())?)
+        self.ctx.response_json_result(builder, re)
     }
 }
 
