@@ -55,6 +55,23 @@ impl GetMaxCount for MaxDownloadPostTasks {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct MaxCount {
+    max_count: usize,
+}
+
+impl MaxCount {
+    pub fn new(max_count: usize) -> Self {
+        MaxCount { max_count }
+    }
+}
+
+impl GetMaxCount for MaxCount {
+    fn get_max_count(&self) -> usize {
+        self.max_count
+    }
+}
+
 /// Task manager
 pub struct TaskManager<T> {
     /// Current running task

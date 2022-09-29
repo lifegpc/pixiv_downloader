@@ -72,6 +72,10 @@ pub trait PixivDownloaderDb {
     /// Initialize the database (create tables, migrate data, etc.)
     async fn init(&self) -> Result<(), PixivDownloaderDbError>;
     #[cfg(feature = "server")]
+    /// Remove all expired tokens
+    /// Return the number of removed tokens
+    async fn revoke_expired_tokens(&self) -> Result<usize, PixivDownloaderDbError>;
+    #[cfg(feature = "server")]
     /// Set a user's information by ID
     /// * `id`: The user's ID
     /// * `name`: The user's name

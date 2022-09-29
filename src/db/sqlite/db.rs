@@ -99,6 +99,7 @@ impl PixivDownloaderSqlite {
         Ok(())
     }
 
+    #[cfg(feature = "server")]
     fn _add_token(
         tx: &Transaction,
         user_id: u64,
@@ -113,6 +114,7 @@ impl PixivDownloaderSqlite {
         Ok(())
     }
 
+    #[cfg(feature = "server")]
     fn _add_user(
         tx: &Transaction,
         name: &str,
@@ -159,7 +161,11 @@ impl PixivDownloaderSqlite {
                     tx.execute(TOKEN_TABLE, [])?;
                 }
                 if db_version < [1, 0, 0, 4] {
-                    tx.execute("DROP TABLE authors, files, tags, token, users;", [])?;
+                    tx.execute("DROP TABLE authors;", [])?;
+                    tx.execute("DROP TABLE files;", [])?;
+                    tx.execute("DROP TABLE tags;", [])?;
+                    tx.execute("DROP TABLE token;", [])?;
+                    tx.execute("DROP TABLE users;", [])?;
                     tx.execute(AUTHORS_TABLE, [])?;
                     tx.execute(FILES_TABLE, [])?;
                     tx.execute(TAGS_TABLE, [])?;
@@ -315,6 +321,12 @@ impl PixivDownloaderSqlite {
         } else {
             Ok(None)
         }
+    }
+
+    #[cfg(feature = "server")]
+    fn _revoke_expired_tokens(ts: &Transaction) -> Result<usize, SqliteError> {
+        let now = Utc::now();
+        Ok(ts.execute("DELETE FROM token WHERE expired_at < ?;", [now])?)
     }
 
     #[cfg(feature = "server")]
@@ -513,6 +525,15 @@ impl PixivDownloaderDb for PixivDownloaderSqlite {
             self._create_table().await?;
         }
         Ok(())
+    }
+
+    #[cfg(feature = "server")]
+    async fn revoke_expired_tokens(&self) -> Result<usize, PixivDownloaderDbError> {
+        let mut db = self.db.lock().await;
+        let mut tx = db.transaction()?;
+        let size = Self::_revoke_expired_tokens(&mut tx)?;
+        tx.commit()?;
+        Ok(size)
     }
 
     #[cfg(feature = "server")]

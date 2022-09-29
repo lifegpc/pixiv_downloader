@@ -13,6 +13,8 @@ pub mod result;
 pub mod route;
 /// Services
 pub mod service;
+/// Tasks invoked by timer
+pub mod timer;
 /// Traits
 pub mod traits;
 #[cfg(all(test, feature = "db_sqlite"))]

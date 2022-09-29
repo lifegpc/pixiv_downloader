@@ -194,3 +194,8 @@ impl MatchRoute<Body, Body> for AuthTokenRoute {
         }
     }
 }
+
+pub async fn revoke_expired_tokens(ctx: Arc<ServerContext>) -> Result<(), PixivDownloaderError> {
+    ctx.db.revoke_expired_tokens().await?;
+    Ok(())
+}
