@@ -3,6 +3,7 @@ use super::{PASSWORD_ITER, PASSWORD_SALT};
 use crate::ext::json::ToJson2;
 use crate::ext::try_err::{TryErr, TryErr3};
 use crate::gettext;
+use bytes::BytesMut;
 use openssl::{hash::MessageDigest, pkcs5::pbkdf2_hmac};
 
 #[derive(Clone, Debug)]
@@ -10,6 +11,8 @@ use openssl::{hash::MessageDigest, pkcs5::pbkdf2_hmac};
 pub enum AuthUserAction {
     /// Add a new user.
     Add,
+    /// Update a existed user.
+    Update,
 }
 
 pub struct AuthUserContext {
@@ -150,6 +153,99 @@ impl AuthUserContext {
                         None => return Err((5, gettext("No RSA key found.")).into()),
                     }
                 }
+                AuthUserAction::Update => {
+                    if root_user.is_some() {
+                        if !user.as_ref().expect("User not found:").is_admin {
+                            return Err((9, gettext("Admin privileges required.")).into());
+                        }
+                    }
+                    let id = params.get_u64("id").try_err3(
+                        13,
+                        &gettext("Failed to parse <opt>:").replace("<opt>", "user id"),
+                    )?;
+                    let username = params.get("username");
+                    let mut user = if let Some(id) = id {
+                        self.ctx.db.get_user(id).await
+                    } else if let Some(username) = username {
+                        self.ctx.db.get_user_by_username(username).await
+                    } else {
+                        return Err((14, gettext("No user id or username specified.")).into());
+                    }
+                    .try_err3(-1001, gettext("Failed to operate the database:"))?
+                    .ok_or((15, gettext("User not found.")))?;
+                    if let Some(username) = username {
+                        if username != user.username {
+                            user.username = username.to_owned();
+                        }
+                    }
+                    if let Some(name) = params.get("name") {
+                        if name != user.name {
+                            user.name = name.to_owned();
+                        }
+                    }
+                    if let Some(password) = params.get("password") {
+                        let password = base64::decode(password)
+                            .try_err3(4, gettext("Failed to decode password with base64:"))?;
+                        let rsa_key = self.ctx.rsa_key.lock().await;
+                        match *rsa_key {
+                            Some(ref key) => {
+                                if key.is_too_old() {
+                                    return Err((
+                                        6,
+                                        gettext(
+                                            "RSA key is too old. A new key should be generated.",
+                                        ),
+                                    )
+                                        .into());
+                                }
+                                let password = key
+                                    .decrypt(&password)
+                                    .try_err3(7, gettext("Failed to decrypt password with RSA:"))?;
+                                let mut hashed_password = [0; 64];
+                                pbkdf2_hmac(
+                                    &password,
+                                    &PASSWORD_SALT,
+                                    PASSWORD_ITER,
+                                    MessageDigest::sha512(),
+                                    &mut hashed_password,
+                                )
+                                .try_err3(11, gettext("Failed to hash password:"))?;
+                                let pw: &[u8] = &user.password;
+                                if &hashed_password != pw {
+                                    let pw: &[u8] = &hashed_password;
+                                    user.password = BytesMut::from(pw);
+                                }
+                            }
+                            None => return Err((5, gettext("No RSA key found.")).into()),
+                        }
+                    }
+                    if let Some(is_admin) = params.get_bool("is_admin").try_err3(
+                        16,
+                        &gettext("Failed to parse <opt>:").replace("<opt>", "is_admin"),
+                    )? {
+                        if user.id == 0 && !is_admin {
+                            return Err((
+                                17,
+                                gettext("Cannot change admin privileges of root user."),
+                            )
+                                .into());
+                        }
+                        user.is_admin = is_admin;
+                    }
+                    let user = self
+                        .ctx
+                        .db
+                        .update_user(
+                            user.id,
+                            &user.name,
+                            &user.username,
+                            &user.password,
+                            user.is_admin,
+                        )
+                        .await
+                        .try_err3(-1001, gettext("Failed to operate the database:"))?;
+                    Ok(user.to_json2())
+                }
             },
             None => {
                 panic!("No action specified for AuthUserContext.");
@@ -200,7 +296,7 @@ pub struct AuthUserRoute {
 impl AuthUserRoute {
     pub fn new() -> Self {
         Self {
-            regex: Regex::new(r"^(/+api)?/+auth/+user(/+add)?$").unwrap(),
+            regex: Regex::new(r"^(/+api)?/+auth/+user(/+(add|update))?$").unwrap(),
         }
     }
 }
@@ -229,12 +325,16 @@ impl MatchRoute<Body, Body> for AuthUserRoute {
                         let m = m.as_str().trim_start_matches("/");
                         match m {
                             "add" => Some(AuthUserAction::Add),
+                            "update" => Some(AuthUserAction::Update),
                             _ => return None,
                         }
                     }
                     None => {
-                        if req.method() == Method::PUT {
+                        let m = req.method();
+                        if m == Method::PUT {
                             Some(AuthUserAction::Add)
+                        } else if m == Method::PATCH {
+                            Some(AuthUserAction::Update)
                         } else {
                             None
                         }

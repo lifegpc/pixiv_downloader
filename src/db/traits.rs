@@ -93,4 +93,22 @@ pub trait PixivDownloaderDb {
         password: &[u8],
         is_admin: bool,
     ) -> Result<User, PixivDownloaderDbError>;
+    #[cfg(feature = "server")]
+    /// Update a user's information
+    /// * `id`: The user's ID
+    /// * `name`: The user's name
+    /// * `username`: The user's username
+    /// * `password`: The user's hashed password
+    /// * `is_admin`: Whether the user is an admin
+    /// # Note
+    /// If the user does not exist, the operation must failed.
+    /// If the user's `username` is taked by another user, the operation must failed.
+    async fn update_user(
+        &self,
+        id: u64,
+        name: &str,
+        username: &str,
+        password: &[u8],
+        is_admin: bool,
+    ) -> Result<User, PixivDownloaderDbError>;
 }
