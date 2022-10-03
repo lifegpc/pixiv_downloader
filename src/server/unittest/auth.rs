@@ -91,5 +91,55 @@ pub async fn test(ctx: &UnitTestContext) -> Result<(u64, Vec<u8>), PixivDownload
             "is_admin": false,
         }
     );
+    let re = ctx
+        .request_json2_sign(
+            "/auth/user/add",
+            &json::object! {
+                "id" => 1,
+                "username" => "test1",
+                "name" => "test1",
+                "password" => b64_password.as_str(),
+                "is_admin" => true,
+            },
+            &token,
+            token_id,
+        )
+        .await?
+        .unwrap();
+    let result = JSONResult::from_json(re)?.expect("Failed to add user:");
+    assert_eq!(
+        result,
+        json::object! {
+            "id": 1,
+            "name": "test1",
+            "username": "test1",
+            "is_admin": true,
+        }
+    );
+    let re = ctx
+        .request_json2_sign(
+            "/auth/user/add",
+            &json::object! {
+                "id" => 1,
+                "username" => "test1",
+                "name" => "test2",
+                "password" => b64_password.as_str(),
+                "is_admin" => false,
+            },
+            &token,
+            token_id,
+        )
+        .await?
+        .unwrap();
+    let result = JSONResult::from_json(re)?.expect("Failed to add user:");
+    assert_eq!(
+        result,
+        json::object! {
+            "id": 1,
+            "name": "test2",
+            "username": "test1",
+            "is_admin": false,
+        }
+    );
     Ok((token_id, token))
 }
