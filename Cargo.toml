@@ -27,7 +27,7 @@ http = "0.2"
 http-content-range = "0.1"
 hyper = { version="0.14", features = ["server"], optional = true }
 indicatif = "0.17.1"
-int-enum = "0.4"
+int-enum = "0.5"
 itertools = "0.10"
 json = "0.12"
 lazy_static = "1.4"
