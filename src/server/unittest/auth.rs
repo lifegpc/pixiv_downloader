@@ -173,5 +173,90 @@ pub async fn test(ctx: &UnitTestContext) -> Result<[(u64, Vec<u8>); 2], PixivDow
         .unwrap();
     let result = JSONResult::from_json(re)?.unwrap_err();
     assert_eq!(result.code, 9);
+    let re = ctx
+        .request_json2_sign(
+            "/auth/user/update",
+            &json::object! {
+                "id": 1,
+                "name": "tesss2",
+            },
+            &token,
+            token_id,
+        )
+        .await?
+        .unwrap();
+    let result = JSONResult::from_json(re)?.unwrap();
+    assert_eq!(
+        result,
+        json::object! {
+            "id": 1,
+            "name": "tesss2",
+            "username": "test1",
+            "is_admin": false,
+        }
+    );
+    let re = ctx
+        .request_json2_sign(
+            "/auth/user/update",
+            &json::object! {
+                "id": 1,
+                "name": "tesss2",
+            },
+            &token2,
+            token2_id,
+        )
+        .await?
+        .unwrap();
+    let result = JSONResult::from_json(re)?.unwrap_err();
+    assert_eq!(result.code, 9);
+    let re = ctx
+        .request_json2_sign(
+            "/auth/user/update",
+            &json::object! {
+                "name": "tesss2",
+            },
+            &token,
+            token_id,
+        )
+        .await?
+        .unwrap();
+    let result = JSONResult::from_json(re)?.unwrap_err();
+    assert_eq!(result.code, 14);
+    let re = ctx
+        .request_json2_sign(
+            "/auth/user/update",
+            &json::object! {
+                "name": "tess3s2",
+                "username": "test1",
+            },
+            &token,
+            token_id,
+        )
+        .await?
+        .unwrap();
+    let result = JSONResult::from_json(re)?.unwrap();
+    assert_eq!(
+        result,
+        json::object! {
+            "id": 1,
+            "name": "tess3s2",
+            "username": "test1",
+            "is_admin": false,
+        }
+    );
+    let re = ctx
+        .request_json2_sign(
+            "/auth/user/update",
+            &json::object! {
+                "is_admin": false,
+                "username": "test",
+            },
+            &token,
+            token_id,
+        )
+        .await?
+        .unwrap();
+    let result = JSONResult::from_json(re)?.unwrap_err();
+    assert_eq!(result.code, 17);
     Ok([(token_id, token), (token2_id, token2)])
 }
