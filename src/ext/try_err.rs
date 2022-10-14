@@ -75,3 +75,13 @@ where
         }
     }
 }
+
+#[cfg(feature = "server")]
+impl<T> TryErr3<T> for Option<T> {
+    fn try_err3<S: AsRef<str> + ?Sized>(self, code: i32, msg: &S) -> Result<T, JSONError> {
+        match self {
+            Some(v) => Ok(v),
+            None => Err(JSONError::from((code, msg.as_ref().to_string(), None))),
+        }
+    }
+}

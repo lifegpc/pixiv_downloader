@@ -11,6 +11,8 @@ use openssl::{hash::MessageDigest, pkcs5::pbkdf2_hmac};
 pub enum AuthUserAction {
     /// Add a new user.
     Add,
+    /// Change a user's name.
+    ChangeName,
     /// Update a existed user.
     Update,
 }
@@ -152,6 +154,16 @@ impl AuthUserContext {
                         }
                         None => return Err((5, gettext("No RSA key found.")).into()),
                     }
+                }
+                AuthUserAction::ChangeName => {
+                    let name = params.get("name").try_err3(18, "No name specified.")?;
+                    let user = self
+                        .ctx
+                        .db
+                        .update_user_name(user.expect("User not found.").id, name)
+                        .await
+                        .try_err3(-1001, gettext("Failed to operate the database:"))?;
+                    Ok(user.to_json2())
                 }
                 AuthUserAction::Update => {
                     if root_user.is_some() {
@@ -296,7 +308,7 @@ pub struct AuthUserRoute {
 impl AuthUserRoute {
     pub fn new() -> Self {
         Self {
-            regex: Regex::new(r"^(/+api)?/+auth/+user(/+(add|update))?$").unwrap(),
+            regex: Regex::new(r"^(/+api)?/+auth/+user(/+(add|update|change/+name))?$").unwrap(),
         }
     }
 }
@@ -326,7 +338,18 @@ impl MatchRoute<Body, Body> for AuthUserRoute {
                         match m {
                             "add" => Some(AuthUserAction::Add),
                             "update" => Some(AuthUserAction::Update),
-                            _ => return None,
+                            _ => {
+                                if m.starts_with("change/") {
+                                    let m = m.trim_start_matches("change/");
+                                    let m = m.trim_start_matches("/");
+                                    match m {
+                                        "name" => Some(AuthUserAction::ChangeName),
+                                        _ => return None,
+                                    }
+                                } else {
+                                    return None;
+                                }
+                            }
                         }
                     }
                     None => {

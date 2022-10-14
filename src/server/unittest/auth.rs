@@ -258,5 +258,26 @@ pub async fn test(ctx: &UnitTestContext) -> Result<[(u64, Vec<u8>); 2], PixivDow
         .unwrap();
     let result = JSONResult::from_json(re)?.unwrap_err();
     assert_eq!(result.code, 17);
+    let re = ctx
+        .request_json2_sign(
+            "/auth/user/change/name",
+            &json::object! {
+                "name": "sdlkasdjklasjd"
+            },
+            &token2,
+            token2_id,
+        )
+        .await?
+        .unwrap();
+    let result = JSONResult::from_json(re)?.unwrap();
+    assert_eq!(
+        result,
+        json::object! {
+            "id": 1,
+            "name": "sdlkasdjklasjd",
+            "username": "test1",
+            "is_admin": false,
+        }
+    );
     Ok([(token_id, token), (token2_id, token2)])
 }

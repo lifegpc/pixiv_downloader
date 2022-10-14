@@ -434,6 +434,10 @@ impl PixivDownloaderSqlite {
         )?)
     }
 
+    fn _update_user_name(ts: &Transaction, id: u64, name: &str) -> Result<usize, SqliteError> {
+        Ok(ts.execute("UPDATE users SET name = ? WHERE id = ?;", (name, id))?)
+    }
+
     fn _write_version<'a>(&self, ts: &Transaction<'a>) -> Result<(), SqliteError> {
         let mut stmt = ts.prepare(
             "INSERT OR REPLACE INTO version (id, v1, v2, v3, v4) VALUES ('main', ?, ?, ?, ?);",
@@ -591,6 +595,17 @@ impl PixivDownloaderDb for PixivDownloaderSqlite {
     ) -> Result<User, PixivDownloaderDbError> {
         self._update_user(id, name, username, password, is_admin)
             .await?;
+        Ok(self.get_user(id).await?.expect("User not found:"))
+    }
+
+    #[cfg(feature = "server")]
+    async fn update_user_name(&self, id: u64, name: &str) -> Result<User, PixivDownloaderDbError> {
+        {
+            let mut db = self.db.lock().await;
+            let mut tx = db.transaction()?;
+            Self::_update_user_name(&mut tx, id, name)?;
+            tx.commit()?;
+        }
         Ok(self.get_user(id).await?.expect("User not found:"))
     }
 }

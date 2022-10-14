@@ -111,4 +111,9 @@ pub trait PixivDownloaderDb {
         password: &[u8],
         is_admin: bool,
     ) -> Result<User, PixivDownloaderDbError>;
+    #[cfg(feature = "server")]
+    /// Update a user's name
+    /// * `id`: The user's ID
+    /// * `name`: The user's name
+    async fn update_user_name(&self, id: u64, name: &str) -> Result<User, PixivDownloaderDbError>;
 }
