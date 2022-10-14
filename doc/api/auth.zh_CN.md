@@ -11,14 +11,18 @@
 * 路径: `/api/auth/user/add`、 `/auth/user/add`
 * 方法: `GET` 或 `POST`
 * RESTful: `PUT /api/auth/user` 或 `PUT /auth/user`
-* 鉴权: 一般需要（如服务器状态内的`has_root_user`为`false`则无需鉴权）
+* 鉴权: 一般需要（如服务器状态内的`has_root_user`为`false`则无需鉴权，如需要仅限管理员）
 ## 更新用户
 * 路径: `/api/auth/user/update`、 `/auth/user/update`
 * 方法: `GET` 或 `POST`
 * RESTful: `PATCH /api/auth/user` 或 `PATCH /auth/user`
-* 鉴权: 需要
+* 鉴权: 需要（仅管理员）
 ## 修改用户名字
 * 路径: `/api/auth/user/change/name`、 `/auth/user/change/name`
+* 方法: `GET` 或 `POST`
+* 鉴权: 需要
+## 修改用户密码
+* 路径: `/api/auth/user/change/password`、 `/auth/user/change/password`
 * 方法: `GET` 或 `POST`
 * 鉴权: 需要
 ## 获取Token

@@ -9,6 +9,17 @@ use openssl::rsa::{Padding, Rsa};
 /// Test authentification methods
 /// Returns token
 pub async fn test(ctx: &UnitTestContext) -> Result<[(u64, Vec<u8>); 2], PixivDownloaderError> {
+    let re = ctx
+        .request_json2(
+            "/auth/user/change/name",
+            &json::object! {
+                "name": "test",
+            },
+        )
+        .await?
+        .unwrap();
+    let result = JSONResult::from_json(&re)?.unwrap_err();
+    assert_eq!(result.code, 19);
     let re = Request::builder().uri("/auth").body(Body::empty())?;
     let res = ctx.request_json(re).await?.unwrap();
     assert_eq!(res["has_root_user"].as_bool(), Some(false));
@@ -275,6 +286,79 @@ pub async fn test(ctx: &UnitTestContext) -> Result<[(u64, Vec<u8>); 2], PixivDow
         json::object! {
             "id": 1,
             "name": "sdlkasdjklasjd",
+            "username": "test1",
+            "is_admin": false,
+        }
+    );
+    let re = ctx
+        .request_json2(
+            "/auth/token/add",
+            &json::object! {
+                "username": "test1",
+                "password": b64_password2.as_str(),
+            },
+        )
+        .await?
+        .unwrap();
+    let result = JSONResult::from_json(re)?.expect("Failed to add token:");
+    assert_eq!(Some(1), result["user_id"].as_u64());
+    let token3 = base64::decode(result["token"].as_str().unwrap()).unwrap();
+    assert_eq!(token2.len(), 64);
+    let token3_id = result["id"].as_u64().unwrap();
+    openssl::rand::rand_bytes(&mut password2)?;
+    key.public_encrypt(&password2, &mut encypted2, Padding::PKCS1)?;
+    let b64_password2 = base64::encode(&encypted2);
+    let re = ctx
+        .request_json2_sign(
+            "/auth/user/change/password",
+            &json::object! {
+                "password": b64_password2.as_str(),
+            },
+            &token2,
+            token2_id,
+        )
+        .await?
+        .unwrap();
+    let result = JSONResult::from_json(re)?.unwrap();
+    assert_eq!(
+        result,
+        json::object! {
+            "id": 1,
+            "name": "sdlkasdjklasjd",
+            "username": "test1",
+            "is_admin": false,
+        }
+    );
+    let re = ctx
+        .request_json2_sign(
+            "/auth/user/change/name",
+            &json::object! {
+                "name": "sadiuqwed",
+            },
+            &token3,
+            token3_id,
+        )
+        .await?
+        .unwrap();
+    let result = JSONResult::from_json(re)?.unwrap_err();
+    assert_eq!(result.code, -403);
+    let re = ctx
+        .request_json2_sign(
+            "/auth/user/change/name",
+            &json::object! {
+                "name": "sadiuqwed",
+            },
+            &token2,
+            token2_id,
+        )
+        .await?
+        .unwrap();
+    let result = JSONResult::from_json(re)?.unwrap();
+    assert_eq!(
+        result,
+        json::object! {
+            "id": 1,
+            "name": "sadiuqwed",
             "username": "test1",
             "is_admin": false,
         }

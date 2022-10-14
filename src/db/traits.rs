@@ -116,4 +116,17 @@ pub trait PixivDownloaderDb {
     /// * `id`: The user's ID
     /// * `name`: The user's name
     async fn update_user_name(&self, id: u64, name: &str) -> Result<User, PixivDownloaderDbError>;
+    #[cfg(feature = "server")]
+    /// Update a user's password
+    /// * `id`: The user's ID
+    /// * `password`: The user's hashed password
+    /// * `token_id`: The token ID
+    /// # Note
+    /// All tokens of the user except token_id will be revoked
+    async fn update_user_password(
+        &self,
+        id: u64,
+        password: &[u8],
+        token_id: u64,
+    ) -> Result<User, PixivDownloaderDbError>;
 }

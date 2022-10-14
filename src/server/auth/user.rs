@@ -13,6 +13,8 @@ pub enum AuthUserAction {
     Add,
     /// Change a user's name.
     ChangeName,
+    /// Change a user's password.
+    ChangePassword,
     /// Update a existed user.
     Update,
 }
@@ -53,6 +55,11 @@ impl AuthUserContext {
         } else {
             None
         };
+        if let Some(act) = self.action.as_ref() {
+            if root_user.is_none() && !matches!(act, AuthUserAction::Add) {
+                return Err((19, gettext("No root user, you need add a user first.")).into());
+            }
+        }
         match &self.action {
             Some(act) => match act {
                 AuthUserAction::Add => {
@@ -164,6 +171,55 @@ impl AuthUserContext {
                         .await
                         .try_err3(-1001, gettext("Failed to operate the database:"))?;
                     Ok(user.to_json2())
+                }
+                AuthUserAction::ChangePassword => {
+                    let token_id = match req.headers().get("X-TOKEN-ID") {
+                        Some(s) => s.to_str().unwrap().to_owned(),
+                        None => params.get("token_id").unwrap().to_owned(),
+                    }
+                    .parse::<u64>()
+                    .unwrap();
+                    let password = params
+                        .get("password")
+                        .try_err3(3, "No password specified.")?;
+                    let password = base64::decode(password)
+                        .try_err3(4, gettext("Failed to decode password with base64:"))?;
+                    let rsa_key = self.ctx.rsa_key.lock().await;
+                    match *rsa_key {
+                        Some(ref key) => {
+                            if key.is_too_old() {
+                                return Err((
+                                    6,
+                                    gettext("RSA key is too old. A new key should be generated."),
+                                )
+                                    .into());
+                            }
+                            let password = key
+                                .decrypt(&password)
+                                .try_err3(7, gettext("Failed to decrypt password with RSA:"))?;
+                            let mut hashed_password = [0; 64];
+                            pbkdf2_hmac(
+                                &password,
+                                &PASSWORD_SALT,
+                                PASSWORD_ITER,
+                                MessageDigest::sha512(),
+                                &mut hashed_password,
+                            )
+                            .try_err3(11, gettext("Failed to hash password:"))?;
+                            let user = self
+                                .ctx
+                                .db
+                                .update_user_password(
+                                    user.expect("User not found:").id,
+                                    &hashed_password,
+                                    token_id,
+                                )
+                                .await
+                                .try_err3(8, gettext("Failed to update user in database:"))?;
+                            Ok(user.to_json2())
+                        }
+                        None => Err((5, gettext("No RSA key found.")).into()),
+                    }
                 }
                 AuthUserAction::Update => {
                     if root_user.is_some() {
@@ -308,7 +364,8 @@ pub struct AuthUserRoute {
 impl AuthUserRoute {
     pub fn new() -> Self {
         Self {
-            regex: Regex::new(r"^(/+api)?/+auth/+user(/+(add|update|change/+name))?$").unwrap(),
+            regex: Regex::new(r"^(/+api)?/+auth/+user(/+(add|update|change/+(name|password)))?$")
+                .unwrap(),
         }
     }
 }
@@ -344,6 +401,7 @@ impl MatchRoute<Body, Body> for AuthUserRoute {
                                     let m = m.trim_start_matches("/");
                                     match m {
                                         "name" => Some(AuthUserAction::ChangeName),
+                                        "password" => Some(AuthUserAction::ChangePassword),
                                         _ => return None,
                                     }
                                 } else {

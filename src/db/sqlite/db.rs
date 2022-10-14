@@ -434,8 +434,27 @@ impl PixivDownloaderSqlite {
         )?)
     }
 
+    #[cfg(feature = "server")]
     fn _update_user_name(ts: &Transaction, id: u64, name: &str) -> Result<usize, SqliteError> {
         Ok(ts.execute("UPDATE users SET name = ? WHERE id = ?;", (name, id))?)
+    }
+
+    #[cfg(feature = "server")]
+    fn _update_user_password(
+        ts: &Transaction,
+        id: u64,
+        password: &[u8],
+        token_id: u64,
+    ) -> Result<(), SqliteError> {
+        ts.execute(
+            "UPDATE users SET password = ? WHERE id = ?;",
+            (password, id),
+        )?;
+        ts.execute(
+            "DELETE FROM token WHERE user_id = ? AND id != ?;",
+            (id, token_id),
+        )?;
+        Ok(())
     }
 
     fn _write_version<'a>(&self, ts: &Transaction<'a>) -> Result<(), SqliteError> {
@@ -604,6 +623,22 @@ impl PixivDownloaderDb for PixivDownloaderSqlite {
             let mut db = self.db.lock().await;
             let mut tx = db.transaction()?;
             Self::_update_user_name(&mut tx, id, name)?;
+            tx.commit()?;
+        }
+        Ok(self.get_user(id).await?.expect("User not found:"))
+    }
+
+    #[cfg(feature = "server")]
+    async fn update_user_password(
+        &self,
+        id: u64,
+        password: &[u8],
+        token_id: u64,
+    ) -> Result<User, PixivDownloaderDbError> {
+        {
+            let mut db = self.db.lock().await;
+            let mut tx = db.transaction()?;
+            Self::_update_user_password(&mut tx, id, password, token_id)?;
             tx.commit()?;
         }
         Ok(self.get_user(id).await?.expect("User not found:"))
