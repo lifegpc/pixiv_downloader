@@ -30,6 +30,11 @@
 * 方法: `GET` 或 `POST`
 * RESTful: `DELETE /api/auth/user` 或 `DELETE /auth/user`
 * 鉴权: 需要（仅管理员）
+## 获取用户信息
+* 路径: `/api/auth/user/info`、 `/auth/user/info`
+* 方法: `GET` 或 `POST`
+* RESTful: `GET /api/auth/user` 或 `GET /auth/user`
+* 鉴权: 需要（其他用户信息仅管理员）
 ## 获取Token
 * 路径: `/api/auth/token/add`、 `/auth/token/add`
 * 方法: `GET` 或 `POST`

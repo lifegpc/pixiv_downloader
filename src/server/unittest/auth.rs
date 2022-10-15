@@ -363,5 +363,68 @@ pub async fn test(ctx: &UnitTestContext) -> Result<[(u64, Vec<u8>); 2], PixivDow
             "is_admin": false,
         }
     );
+    let re = ctx
+        .request_json2_sign("/auth/user/info", &json::object! {}, &token2, token2_id)
+        .await?
+        .unwrap();
+    let result = JSONResult::from_json(re)?.unwrap();
+    assert_eq!(
+        result,
+        json::object! {
+            "id": 1,
+            "name": "sadiuqwed",
+            "username": "test1",
+            "is_admin": false,
+        }
+    );
+    let re = ctx
+        .request_json2_sign(
+            "/auth/user/info",
+            &json::object! { "id": 1 },
+            &token2,
+            token2_id,
+        )
+        .await?
+        .unwrap();
+    let result = JSONResult::from_json(re)?.unwrap();
+    assert_eq!(
+        result,
+        json::object! {
+            "id": 1,
+            "name": "sadiuqwed",
+            "username": "test1",
+            "is_admin": false,
+        }
+    );
+    let re = ctx
+        .request_json2_sign(
+            "/auth/user/info",
+            &json::object! {"username": "test"},
+            &token2,
+            token2_id,
+        )
+        .await?
+        .unwrap();
+    let result = JSONResult::from_json(re)?.unwrap_err();
+    assert_eq!(result.code, 9);
+    let re = ctx
+        .request_json2_sign(
+            "/auth/user/info",
+            &json::object! {"username": "test1"},
+            &token,
+            token_id,
+        )
+        .await?
+        .unwrap();
+    let result = JSONResult::from_json(re)?.unwrap();
+    assert_eq!(
+        result,
+        json::object! {
+            "id": 1,
+            "name": "sadiuqwed",
+            "username": "test1",
+            "is_admin": false,
+        }
+    );
     Ok([(token_id, token), (token2_id, token2)])
 }

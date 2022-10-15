@@ -2,6 +2,7 @@ use bytes::BytesMut;
 
 use crate::ext::json::ToJson2;
 
+#[derive(Clone)]
 /// A user in the database
 pub struct User {
     /// The user ID

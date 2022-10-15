@@ -17,6 +17,8 @@ pub enum AuthUserAction {
     ChangePassword,
     /// Delete a user.
     Delete,
+    /// Get a user's information.
+    GetInfo,
     /// Update a existed user.
     Update,
 }
@@ -251,6 +253,29 @@ impl AuthUserContext {
                         .try_err3(-1001, gettext("Failed to operate the database:"))?;
                     Ok(json::JsonValue::Boolean(re))
                 }
+                AuthUserAction::GetInfo => {
+                    let id = params.get_u64("id").try_err3(
+                        13,
+                        &gettext("Failed to parse <opt>:").replace("<opt>", "user id"),
+                    )?;
+                    let username = params.get("username");
+                    let nuser = if let Some(id) = id {
+                        self.ctx.db.get_user(id).await
+                    } else if let Some(username) = username {
+                        self.ctx.db.get_user_by_username(username).await
+                    } else {
+                        Ok(user.clone())
+                    }
+                    .try_err3(-1001, gettext("Failed to operate the database:"))?
+                    .try_err3(15, gettext("User not found."))?;
+                    let user = user.as_ref().expect("User not found:");
+                    if root_user.is_some() && nuser.id != user.id {
+                        if !user.is_admin {
+                            return Err((9, gettext("Admin privileges required.")).into());
+                        }
+                    }
+                    Ok(nuser.to_json2())
+                }
                 AuthUserAction::Update => {
                     if root_user.is_some() {
                         if !user.as_ref().expect("User not found:").is_admin {
@@ -369,6 +394,7 @@ impl ResponseJsonFor<Body> for AuthUserContext {
                 PUT,
                 PATCH,
                 DELETE,
+                GET,
             );
             builder
         } else {
@@ -397,7 +423,7 @@ impl AuthUserRoute {
     pub fn new() -> Self {
         Self {
             regex: Regex::new(
-                r"^(/+api)?/+auth/+user(/+(add|update|delete|change/+(name|password)))?$",
+                r"^(/+api)?/+auth/+user(/+(add|update|delete|info|change/+(name|password)))?$",
             )
             .unwrap(),
         }
@@ -429,6 +455,7 @@ impl MatchRoute<Body, Body> for AuthUserRoute {
                         match m {
                             "add" => Some(AuthUserAction::Add),
                             "delete" => Some(AuthUserAction::Delete),
+                            "info" => Some(AuthUserAction::GetInfo),
                             "update" => Some(AuthUserAction::Update),
                             _ => {
                                 if m.starts_with("change/") {
@@ -453,6 +480,8 @@ impl MatchRoute<Body, Body> for AuthUserRoute {
                             Some(AuthUserAction::Update)
                         } else if m == Method::DELETE {
                             Some(AuthUserAction::Delete)
+                        } else if m == Method::GET {
+                            Some(AuthUserAction::GetInfo)
                         } else {
                             None
                         }
