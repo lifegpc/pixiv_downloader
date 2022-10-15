@@ -55,6 +55,12 @@ pub trait PixivDownloaderDb {
         is_admin: bool,
     ) -> Result<User, PixivDownloaderDbError>;
     #[cfg(feature = "server")]
+    /// Delete a user
+    /// * `id` - User ID
+    /// # Note
+    /// All tokens of the user will be deleted.
+    async fn delete_user(&self, id: u64) -> Result<bool, PixivDownloaderDbError>;
+    #[cfg(feature = "server")]
     /// Get token by ID
     /// * `id` - The token ID
     async fn get_token(&self, id: u64) -> Result<Option<Token>, PixivDownloaderDbError>;

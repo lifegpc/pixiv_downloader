@@ -220,6 +220,13 @@ impl PixivDownloaderSqlite {
         Ok(())
     }
 
+    #[cfg(feature = "server")]
+    fn _delete_user(tx: &Transaction, id: u64) -> Result<bool, SqliteError> {
+        let af = tx.execute("DELETE FROM users WHERE id = ?;", [id])?;
+        tx.execute("DELETE FROM token WHERE user_id = ?;", [id])?;
+        Ok(af > 0)
+    }
+
     /// Get all exists tables
     async fn _get_exists_table(&self) -> Result<HashMap<String, ()>, SqliteError> {
         let con = self.db.lock().await;
@@ -553,6 +560,15 @@ impl PixivDownloaderDb for PixivDownloaderSqlite {
             .get_user_by_username(username)
             .await?
             .expect("User not found:"))
+    }
+
+    #[cfg(feature = "server")]
+    async fn delete_user(&self, id: u64) -> Result<bool, PixivDownloaderDbError> {
+        let mut db = self.db.lock().await;
+        let tx = db.transaction()?;
+        let re = Self::_delete_user(&tx, id)?;
+        tx.commit()?;
+        Ok(re)
     }
 
     #[cfg(feature = "server")]

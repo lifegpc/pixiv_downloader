@@ -15,6 +15,8 @@ pub enum AuthUserAction {
     ChangeName,
     /// Change a user's password.
     ChangePassword,
+    /// Delete a user.
+    Delete,
     /// Update a existed user.
     Update,
 }
@@ -221,6 +223,34 @@ impl AuthUserContext {
                         None => Err((5, gettext("No RSA key found.")).into()),
                     }
                 }
+                AuthUserAction::Delete => {
+                    if root_user.is_some() {
+                        if !user.as_ref().expect("User not found:").is_admin {
+                            return Err((9, gettext("Admin privileges required.")).into());
+                        }
+                    }
+                    let id = params.get_u64("id").try_err3(
+                        13,
+                        &gettext("Failed to parse <opt>:").replace("<opt>", "user id"),
+                    )?;
+                    let username = params.get("username");
+                    let user = if let Some(id) = id {
+                        self.ctx.db.get_user(id).await
+                    } else if let Some(username) = username {
+                        self.ctx.db.get_user_by_username(username).await
+                    } else {
+                        return Err((14, gettext("No user id or username specified.")).into());
+                    }
+                    .try_err3(-1001, gettext("Failed to operate the database:"))?
+                    .try_err3(15, gettext("User not found."))?;
+                    let re = self
+                        .ctx
+                        .db
+                        .delete_user(user.id)
+                        .await
+                        .try_err3(-1001, gettext("Failed to operate the database:"))?;
+                    Ok(json::JsonValue::Boolean(re))
+                }
                 AuthUserAction::Update => {
                     if root_user.is_some() {
                         if !user.as_ref().expect("User not found:").is_admin {
@@ -337,6 +367,8 @@ impl ResponseJsonFor<Body> for AuthUserContext {
                 allow_headers = [CONTENT_TYPE, X_SIGN, X_TOKEN_ID],
                 OPTIONS,
                 PUT,
+                PATCH,
+                DELETE,
             );
             builder
         } else {
@@ -364,8 +396,10 @@ pub struct AuthUserRoute {
 impl AuthUserRoute {
     pub fn new() -> Self {
         Self {
-            regex: Regex::new(r"^(/+api)?/+auth/+user(/+(add|update|change/+(name|password)))?$")
-                .unwrap(),
+            regex: Regex::new(
+                r"^(/+api)?/+auth/+user(/+(add|update|delete|change/+(name|password)))?$",
+            )
+            .unwrap(),
         }
     }
 }
@@ -394,6 +428,7 @@ impl MatchRoute<Body, Body> for AuthUserRoute {
                         let m = m.as_str().trim_start_matches("/");
                         match m {
                             "add" => Some(AuthUserAction::Add),
+                            "delete" => Some(AuthUserAction::Delete),
                             "update" => Some(AuthUserAction::Update),
                             _ => {
                                 if m.starts_with("change/") {
@@ -416,6 +451,8 @@ impl MatchRoute<Body, Body> for AuthUserRoute {
                             Some(AuthUserAction::Add)
                         } else if m == Method::PATCH {
                             Some(AuthUserAction::Update)
+                        } else if m == Method::DELETE {
+                            Some(AuthUserAction::Delete)
                         } else {
                             None
                         }
