@@ -426,5 +426,90 @@ pub async fn test(ctx: &UnitTestContext) -> Result<[(u64, Vec<u8>); 2], PixivDow
             "is_admin": false,
         }
     );
+    let mut password3 = BytesMut::with_capacity(64);
+    password3.resize(64, 0);
+    openssl::rand::rand_bytes(&mut password3)?;
+    let mut encypted3 = BytesMut::with_capacity(tosize);
+    encypted3.resize(tosize, 0);
+    key.public_encrypt(&password3, &mut encypted3, Padding::PKCS1)?;
+    let b64_password3 = base64::encode(&encypted3);
+    let re = ctx
+        .request_json2_sign(
+            "/auth/user/add",
+            &json::object! {
+                "username": "test2",
+                "password": b64_password3.as_str(),
+                "name": "test2",
+            },
+            &token,
+            token_id,
+        )
+        .await?
+        .unwrap();
+    let result = JSONResult::from_json(re)?.expect("Failed to add user:");
+    assert_eq!(
+        result,
+        json::object! {
+            "id": 2,
+            "name": "test2",
+            "username": "test2",
+            "is_admin": false,
+        }
+    );
+    let re = ctx
+        .request_json2(
+            "/auth/token/add",
+            &json::object! {
+                "username": "test2",
+                "password": b64_password3.as_str(),
+            },
+        )
+        .await?
+        .unwrap();
+    let result = JSONResult::from_json(re)?.unwrap();
+    assert_eq!(Some(2), result["user_id"].as_u64());
+    let token3_id = result["id"].as_u64().unwrap();
+    let token3 = base64::decode(result["token"].as_str().unwrap()).unwrap();
+    let re = ctx
+        .request_json2_sign(
+            "/auth/user/info",
+            &json::object! {"username": "test2"},
+            &token3,
+            token3_id,
+        )
+        .await?
+        .unwrap();
+    let result = JSONResult::from_json(re)?.unwrap();
+    assert_eq!(
+        result,
+        json::object! {
+            "id": 2,
+            "name": "test2",
+            "username": "test2",
+            "is_admin": false,
+        }
+    );
+    let re = ctx
+        .request_json2_sign(
+            "/auth/user/delete",
+            &json::object! { "id": 2 },
+            &token2,
+            token2_id,
+        )
+        .await?
+        .unwrap();
+    let result = JSONResult::from_json(re)?.unwrap_err();
+    assert_eq!(result.code, 9);
+    let re = ctx
+        .request_json2_sign(
+            "/auth/user/delete",
+            &json::object! { "id": 2 },
+            &token,
+            token_id,
+        )
+        .await?
+        .unwrap();
+    let result = JSONResult::from_json(re)?.unwrap();
+    assert_eq!(result.as_bool(), Some(true));
     Ok([(token_id, token), (token2_id, token2)])
 }
