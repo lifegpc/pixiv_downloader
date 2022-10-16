@@ -426,6 +426,24 @@ pub async fn test(ctx: &UnitTestContext) -> Result<[(u64, Vec<u8>); 2], PixivDow
             "is_admin": false,
         }
     );
+    let re = ctx
+        .request_json2_sign(
+            "/auth/user/list",
+            &json::object! { "id_only": true },
+            &token,
+            token_id,
+        )
+        .await?
+        .unwrap();
+    let result = JSONResult::from_json(re)?.unwrap();
+    assert_eq!(
+        result,
+        json::object! {
+            "page": 1,
+            "page_count": 10,
+            "data": [0, 1],
+        }
+    );
     let mut password3 = BytesMut::with_capacity(64);
     password3.resize(64, 0);
     openssl::rand::rand_bytes(&mut password3)?;
@@ -491,6 +509,24 @@ pub async fn test(ctx: &UnitTestContext) -> Result<[(u64, Vec<u8>); 2], PixivDow
     );
     let re = ctx
         .request_json2_sign(
+            "/auth/user/list",
+            &json::object! { "id_only": true, "page_count": 2, "page": 2 },
+            &token,
+            token_id,
+        )
+        .await?
+        .unwrap();
+    let result = JSONResult::from_json(re)?.unwrap();
+    assert_eq!(
+        result,
+        json::object! {
+            "page": 2,
+            "page_count": 2,
+            "data": [2],
+        }
+    );
+    let re = ctx
+        .request_json2_sign(
             "/auth/user/delete",
             &json::object! { "id": 2 },
             &token2,
@@ -511,5 +547,49 @@ pub async fn test(ctx: &UnitTestContext) -> Result<[(u64, Vec<u8>); 2], PixivDow
         .unwrap();
     let result = JSONResult::from_json(re)?.unwrap();
     assert_eq!(result.as_bool(), Some(true));
+    let re = ctx
+        .request_json2_sign(
+            "/auth/user/list",
+            &json::object! { "id_only": true, "page_count": 2, "page": 1 },
+            &token,
+            token_id,
+        )
+        .await?
+        .unwrap();
+    let result = JSONResult::from_json(re)?.unwrap();
+    assert_eq!(
+        result,
+        json::object! {
+            "page": 1,
+            "page_count": 2,
+            "data": [0, 1],
+        }
+    );
+    let re = ctx
+        .request_json2_sign("/auth/user/list", &json::object! {}, &token, token_id)
+        .await?
+        .unwrap();
+    let result = JSONResult::from_json(re)?.unwrap();
+    assert_eq!(
+        result,
+        json::object! {
+            "page": 1,
+            "page_count": 10,
+            "data": [
+                {
+                    "id": 0,
+                    "name": "test",
+                    "username": "test",
+                    "is_admin": true,
+                },
+                {
+                    "id": 1,
+                    "name": "sadiuqwed",
+                    "username": "test1",
+                    "is_admin": false,
+                },
+            ],
+        }
+    );
     Ok([(token_id, token), (token2_id, token2)])
 }

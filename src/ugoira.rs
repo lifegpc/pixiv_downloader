@@ -291,7 +291,9 @@ impl UgoiraFrames {
     pub fn append<T: ToCStr>(&mut self, file: T, delay: f32) -> Result<(), UgoiraError> {
         let f = file.to_cstr()?;
         if delay <= 0f32 {
-            Err(gettext("Delay should be greater than 0."))?;
+            Err(gettext("<sth> should be greater than <num>.")
+                .replace("<sth>", gettext("Delay"))
+                .replace("<num>", "0"))?;
         }
         let re = unsafe { _ugoira::new_ugoira_frame(f.as_ptr(), delay, self.tail) };
         if re.is_null() {

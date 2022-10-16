@@ -35,6 +35,10 @@
 * 方法: `GET` 或 `POST`
 * RESTful: `GET /api/auth/user` 或 `GET /auth/user`
 * 鉴权: 需要（其他用户信息仅管理员）
+## 获取用户列表
+* 路径: `/api/auth/user/list`、 `/auth/user/list`
+* 方法: `GET` 或 `POST`
+* 鉴权: 需要（仅管理员）
 ## 获取Token
 * 路径: `/api/auth/token/add`、 `/auth/token/add`
 * 方法: `GET` 或 `POST`

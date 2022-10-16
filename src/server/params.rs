@@ -74,6 +74,24 @@ impl RequestParams {
         }
     }
 
+    /// Get parameter and return it as [u64].
+    /// * `name` - A list of the parameter name.
+    /// # Note
+    /// It will return the first existed parameter's value.
+    pub fn get_u64_mult<S: AsRef<str> + ?Sized>(
+        &self,
+        name: &[&S],
+    ) -> Result<Option<u64>, PixivDownloaderError> {
+        for name in name.iter() {
+            match self.get_u64(name) {
+                Ok(Some(v)) => return Ok(Some(v)),
+                Ok(None) => {}
+                Err(e) => return Err(e),
+            }
+        }
+        Ok(None)
+    }
+
     /// Get all parameters with same name.
     /// * `name` - Parameter name.
     pub fn get_all<S: AsRef<str> + ?Sized>(&self, name: &S) -> Option<&Vec<String>> {

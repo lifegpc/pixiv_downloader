@@ -319,6 +319,38 @@ impl PixivDownloaderSqlite {
             .optional()?)
     }
 
+    #[cfg(feature = "server")]
+    async fn _list_users(&self, offset: u64, limit: u64) -> Result<Vec<User>, SqliteError> {
+        let con = self.db.lock().await;
+        let mut stmt = con.prepare("SELECT * FROM users LIMIT ?, ?;")?;
+        let mut rows = stmt.query([offset, limit])?;
+        let mut users = Vec::new();
+        while let Some(row) = rows.next()? {
+            let password: Vec<u8> = row.get(3)?;
+            let password: &[u8] = &password;
+            users.push(User {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                username: row.get(2)?,
+                password: BytesMut::from(password),
+                is_admin: row.get(4)?,
+            });
+        }
+        Ok(users)
+    }
+
+    #[cfg(feature = "server")]
+    async fn _list_users_id(&self, offset: u64, count: u64) -> Result<Vec<u64>, SqliteError> {
+        let con = self.db.lock().await;
+        let mut stmt = con.prepare("SELECT id FROM users LIMIT ?, ?;")?;
+        let mut rows = stmt.query([offset, count])?;
+        let mut ids = Vec::new();
+        while let Some(row) = rows.next()? {
+            ids.push(row.get(0)?);
+        }
+        Ok(ids)
+    }
+
     async fn _read_version(&self) -> Result<Option<[u8; 4]>, SqliteError> {
         let con = self.db.lock().await;
         let mut stmt = con.prepare("SELECT v1, v2, v3, v4 FROM version WHERE id='main';")?;
@@ -594,6 +626,24 @@ impl PixivDownloaderDb for PixivDownloaderSqlite {
             self._create_table().await?;
         }
         Ok(())
+    }
+
+    #[cfg(feature = "server")]
+    async fn list_users(
+        &self,
+        offset: u64,
+        limit: u64,
+    ) -> Result<Vec<User>, PixivDownloaderDbError> {
+        Ok(self._list_users(offset, limit).await?)
+    }
+
+    #[cfg(feature = "server")]
+    async fn list_users_id(
+        &self,
+        offset: u64,
+        count: u64,
+    ) -> Result<Vec<u64>, PixivDownloaderDbError> {
+        Ok(self._list_users_id(offset, count).await?)
     }
 
     #[cfg(feature = "server")]

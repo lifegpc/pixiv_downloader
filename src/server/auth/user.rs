@@ -19,6 +19,8 @@ pub enum AuthUserAction {
     Delete,
     /// Get a user's information.
     GetInfo,
+    /// List users.
+    List,
     /// Update a existed user.
     Update,
 }
@@ -276,6 +278,77 @@ impl AuthUserContext {
                     }
                     Ok(nuser.to_json2())
                 }
+                AuthUserAction::List => {
+                    if root_user.is_some() {
+                        if !user.as_ref().expect("User not found:").is_admin {
+                            return Err((9, gettext("Admin privileges required.")).into());
+                        }
+                    }
+                    let page = params
+                        .get_u64_mult(&["page", "p"])
+                        .try_err3(
+                            20,
+                            &gettext("Failed to parse <opt>:")
+                                .replace("<opt>", gettext("page number")),
+                        )?
+                        .unwrap_or(1);
+                    let page_count = params
+                        .get_u64_mult(&["page_count", "pc"])
+                        .try_err3(
+                            22,
+                            &gettext("Failed to parse <opt>:")
+                                .replace("<opt>", gettext("page count")),
+                        )?
+                        .unwrap_or(10);
+                    if page == 0 {
+                        return Err((
+                            21,
+                            &gettext("<sth> should be greater than <num>.")
+                                .replace("<sth>", gettext("Page number"))
+                                .replace("<num>", "0"),
+                        )
+                            .into());
+                    }
+                    if page_count == 0 {
+                        return Err((
+                            23,
+                            &gettext("<sth> should be greater than <num>.")
+                                .replace("<sth>", gettext("Page count"))
+                                .replace("<num>", "0"),
+                        )
+                            .into());
+                    }
+                    let id_only = params
+                        .get_bool("id_only")
+                        .try_err3(
+                            24,
+                            &gettext("Failed to parse <opt>:").replace("<opt>", "id_only"),
+                        )?
+                        .unwrap_or(false);
+                    let offset = (page - 1) * page_count;
+                    let data = if id_only {
+                        let users = self
+                            .ctx
+                            .db
+                            .list_users_id(offset, page_count)
+                            .await
+                            .try_err3(-1001, gettext("Failed to operate the database:"))?;
+                        json::from(users)
+                    } else {
+                        let users = self
+                            .ctx
+                            .db
+                            .list_users(offset, page_count)
+                            .await
+                            .try_err3(-1001, gettext("Failed to operate the database:"))?;
+                        let mut tmp = Vec::with_capacity(users.len());
+                        for user in users {
+                            tmp.push(user.to_json2());
+                        }
+                        json::from(tmp)
+                    };
+                    Ok(json::object! { "page": page, "page_count": page_count, "data": data })
+                }
                 AuthUserAction::Update => {
                     if root_user.is_some() {
                         if !user.as_ref().expect("User not found:").is_admin {
@@ -423,7 +496,7 @@ impl AuthUserRoute {
     pub fn new() -> Self {
         Self {
             regex: Regex::new(
-                r"^(/+api)?/+auth/+user(/+(add|update|delete|info|change/+(name|password)))?$",
+                r"^(/+api)?/+auth/+user(/+(add|update|delete|info|list|change/+(name|password)))?$",
             )
             .unwrap(),
         }
@@ -456,6 +529,7 @@ impl MatchRoute<Body, Body> for AuthUserRoute {
                             "add" => Some(AuthUserAction::Add),
                             "delete" => Some(AuthUserAction::Delete),
                             "info" => Some(AuthUserAction::GetInfo),
+                            "list" => Some(AuthUserAction::List),
                             "update" => Some(AuthUserAction::Update),
                             _ => {
                                 if m.starts_with("change/") {

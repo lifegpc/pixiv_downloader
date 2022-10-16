@@ -78,6 +78,24 @@ pub trait PixivDownloaderDb {
     /// Initialize the database (create tables, migrate data, etc.)
     async fn init(&self) -> Result<(), PixivDownloaderDbError>;
     #[cfg(feature = "server")]
+    /// List users
+    /// * `offset` - The offset of the first user
+    /// * `limit` - The maximum number of users to return
+    async fn list_users(
+        &self,
+        offset: u64,
+        limit: u64,
+    ) -> Result<Vec<User>, PixivDownloaderDbError>;
+    #[cfg(feature = "server")]
+    /// List users' id
+    /// * `offset` - The offset of the list
+    /// * `count` - The maximum count of the list
+    async fn list_users_id(
+        &self,
+        offset: u64,
+        count: u64,
+    ) -> Result<Vec<u64>, PixivDownloaderDbError>;
+    #[cfg(feature = "server")]
     /// Remove all expired tokens
     /// Return the number of removed tokens
     async fn revoke_expired_tokens(&self) -> Result<usize, PixivDownloaderDbError>;
