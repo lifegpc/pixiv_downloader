@@ -44,3 +44,8 @@
 * 方法: `GET` 或 `POST`
 * RESTful: `PUT /api/auth/token` 或 `PUT /auth/token`
 * 鉴权：不需要
+## 移除Token
+* 路径: `/api/auth/token/delete`、 `/auth/token/delete`
+* 方法: `GET` 或 `POST`
+* RESTful: `DELETE /api/auth/token` 或 `DELETE /auth/token`
+* 鉴权：需要（删除其他用户的Token仅管理员）

@@ -1,5 +1,7 @@
 use super::super::preclude::*;
 use super::{PASSWORD_ITER, PASSWORD_SALT};
+use crate::db::User;
+use crate::ext::json::ToJson2;
 use crate::ext::try_err::TryErr3;
 use crate::gettext;
 use openssl::{hash::MessageDigest, pkcs5::pbkdf2_hmac};
@@ -8,6 +10,8 @@ use openssl::{hash::MessageDigest, pkcs5::pbkdf2_hmac};
 pub enum AuthTokenAction {
     /// Add a new token
     Add,
+    /// Delete a token
+    Delete,
 }
 
 pub struct AuthTokenContext {
@@ -30,12 +34,12 @@ impl AuthTokenContext {
             .get_params()
             .await
             .try_err3(-1002, gettext("Failed to get parameters:"))?;
-        let username = params
-            .get("username")
-            .ok_or((1, gettext("No username specified.")))?;
         match &self.action {
             Some(s) => match s {
                 AuthTokenAction::Add => {
+                    let username = params
+                        .get("username")
+                        .ok_or((1, gettext("No username specified.")))?;
                     let password = params
                         .get("password")
                         .ok_or((2, gettext("No password specified.")))?;
@@ -94,11 +98,53 @@ impl AuthTokenContext {
                         json::object! { "id": token.id, "user_id": token.user_id, "token": b64token, "created_at": token.created_at.timestamp(), "expired_at": token.expired_at.timestamp() },
                     )
                 }
+                AuthTokenAction::Delete => {
+                    let user = self
+                        .ctx
+                        .verify_token(&req, &params)
+                        .await
+                        .try_err3(-403, gettext("Failed to verify the token:"))?;
+                    let ids = params
+                        .get_u64_all("id")
+                        .try_err3(
+                            10,
+                            &gettext("Failed to parse <opt>:").replace("<opt>", "id"),
+                        )?
+                        .try_err3(11, gettext("No id specified."))?;
+                    let mut data = json::JsonValue::new_object();
+                    for id in ids {
+                        data.insert(
+                            &format!("{}", id),
+                            self.revoke_token(id, &user).await.to_json2(),
+                        )
+                        .try_err3(-1004, gettext("Failed to insert data to JSON:"))?;
+                    }
+                    Ok(data)
+                }
             },
             None => {
                 panic!("No action specified for AuthTokenContext.");
             }
         }
+    }
+
+    async fn revoke_token(&self, id: u64, user: &User) -> JSONResult {
+        let token = self
+            .ctx
+            .db
+            .get_token(id)
+            .await
+            .try_err3(-1001, gettext("Failed to operate the database:"))?
+            .try_err3(12, gettext("Token not found."))?;
+        if token.user_id != user.id && !user.is_admin {
+            return Err((13, gettext("Permission denied.")).into());
+        }
+        self.ctx
+            .db
+            .delete_token(id)
+            .await
+            .try_err3(-1001, gettext("Failed to operate the database:"))?;
+        Ok(json::JsonValue::Boolean(true))
     }
 }
 
@@ -117,6 +163,7 @@ impl ResponseJsonFor<Body> for AuthTokenContext {
                 allow_headers = [CONTENT_TYPE, X_SIGN, X_TOKEN_ID],
                 OPTIONS,
                 PUT,
+                DELETE,
             );
             builder
         } else {
@@ -144,7 +191,7 @@ pub struct AuthTokenRoute {
 impl AuthTokenRoute {
     pub fn new() -> Self {
         Self {
-            regex: Regex::new(r"^(/+api)?/+auth/+token(/+add)?$").unwrap(),
+            regex: Regex::new(r"^(/+api)?/+auth/+token(/+(add|delete))?$").unwrap(),
         }
     }
 }
@@ -173,12 +220,16 @@ impl MatchRoute<Body, Body> for AuthTokenRoute {
                         let m = m.as_str().trim_start_matches("/");
                         match m {
                             "add" => Some(AuthTokenAction::Add),
+                            "delete" => Some(AuthTokenAction::Delete),
                             _ => return None,
                         }
                     }
                     None => {
-                        if req.method() == Method::PUT {
+                        let m = req.method();
+                        if m == Method::PUT {
                             Some(AuthTokenAction::Add)
+                        } else if m == Method::DELETE {
+                            Some(AuthTokenAction::Delete)
                         } else {
                             None
                         }

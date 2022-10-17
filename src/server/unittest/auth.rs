@@ -591,5 +591,82 @@ pub async fn test(ctx: &UnitTestContext) -> Result<[(u64, Vec<u8>); 2], PixivDow
             ],
         }
     );
+    let re = ctx
+        .request_json2(
+            "/auth/token/add",
+            &json::object! {
+                "username": "test1",
+                "password": b64_password2.as_str(),
+            },
+        )
+        .await?
+        .unwrap();
+    let result = JSONResult::from_json(re)?.expect("Failed to add token:");
+    assert_eq!(Some(1), result["user_id"].as_u64());
+    let token3 = base64::decode(result["token"].as_str().unwrap()).unwrap();
+    assert_eq!(token3.len(), 64);
+    let token3_id = result["id"].as_u64().unwrap();
+    let re = ctx
+        .request_json2_sign(
+            "/auth/token/delete",
+            &json::object! {
+                "id": [token3_id, token_id],
+            },
+            &token2,
+            token2_id,
+        )
+        .await?
+        .unwrap();
+    let result = JSONResult::from_json(re)?.unwrap();
+    let result2 = JSONResult::from_json(&result[format!("{}", token3_id)])?.unwrap();
+    assert_eq!(result2.as_bool(), Some(true));
+    let result2 = JSONResult::from_json(&result[format!("{}", token_id)])?.unwrap_err();
+    assert_eq!(result2.code, 13);
+    let re = ctx
+        .request_json2(
+            "/auth/token/add",
+            &json::object! {
+                "username": "test1",
+                "password": b64_password2.as_str(),
+            },
+        )
+        .await?
+        .unwrap();
+    let result = JSONResult::from_json(re)?.expect("Failed to add token:");
+    assert_eq!(Some(1), result["user_id"].as_u64());
+    let token3 = base64::decode(result["token"].as_str().unwrap()).unwrap();
+    assert_eq!(token3.len(), 64);
+    let token3_id = result["id"].as_u64().unwrap();
+    let re = ctx
+        .request_json2(
+            "/auth/token/add",
+            &json::object! {
+                "username": "test",
+                "password": b64_password.as_str(),
+            },
+        )
+        .await?
+        .unwrap();
+    let result = JSONResult::from_json(re)?.expect("Failed to add token:");
+    assert_eq!(Some(0), result["user_id"].as_u64());
+    let token4 = base64::decode(result["token"].as_str().unwrap()).unwrap();
+    assert_eq!(token4.len(), 64);
+    let token4_id = result["id"].as_u64().unwrap();
+    let re = ctx
+        .request_json2_sign(
+            "/auth/token/delete",
+            &json::object! {
+                "id": [token3_id, token4_id],
+            },
+            &token,
+            token_id,
+        )
+        .await?
+        .unwrap();
+    let result = JSONResult::from_json(re)?.unwrap();
+    let result2 = JSONResult::from_json(&result[format!("{}", token3_id)])?.unwrap();
+    assert_eq!(result2.as_bool(), Some(true));
+    let result2 = JSONResult::from_json(&result[format!("{}", token4_id)])?.unwrap();
+    assert_eq!(result2.as_bool(), Some(true));
     Ok([(token_id, token), (token2_id, token2)])
 }

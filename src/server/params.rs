@@ -74,6 +74,32 @@ impl RequestParams {
         }
     }
 
+    /// Get all parameters with same name and return it as [u64]
+    /// * `name` - Parameter name.
+    pub fn get_u64_all<S: AsRef<str> + ?Sized>(
+        &self,
+        name: &S,
+    ) -> Result<Option<Vec<u64>>, PixivDownloaderError> {
+        let mut result = Vec::new();
+        match self.params.get(name.as_ref()) {
+            Some(v) => {
+                for s in v {
+                    let s = s.trim();
+                    match s.parse::<u64>() {
+                        Ok(v) => result.push(v),
+                        Err(_) => {
+                            return Err(gettext("Invalid unsigned 64bit integer value.").into())
+                        }
+                    }
+                }
+            }
+            None => {
+                return Ok(None);
+            }
+        }
+        Ok(Some(result))
+    }
+
     /// Get parameter and return it as [u64].
     /// * `name` - A list of the parameter name.
     /// # Note

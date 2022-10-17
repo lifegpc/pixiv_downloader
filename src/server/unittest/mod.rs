@@ -118,31 +118,37 @@ impl UnitTestContext {
     ) -> Result<Option<JsonValue>, PixivDownloaderError> {
         let mut par = BTreeMap::new();
         for (key, obj) in params.entries() {
+            if !par.contains_key(key) {
+                par.insert(key.to_string(), Vec::new());
+            }
+            let pp = par.get_mut(key).unwrap();
             if let Some(s) = obj.as_str() {
-                par.insert(key.to_owned(), s.to_owned());
+                pp.push(s.to_owned());
             } else if obj.is_array() {
                 for s in obj.members() {
                     if let Some(s) = s.as_str() {
-                        par.insert(key.to_owned(), s.to_owned());
+                        pp.push(s.to_owned());
                     } else {
-                        par.insert(key.to_owned(), s.dump());
+                        pp.push(s.dump());
                     }
                 }
             } else {
-                par.insert(key.to_owned(), obj.dump());
+                pp.push(obj.dump());
             }
         }
         let mut sha = openssl::sha::Sha512::new();
         sha.update(token);
         let mut par2 = Vec::new();
         for (key, value) in par.iter() {
-            sha.update(key.as_bytes());
-            sha.update(value.as_bytes());
-            par2.push(format!(
-                "{}={}",
-                urlparse::quote_plus(key, b"")?,
-                urlparse::quote_plus(value, b"")?
-            ));
+            for v in value {
+                sha.update(key.as_bytes());
+                sha.update(v.as_bytes());
+                par2.push(format!(
+                    "{}={}",
+                    urlparse::quote_plus(key, b"")?,
+                    urlparse::quote_plus(v, b"")?
+                ));
+            }
         }
         let par2 = par2.join("&");
         let sign = hex::encode(sha.finish());

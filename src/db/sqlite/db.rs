@@ -221,6 +221,12 @@ impl PixivDownloaderSqlite {
     }
 
     #[cfg(feature = "server")]
+    fn _delete_token(tx: &Transaction, id: u64) -> Result<(), SqliteError> {
+        tx.execute("DELETE FROM token WHERE id = ?;", [id])?;
+        Ok(())
+    }
+
+    #[cfg(feature = "server")]
     fn _delete_user(tx: &Transaction, id: u64) -> Result<bool, SqliteError> {
         let af = tx.execute("DELETE FROM users WHERE id = ?;", [id])?;
         tx.execute("DELETE FROM token WHERE user_id = ?;", [id])?;
@@ -592,6 +598,15 @@ impl PixivDownloaderDb for PixivDownloaderSqlite {
             .get_user_by_username(username)
             .await?
             .expect("User not found:"))
+    }
+
+    #[cfg(feature = "server")]
+    async fn delete_token(&self, id: u64) -> Result<(), PixivDownloaderDbError> {
+        let mut db = self.db.lock().await;
+        let mut tx = db.transaction()?;
+        Self::_delete_token(&mut tx, id)?;
+        tx.commit()?;
+        Ok(())
     }
 
     #[cfg(feature = "server")]
