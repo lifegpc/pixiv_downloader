@@ -449,7 +449,7 @@ impl ExifValue {
                 return None;
             }
         }
-        let mut size: Vec<_exif::size_t> = vec![0];
+        let mut size: Vec<usize> = vec![0];
         let ptr = size.as_mut_ptr();
         if ptr.is_null() {
             return None;
