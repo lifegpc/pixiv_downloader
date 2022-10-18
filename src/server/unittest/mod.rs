@@ -117,6 +117,10 @@ impl UnitTestContext {
         token_id: u64,
     ) -> Result<Option<JsonValue>, PixivDownloaderError> {
         let mut par = BTreeMap::new();
+        par.insert(
+            "t".to_string(),
+            vec![chrono::Utc::now().timestamp().to_string()],
+        );
         for (key, obj) in params.entries() {
             if !par.contains_key(key) {
                 par.insert(key.to_string(), Vec::new());

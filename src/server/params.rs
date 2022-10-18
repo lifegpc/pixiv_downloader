@@ -31,6 +31,22 @@ impl RequestParams {
         }
     }
 
+    /// Get parameter.
+    /// * `name` - A list of the parameter name.
+    /// # Note
+    /// It will return the first existed parameter's value.
+    pub fn get_mult<S: AsRef<str> + ?Sized>(&self, names: &[&S]) -> Option<&str> {
+        for name in names {
+            match self.get(name.as_ref()) {
+                Some(v) => {
+                    return Some(v);
+                }
+                None => {}
+            }
+        }
+        None
+    }
+
     /// Get parameter and return it as boolean.
     /// * `name` - Parameter name.
     pub fn get_bool<S: AsRef<str> + ?Sized>(

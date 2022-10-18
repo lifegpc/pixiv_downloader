@@ -90,6 +90,13 @@ impl ServerContext {
             Some(sign) => sign,
             None => return Err(PixivDownloaderError::from(gettext("Sign not found."))),
         };
+        let time = params
+            .get_u64_mult(&["time", "t"])?
+            .ok_or(gettext("Time not found."))?;
+        let now = chrono::Utc::now().timestamp() as u64;
+        if time < now - 300 || time > now + 300 {
+            return Err(PixivDownloaderError::from(gettext("Time out of range.")));
+        }
         let token = self
             .db
             .get_token(token_id)
