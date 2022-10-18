@@ -1,0 +1,39 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "https://github.com/lifegpc/pixiv_downloader/raw/master/doc/api/auth/pubkey.json",
+    "title": "Result object",
+    "type": "object",
+    "properties": {
+        "ok": {
+            "description": "Whether the request was successful",
+            "type": "boolean"
+        },
+        "code": {
+            "description": "Error code, 0 if it was successful",
+            "type": "integer"
+        },
+        "msg": {
+            "description": "Error message",
+            "type": "string"
+        },
+        "debug_msg": {
+            "description": "Error message contains debug information"
+        },
+        "result": {
+            "description": "Result",
+            "type": "object",
+            "properties": {
+                "key": {
+                    "description": "RSA public key",
+                    "type": "string"
+                },
+                "generated_time": {
+                    "description": "The generated time of the key",
+                    "type": "integer"
+                }
+            },
+            "required": ["key", "generated_time"]
+        }
+    },
+    "required": ["ok", "code"]
+}

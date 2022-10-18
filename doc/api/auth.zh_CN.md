@@ -1,8 +1,12 @@
+[English](auth.md)
 # 验证相关API
 ## 获取服务器验证状态
 * 路径: `/api/auth/status`、 `/auth/status`、 `/api/auth` 或 `/auth`
 * 方法: `GET` 或 `POST`
 * 鉴权: 无需
+* 参数：无
+* 返回结构[示例](auth/status.example.json)
+* 返回结果的[JSON Schema](auth/status.zh_CN.json)
 ## 获取服务器公钥
 * 路径: `/api/auth/pubkey`、 `/auth/pubkey`
 * 方法: `GET` 或 `POST`

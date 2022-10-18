@@ -1,0 +1,27 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "https://github.com/lifegpc/pixiv_downloader/raw/master/doc/api/result.json",
+    "title": "Result object",
+    "type": "object",
+    "properties": {
+        "ok": {
+            "description": "Whether the request was successful",
+            "type": "boolean"
+        },
+        "code": {
+            "description": "Error code, 0 if it was successful",
+            "type": "integer"
+        },
+        "msg": {
+            "description": "Error message",
+            "type": "string"
+        },
+        "debug_msg": {
+            "description": "Error message contains debug information"
+        },
+        "result": {
+            "description": "Result"
+        }
+    },
+    "required": ["ok", "code"]
+}
