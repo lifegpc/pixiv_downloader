@@ -2,7 +2,7 @@ use super::auth::RSAKey;
 use super::cors::CorsContext;
 use super::params::RequestParams;
 use super::result::JSONResult;
-use crate::db::{open_and_init_database, PixivDownloaderDb, User};
+use crate::db::{open_and_init_database, PixivDownloaderDb, Token, User};
 use crate::error::PixivDownloaderError;
 use crate::ext::json::ToJson2;
 use crate::get_helper;
@@ -52,11 +52,11 @@ impl ServerContext {
         Ok(builder.body(re.to_json2())?)
     }
 
-    pub async fn verify_token(
+    pub async fn verify_token2(
         &self,
         req: &Request<Body>,
         params: &RequestParams,
-    ) -> Result<User, PixivDownloaderError> {
+    ) -> Result<Token, PixivDownloaderError> {
         let mut token_id = None;
         match req.headers().get("X-TOKEN-ID") {
             Some(v) => {
@@ -121,6 +121,15 @@ impl ServerContext {
         if sign != sha {
             return Err(PixivDownloaderError::from(gettext("Sign not match.")));
         }
+        Ok(token)
+    }
+
+    pub async fn verify_token(
+        &self,
+        req: &Request<Body>,
+        params: &RequestParams,
+    ) -> Result<User, PixivDownloaderError> {
+        let token = self.verify_token2(req, params).await?;
         Ok(self
             .db
             .get_user(token.user_id)

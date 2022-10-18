@@ -12,6 +12,8 @@ pub enum AuthTokenAction {
     Add,
     /// Delete a token
     Delete,
+    /// Extend a token's expire time
+    Extend,
 }
 
 pub struct AuthTokenContext {
@@ -121,6 +123,22 @@ impl AuthTokenContext {
                     }
                     Ok(data)
                 }
+                AuthTokenAction::Extend => {
+                    let token = self
+                        .ctx
+                        .verify_token2(&req, &params)
+                        .await
+                        .try_err3(-403, gettext("Failed to verify the token:"))?;
+                    let expired_at = chrono::Utc::now() + chrono::Duration::days(30);
+                    self.ctx
+                        .db
+                        .extend_token(token.id, &expired_at)
+                        .await
+                        .try_err3(-1001, gettext("Failed to operate the database:"))?;
+                    Ok(
+                        json::object! { "id": token.id, "user_id": token.user_id, "created_at": token.created_at.timestamp(), "expired_at": expired_at.timestamp() },
+                    )
+                }
             },
             None => {
                 panic!("No action specified for AuthTokenContext.");
@@ -191,7 +209,7 @@ pub struct AuthTokenRoute {
 impl AuthTokenRoute {
     pub fn new() -> Self {
         Self {
-            regex: Regex::new(r"^(/+api)?/+auth/+token(/+(add|delete))?$").unwrap(),
+            regex: Regex::new(r"^(/+api)?/+auth/+token(/+(add|delete|extend))?$").unwrap(),
         }
     }
 }
@@ -221,6 +239,7 @@ impl MatchRoute<Body, Body> for AuthTokenRoute {
                         match m {
                             "add" => Some(AuthTokenAction::Add),
                             "delete" => Some(AuthTokenAction::Delete),
+                            "extend" => Some(AuthTokenAction::Extend),
                             _ => return None,
                         }
                     }

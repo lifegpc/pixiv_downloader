@@ -65,6 +65,15 @@ pub trait PixivDownloaderDb {
     /// All tokens of the user will be deleted.
     async fn delete_user(&self, id: u64) -> Result<bool, PixivDownloaderDbError>;
     #[cfg(feature = "server")]
+    /// Extend a token's expiration time
+    /// * `id` - The token ID
+    /// * `expired_at` - The token's new expiration time
+    async fn extend_token(
+        &self,
+        id: u64,
+        expired_at: &DateTime<Utc>,
+    ) -> Result<(), PixivDownloaderDbError>;
+    #[cfg(feature = "server")]
     /// Get token by ID
     /// * `id` - The token ID
     async fn get_token(&self, id: u64) -> Result<Option<Token>, PixivDownloaderDbError>;

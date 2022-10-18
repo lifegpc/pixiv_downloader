@@ -233,6 +233,19 @@ impl PixivDownloaderSqlite {
         Ok(af > 0)
     }
 
+    #[cfg(feature = "server")]
+    fn _extend_token(
+        tx: &Transaction,
+        id: u64,
+        expired_at: &DateTime<Utc>,
+    ) -> Result<(), SqliteError> {
+        tx.execute(
+            "UPDATE token SET expired_at = ? WHERE id = ?;",
+            (expired_at, id),
+        )?;
+        Ok(())
+    }
+
     /// Get all exists tables
     async fn _get_exists_table(&self) -> Result<HashMap<String, ()>, SqliteError> {
         let con = self.db.lock().await;
@@ -616,6 +629,19 @@ impl PixivDownloaderDb for PixivDownloaderSqlite {
         let re = Self::_delete_user(&tx, id)?;
         tx.commit()?;
         Ok(re)
+    }
+
+    #[cfg(feature = "server")]
+    async fn extend_token(
+        &self,
+        id: u64,
+        expired_at: &DateTime<Utc>,
+    ) -> Result<(), PixivDownloaderDbError> {
+        let mut db = self.db.lock().await;
+        let mut tx = db.transaction()?;
+        Self::_extend_token(&mut tx, id, expired_at)?;
+        tx.commit()?;
+        Ok(())
     }
 
     #[cfg(feature = "server")]

@@ -668,5 +668,12 @@ pub async fn test(ctx: &UnitTestContext) -> Result<[(u64, Vec<u8>); 2], PixivDow
     assert_eq!(result2.as_bool(), Some(true));
     let result2 = JSONResult::from_json(&result[format!("{}", token4_id)])?.unwrap();
     assert_eq!(result2.as_bool(), Some(true));
+    let re = ctx
+        .request_json2_sign("/auth/token/extend", &json::object! {}, &token2, token2_id)
+        .await?
+        .unwrap();
+    let result = JSONResult::from_json(re)?.unwrap();
+    assert_eq!(result["user_id"].as_u64(), Some(1));
+    assert_eq!(result["id"].as_u64(), Some(token2_id));
     Ok([(token_id, token), (token2_id, token2)])
 }
