@@ -11,35 +11,50 @@
 * 路径: `/api/auth/pubkey`、 `/auth/pubkey`
 * 方法: `GET` 或 `POST`
 * 鉴权: 无需
-## 新增用户
+* 参数：无
+* 返回结构[示例](auth/pubkey.example.json)
+* 返回结果的[JSON Schema](auth/pubkey.zh_CN.json)
+## 用户管理
+### 新增用户
 * 路径: `/api/auth/user/add`、 `/auth/user/add`
 * 方法: `GET` 或 `POST`
 * RESTful: `PUT /api/auth/user` 或 `PUT /auth/user`
 * 鉴权: 一般需要（如服务器状态内的`has_root_user`为`false`则无需鉴权，如需要仅限管理员）
-## 更新用户
+* 参数：
+
+| 参数名 | 类型 | 必须 | 说明 |
+|:---:|:---:|:---:|:---:|
+| `name` | `string` | 是 | 用户名称 |
+| `username` | `string` | 是 | 用户名（唯一，用于登录） |
+| `password` | `string` | 是 | 用户密码（使用RSA加密） |
+| `is_admin` | `boolean` | 否 | 是否为管理员。默认为`false`。root用户必定为管理员。 |
+| `id` | `uint64` | 否 | 需要修改的用户ID。 |
+* 返回结构[示例](auth/user/add.example.json)
+* 返回结果的[JSON Schema](auth/user/add.zh_CN.json)
+### 更新用户
 * 路径: `/api/auth/user/update`、 `/auth/user/update`
 * 方法: `GET` 或 `POST`
 * RESTful: `PATCH /api/auth/user` 或 `PATCH /auth/user`
 * 鉴权: 需要（仅管理员）
-## 修改用户名字
+### 修改用户名字
 * 路径: `/api/auth/user/change/name`、 `/auth/user/change/name`
 * 方法: `GET` 或 `POST`
 * 鉴权: 需要
-## 修改用户密码
+### 修改用户密码
 * 路径: `/api/auth/user/change/password`、 `/auth/user/change/password`
 * 方法: `GET` 或 `POST`
 * 鉴权: 需要
-## 删除用户
+### 删除用户
 * 路径: `/api/auth/user/delete`、 `/auth/user/delete`
 * 方法: `GET` 或 `POST`
 * RESTful: `DELETE /api/auth/user` 或 `DELETE /auth/user`
 * 鉴权: 需要（仅管理员）
-## 获取用户信息
+### 获取用户信息
 * 路径: `/api/auth/user/info`、 `/auth/user/info`
 * 方法: `GET` 或 `POST`
 * RESTful: `GET /api/auth/user` 或 `GET /auth/user`
 * 鉴权: 需要（其他用户信息仅管理员）
-## 获取用户列表
+### 获取用户列表
 * 路径: `/api/auth/user/list`、 `/auth/user/list`
 * 方法: `GET` 或 `POST`
 * 鉴权: 需要（仅管理员）

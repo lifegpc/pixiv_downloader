@@ -1,0 +1,25 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "https://github.com/lifegpc/pixiv_downloader/raw/master/doc/api/auth/user/user.json",
+    "title": "User's information",
+    "properties": {
+        "id": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 18446744073709551615,
+            "description": "User ID"
+        },
+        "name": {
+            "type": "string",
+            "description": "User's name"
+        },
+        "username": {
+            "type": "string"
+        },
+        "is_admin": {
+            "type": "boolean",
+            "description": "Whether the user is an admin"
+        }
+    },
+    "required": ["id", "name", "username", "is_admin"]
+}

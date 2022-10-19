@@ -1,0 +1,26 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "https://github.com/lifegpc/pixiv_downloader/raw/master/doc/api/auth/user/user.zh_CN.json",
+    "title": "用户信息",
+    "properties": {
+        "id": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 18446744073709551615,
+            "description": "用户ID"
+        },
+        "name": {
+            "type": "string",
+            "description": "用户名字"
+        },
+        "username": {
+            "type": "string",
+            "description": "用户名"
+        },
+        "is_admin": {
+            "type": "boolean",
+            "description": "用户是否为管理员"
+        }
+    },
+    "required": ["id", "name", "username", "is_admin"]
+}

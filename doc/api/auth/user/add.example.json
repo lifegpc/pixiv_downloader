@@ -1,0 +1,11 @@
+{
+    "$schema": "add.json",
+    "ok": true,
+    "code": 0,
+    "result": {
+        "id": 0,
+        "name": "John",
+        "username": "john",
+        "is_admin": true
+    }
+}

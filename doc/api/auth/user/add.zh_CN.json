@@ -1,0 +1,28 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "https://github.com/lifegpc/pixiv_downloader/raw/master/doc/api/auth/user/add.zh_CN.json",
+    "title": "返回结果",
+    "type": "object",
+    "properties": {
+        "ok": {
+            "description": "请求是否成功",
+            "type": "boolean"
+        },
+        "code": {
+            "description": "错误代码，如请求成功则为0",
+            "type": "integer"
+        },
+        "msg": {
+            "description": "错误信息",
+            "type": "string"
+        },
+        "debug_msg": {
+            "description": "调试用的错误信息"
+        },
+        "result": {
+            "$ref": "user.zh_CN.json",
+            "description": "新用户/被修改用户的信息"
+        }
+    },
+    "required": ["ok", "code"]
+}
