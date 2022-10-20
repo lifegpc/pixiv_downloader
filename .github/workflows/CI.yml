@@ -257,15 +257,32 @@ jobs:
       run: |
         SET PKG_CONFIG_PATH=%CD%\clib\lib\pkgconfig
         SET CMAKE_PREFIX_PATH=%CD%\clib
-        SET PATH=%PATH%;%CD%\clib\bin
+        SET PATH=%CD%\clib\bin;%PATH%
         SET OPENSSL_LIB_DIR=%CD%\clib\lib
         SET OPENSSL_INCLUDE_DIR=%CD%\clib\include
         cargo build --features all --profile release-with-debug -vv || exit 1
+    - name: Download lld-rust
+      continue-on-error: true
+      run: |
+        COPY /Y scripts\download_lld-rust.bat || exit 1
+        CALL download_lld-rust.bat || exit 1
+    - name: Package files
+      continue-on-error: true
+      run: |
+        SET PATH=%CD%\clib\bin;%PATH%
+        COPY /Y clib\ssl\cert.pem cert.pem
+        python scripts\pack_prog.py -o pixiv_downloader.7z -a cert.pem %CD%/target/release-with-debug/pixiv_downloader.exe || exit 1
+    - name: Upload files
+      continue-on-error: true
+      uses: actions/upload-artifact@v3
+      with:
+        name: pixiv_downloader
+        path: ./pixiv_downloader.7z
     - name: Test
       run: |
         SET PKG_CONFIG_PATH=%CD%\clib\lib\pkgconfig
         SET CMAKE_PREFIX_PATH=%CD%\clib
-        SET PATH=%PATH%;%CD%\clib\bin
+        SET PATH=%CD%\clib\bin;%PATH%
         SET OPENSSL_LIB_DIR=%CD%\clib\lib
         SET OPENSSL_INCLUDE_DIR=%CD%\clib\include
         cargo test --features all --profile release-with-debug --verbose -- --show-output || exit 1
