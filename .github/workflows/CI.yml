@@ -251,7 +251,8 @@ jobs:
         ./build_win_ffmpeg.sh || exit 1
     - name: Download certs
       run: |
-        CALL scripts\download_resource.bat -o "clib\ssl\cert.pem" https://curl.se/ca/cacert.pem || exit 1
+        COPY /Y scripts\download_certs.bat || exit 1
+        CALL download_certs.bat || exit 1
     - name: Build
       run: |
         SET PKG_CONFIG_PATH=%CD%\clib\lib\pkgconfig
