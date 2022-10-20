@@ -176,7 +176,7 @@ jobs:
       id: cache_key
       run: |
         cd scripts
-        python get_cache_key.py --prefix=win zlib pkgconf expat exiv2 openssl || exit 1
+        python get_cache_key.py --prefix=win zlib pkgconf expat exiv2 openssl libzip x264 ffmpeg || exit 1
     - name: Cache
       id: cache
       uses: actions/cache@v2
@@ -228,6 +228,27 @@ jobs:
       run: |
         COPY /Y scripts\build_win_openssl.bat || exit 1
         CALL build_win_openssl.bat || exit 1
+    - name: Build libzip
+      if: steps.cache.outputs.cache-hit != 'true'
+      run: |
+        COPY /Y scripts\build_win_libzip.bat || exit 1
+        CALL build_win_libzip.bat || exit 1
+    - name: Build x264
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: msys2 {0}
+      env:
+        MSYS2_PATH_TYPE: inherit
+      run: |
+        cp scripts/build_win_x264.sh -v ./ || exit 1
+        ./build_win_x264.sh || exit 1
+    - name: Build ffmpeg
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: msys2 {0}
+      env:
+        MSYS2_PATH_TYPE: inherit
+      run: |
+        cp scripts/build_win_ffmpeg.sh -v ./ || exit 1
+        ./build_win_ffmpeg.sh || exit 1
     - name: Build
       run: |
         SET PKG_CONFIG_PATH=%CD%\clib\lib\pkgconfig
@@ -235,4 +256,4 @@ jobs:
         SET PATH=%PATH%;%CD%\clib\bin
         SET OPENSSL_LIB_DIR=%CD%\clib\lib
         SET OPENSSL_INCLUDE_DIR=%CD%\clib\include
-        cargo build --features exif -vv || exit 1
+        cargo build --features all -vv || exit 1
