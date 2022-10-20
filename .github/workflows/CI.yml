@@ -216,7 +216,7 @@ jobs:
     - name: Build exiv2
       if: steps.cache.outputs.cache-hit != 'true'
       run: |
-        COPY /Y build_win_exiv2.bat || exit 1
+        COPY /Y scripts\build_win_exiv2.bat || exit 1
         CALL build_win_exiv2.bat || exit 1
     - name: Build openssl
       if: steps.cache.outputs.cache-hit != 'true'
