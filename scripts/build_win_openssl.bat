@@ -18,5 +18,6 @@ SET "PATH=%PREFIX%\bin;%PATH%"
 SET "INCLUDE=%PREFIX%\include;%INCLUDE%"
 SET "LIB=%PREFIX%\lib;%LIB%"
 nmake || EXIT /B %ERRORLEVEL%
-nmake install || EXIT /B %ERRORLEVEL%
+nmake install_sw || EXIT /B %ERRORLEVEL%
+nmake install_ssldirs || EXIT /B %ERRORLEVEL%
 ENDLOCAL

@@ -233,4 +233,6 @@ jobs:
         SET PKG_CONFIG_PATH=%CD%\clib\lib\pkgconfig
         SET CMAKE_PREFIX_PATH=%CD%\clib
         SET PATH=%PATH%;%CD%\clib\bin
+        SET OPENSSL_LIB_DIR=%CD%\clib\lib
+        SET OPENSSL_INCLUDE_DIR=%CD%\clib\include
         cargo build --features exif -vv || exit 1
