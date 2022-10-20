@@ -256,4 +256,12 @@ jobs:
         SET PATH=%PATH%;%CD%\clib\bin
         SET OPENSSL_LIB_DIR=%CD%\clib\lib
         SET OPENSSL_INCLUDE_DIR=%CD%\clib\include
-        cargo build --features all -vv || exit 1
+        cargo build --features all --profile release-with-debug -vv || exit 1
+    - name: Test
+      run: |
+        SET PKG_CONFIG_PATH=%CD%\clib\lib\pkgconfig
+        SET CMAKE_PREFIX_PATH=%CD%\clib
+        SET PATH=%PATH%;%CD%\clib\bin
+        SET OPENSSL_LIB_DIR=%CD%\clib\lib
+        SET OPENSSL_INCLUDE_DIR=%CD%\clib\include
+        cargo test --features all --profile release-with-debug --verbose -- --show-output || exit 1
