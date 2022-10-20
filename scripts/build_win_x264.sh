@@ -15,4 +15,4 @@ export PKGCONFIG='pkg-config --msvc --env-only'
     || exit 1
 make -j8 || exit 1
 make -j8 install || exit 1
-mv -v $PREFIX/lib/libx264.dll.lib $PREFIX/lib/x264.lib || exit 1
+mv -v $PREFIX/lib/libx264.dll.lib $PREFIX/lib/libx264.lib || exit 1
