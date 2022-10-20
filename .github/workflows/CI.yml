@@ -272,12 +272,19 @@ jobs:
         SET PATH=%CD%\clib\bin;%PATH%
         COPY /Y clib\ssl\cert.pem cert.pem
         python scripts\pack_prog.py -o pixiv_downloader.7z -a cert.pem %CD%/target/release-with-debug/pixiv_downloader.exe || exit 1
+        python scripts\pack_prog.py -o pixiv_downloader.pdb.7z -p %CD%/target/release-with-debug/pixiv_downloader.exe || exit 1
     - name: Upload files
       continue-on-error: true
       uses: actions/upload-artifact@v3
       with:
         name: pixiv_downloader
         path: ./pixiv_downloader.7z
+    - name: Upload pdb files
+      continue-on-error: true
+      uses: actions/upload-artifact@v3
+      with:
+        name: pixiv_downloader-pdb
+        path: ./pixiv_downloader.pdb.7z
     - name: Test
       run: |
         SET PKG_CONFIG_PATH=%CD%\clib\lib\pkgconfig
