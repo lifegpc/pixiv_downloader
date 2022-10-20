@@ -161,3 +161,71 @@ jobs:
         export "LIBRARY_PATH=$LIBRARY_PATH:`pwd`/clib/lib"
         export "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/clib/lib"
         cargo test --features all --verbose -- --show-output || exit 1
+  build-win:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: cmd
+    - name: Check Out
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+        submodules: true
+    - name: Get Cache Key
+      id: cache_key
+      run: |
+        cd scripts
+        python get_cache_key.py --prefix=win zlib pkgconf exiv2 openssl || exit 1
+    - name: Cache
+      id: cache
+      uses: actions/cache@v2
+      with:
+        path: clib/
+        key: win-${{ steps.cache_key.outputs.cache_key }}
+    - name: Install Ninja
+      run: |
+        python -m pip install --upgrade ninja
+    - name: Install Meson
+      if: steps.cache.outputs.cache-hit != 'true'
+      run: |
+        python -m pip install --upgrade meson
+    - name: Setup CL
+      if: steps.cache.outputs.cache-hit != 'true'
+      uses: ilammy/msvc-dev-cmd@v1
+    - name: Set up NASM
+      if: steps.cache.outputs.cache-hit != 'true'
+      uses: ilammy/setup-nasm@v1.3.0
+    - name: Setup MSYS2
+      if: steps.cache.outputs.cache-hit != 'true'
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        update: true
+        install: >-
+          base-devel
+    - name: Build zlib
+      if: steps.cache.outputs.cache-hit != 'true'
+      run: |
+        COPY /Y scripts\build_win_zlib.bat || exit 1
+        CALL build_win_zlib.bat || exit 1
+    - name: Build pkgconf
+      if: steps.cache.outputs.cache-hit != 'true'
+      run: |
+        COPY /Y scripts\build_win_pkgconf.bat || exit 1
+        CALL build_win_pkgconf.bat || exit 1
+    - name: Build exiv2
+      if: steps.cache.outputs.cache-hit != 'true'
+      run: |
+        COPY /Y build_win_exiv2.bat || exit 1
+        CALL build_win_exiv2.bat || exit 1
+    - name: Build openssl
+      if: steps.cache.outputs.cache-hit != 'true'
+      run: |
+        COPY /Y scripts\build_win_openssl.bat || exit 1
+        CALL build_win_openssl.bat || exit 1
+    - name: Build
+      run: |
+        SET PKG_CONFIG_PATH=%CD%\clib\lib\pkgconfig
+        SET CMAKE_PREFIX_PATH=%CD%\clib
+        SET PATH=%PATH%;%CD%\clib\bin
+        cargo build --features exif -vv || exit 1
