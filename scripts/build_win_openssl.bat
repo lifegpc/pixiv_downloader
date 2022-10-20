@@ -14,6 +14,6 @@ CALL %DOWNLOAD_RESOURCE% -o "openssl-3.0.5.tar.gz" "https://www.openssl.org/sour
 tar -xzvf "openssl-3.0.5.tar.gz" || EXIT /B %ERRORLEVEL%
 CD openssl-3.0.5 || EXIT /B 1
 perl Configure shared zlib-dynamic --prefix=%PREFIX% --openssldir=%OPENSSLDIR% || EXIT /B %ERRORLEVEL%
-nmake -j8 || EXIT /B %ERRORLEVEL%
+nmake || EXIT /B %ERRORLEVEL%
 nmake install || EXIT /B %ERRORLEVEL%
 ENDLOCAL
