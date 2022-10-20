@@ -176,7 +176,7 @@ jobs:
       id: cache_key
       run: |
         cd scripts
-        python get_cache_key.py --prefix=win zlib pkgconf exiv2 openssl || exit 1
+        python get_cache_key.py --prefix=win zlib pkgconf expat exiv2 openssl || exit 1
     - name: Cache
       id: cache
       uses: actions/cache@v2
@@ -213,6 +213,11 @@ jobs:
       run: |
         COPY /Y scripts\build_win_pkgconf.bat || exit 1
         CALL build_win_pkgconf.bat || exit 1
+    - name: Build expat
+      if: steps.cache.outputs.cache-hit != 'true'
+      run: |
+        COPY /Y scripts\build_win_expat.bat || exit 1
+        CALL build_win_expat.bat || exit 1
     - name: Build exiv2
       if: steps.cache.outputs.cache-hit != 'true'
       run: |
