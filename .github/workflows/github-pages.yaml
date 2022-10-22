@@ -80,7 +80,7 @@ jobs:
         run: |
           echo '<!DOCTYPE HTML><html><head><script>window.location.href="pixiv_downloader/"</script></head><body><a href="pixiv_downloader/">Content Moved</a></body></html>' > target/doc/index.html
       - name: Setup Pages
-        uses: actions/configure-pages@v1
+        uses: actions/configure-pages@v2
       - name: Upload documents
         uses: actions/upload-pages-artifact@v1
         with:
