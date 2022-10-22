@@ -16,7 +16,7 @@ jobs:
 
     steps:
     - name: Check Out
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Build
       run: cargo build -vv
     - name: Run tests
@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Check Out
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         fetch-depth: 0
         submodules: true
@@ -36,7 +36,7 @@ jobs:
         python3 get_cache_key.py exiv2 || exit 1
     - name: Cache
       id: cache
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: clib/
         key: ${{ runner.os }}-${{ steps.cache_key.outputs.cache_key }}
@@ -58,7 +58,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Check Out
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         fetch-depth: 0
         submodules: true
@@ -69,7 +69,7 @@ jobs:
         python3 get_cache_key.py libzip x264 ffmpeg || exit 1
     - name: Cache
       id: cache
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: clib/
         key: ${{ runner.os }}-${{ steps.cache_key.outputs.cache_key }}
@@ -102,7 +102,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Check Out
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Build
       run: cargo build --features server,db_sqlite -vv
     - name: Run tests
@@ -111,7 +111,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Check Out
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Build
       run: cargo build --features db_all -vv
     - name: Run tests
@@ -120,7 +120,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Check Out
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         fetch-depth: 0
         submodules: true
@@ -131,7 +131,7 @@ jobs:
         python3 get_cache_key.py exiv2 libzip x264 ffmpeg || exit 1
     - name: Cache
       id: cache
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: clib/
         key: ${{ runner.os }}-${{ steps.cache_key.outputs.cache_key }}
@@ -168,7 +168,7 @@ jobs:
         shell: cmd
     steps:
     - name: Check Out
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         fetch-depth: 0
         submodules: true
@@ -179,7 +179,7 @@ jobs:
         python get_cache_key.py --prefix=win zlib pkgconf expat exiv2 openssl libzip x264 ffmpeg || exit 1
     - name: Cache
       id: cache
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: clib/
         key: win-${{ steps.cache_key.outputs.cache_key }}
