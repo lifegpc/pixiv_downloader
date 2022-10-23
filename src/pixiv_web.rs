@@ -297,20 +297,3 @@ impl PixivWebClient {
         false
     }
 }
-
-impl Drop for PixivWebClient {
-    fn drop(&mut self) {
-        if self.is_inited() {
-            let c = get_helper().cookies();
-            if c.is_some() {
-                if !self.client.save_cookies(c.as_ref().unwrap()) {
-                    println!(
-                        "{} {}",
-                        gettext("Warning: Failed to save cookies file:"),
-                        c.as_ref().unwrap()
-                    );
-                }
-            }
-        }
-    }
-}

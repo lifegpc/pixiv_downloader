@@ -4,12 +4,7 @@ A pixiv downloader written in Rust.
 * Write exif metatata to picture.
 * Merge ugoira(GIF) pictures to video files.
 ### TODO
-- [ ] Add support for multiple threads download.
-- [ ] Batch download.
-- [ ] Fanbox support.
-### TODO - CVE
-- [ ] Remove parse_duration dependency which used in unittest.
-## Rust features flags
+See [issues](https://github.com/lifegpc/pixiv_downloader/issues) or [projects](https://github.com/lifegpc/pixiv_downloader/projects)
 ### all
 Enable all unconflicted features, this will enable [`exif`](#exif) and [`ugoira`](#ugoira).
 ### exif

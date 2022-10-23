@@ -1,14 +1,20 @@
+use crate::ext::replace::ReplaceWith;
+use crate::ext::rw_lock::GetRwLock;
 use crate::gettext;
 use chrono::DateTime;
 use chrono::TimeZone;
 use chrono::Utc;
 use reqwest::IntoUrl;
+use std::collections::HashMap;
+#[cfg(test)]
+use std::fs::create_dir;
 use std::fs::{remove_file, File};
 use std::io::BufRead;
 use std::io::BufReader;
 use std::io::Write;
 use std::iter::Iterator;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::sync::{Arc, RwLock};
 
 trait ToNetscapeStr {
     fn to_netscape_str(&self) -> &'static str;
@@ -311,16 +317,27 @@ impl CookieJar {
         self.cookies.clear();
     }
 
-    pub fn read(&mut self, file_name: &str) -> bool {
+    #[allow(dead_code)]
+    pub fn get<S: AsRef<str> + ?Sized>(&self, name: &S) -> Option<&Cookie> {
+        let name = name.as_ref();
+        for i in self.cookies.iter() {
+            if i._name == name {
+                return Some(i);
+            }
+        }
+        None
+    }
+
+    pub fn read<P: AsRef<Path> + ?Sized>(&mut self, file_name: &P) -> bool {
         self.cookies.clear();
-        let p = Path::new(file_name);
+        let p = file_name.as_ref();
         if !p.exists() {
-            println!("{} {}", gettext("Can not find file:"), file_name);
+            println!("{} {}", gettext("Can not find file:"), p.display());
             return false;
         }
         let re = File::open(p);
         if re.is_err() {
-            println!("{} {}", gettext("Can not open file:"), file_name);
+            println!("{} {}", gettext("Can not open file:"), p.display());
             return false;
         }
         let f = re.unwrap();
@@ -361,8 +378,8 @@ impl CookieJar {
         true
     }
 
-    pub fn save(&mut self, file_name: &str) -> bool {
-        let p = Path::new(file_name);
+    pub fn save<P: AsRef<Path> + ?Sized>(&mut self, file_name: &P) -> bool {
+        let p = file_name.as_ref();
         self.check_expired();
         if p.exists() {
             let re = remove_file(p);
@@ -389,5 +406,167 @@ impl CookieJar {
 
     pub fn iter(&self) -> core::slice::Iter<Cookie> {
         self.cookies.iter()
+    }
+}
+
+struct CookieJarManager {
+    jars: RwLock<HashMap<PathBuf, (Arc<RwLock<CookieJar>>, usize)>>,
+}
+
+impl CookieJarManager {
+    pub fn new() -> Self {
+        Self {
+            jars: RwLock::new(HashMap::new()),
+        }
+    }
+
+    pub fn get_cookie_jar<P: AsRef<Path> + ?Sized>(
+        &self,
+        path: &P,
+    ) -> Result<Arc<RwLock<CookieJar>>, ()> {
+        let path = path.as_ref().to_owned();
+        let mut jars = self.jars.get_mut();
+        match jars.get_mut(&path) {
+            Some((jar, count)) => {
+                *count += 1;
+                Ok(jar.clone())
+            }
+            None => {
+                let mut jar = CookieJar::new();
+                if jar.read(&path) {
+                    let jar = Arc::new(RwLock::new(jar));
+                    jars.insert(path, (jar.clone(), 1));
+                    Ok(jar)
+                } else {
+                    Err(())
+                }
+            }
+        }
+    }
+
+    pub fn drop_cookie_jar<P: AsRef<Path> + ?Sized>(&self, path: &P) {
+        let path = path.as_ref().to_owned();
+        let mut jars = self.jars.get_mut();
+        match jars.get_mut(&path) {
+            Some((jar, count)) => {
+                *count -= 1;
+                if *count == 0 {
+                    if !jar.get_mut().save(&path) {
+                        println!(
+                            "{} {}",
+                            gettext("Warning: Failed to save cookies file:"),
+                            path.display()
+                        );
+                    }
+                    jars.remove(&path);
+                }
+            }
+            None => {}
+        }
+    }
+}
+
+lazy_static! {
+    static ref MANAGER: CookieJarManager = CookieJarManager::new();
+}
+
+#[derive(Clone, Debug)]
+/// A cookie jar that make sure there are one cookie interface for a cookies file
+pub struct ManagedCookieJar {
+    pub jar: Arc<RwLock<CookieJar>>,
+    path: Option<PathBuf>,
+}
+
+impl ManagedCookieJar {
+    pub fn new() -> Self {
+        Self {
+            jar: Arc::new(RwLock::new(CookieJar::new())),
+            path: None,
+        }
+    }
+
+    pub fn read<P: AsRef<Path> + ?Sized>(&mut self, path: &P) -> bool {
+        let path = path.as_ref();
+        let path = match path.canonicalize() {
+            Ok(p) => p,
+            Err(_) => path.to_owned(),
+        };
+        match self.path.as_ref() {
+            Some(p) => {
+                if p == &path {
+                    return true;
+                }
+                MANAGER.drop_cookie_jar(p);
+                let jar = match MANAGER.get_cookie_jar(&path) {
+                    Ok(jar) => jar,
+                    Err(()) => return false,
+                };
+                self.jar.replace_with(jar);
+                self.path.replace(path);
+                true
+            }
+            None => {
+                let jar = match MANAGER.get_cookie_jar(&path) {
+                    Ok(jar) => jar,
+                    Err(()) => return false,
+                };
+                self.jar.replace_with(jar);
+                self.path.replace(path);
+                true
+            }
+        }
+    }
+}
+
+impl Drop for ManagedCookieJar {
+    fn drop(&mut self) {
+        if let Some(path) = self.path.as_ref() {
+            MANAGER.drop_cookie_jar(path);
+        }
+    }
+}
+
+#[test]
+fn test_managed_cookie_jar() {
+    let p = Path::new("./test");
+    if !p.exists() {
+        let re = create_dir("./test");
+        assert!(re.is_ok() || p.exists());
+    }
+    {
+        let mut jar = CookieJar::new();
+        jar.add(Cookie::new(
+            "test",
+            "de",
+            "example.com",
+            true,
+            "/",
+            false,
+            None,
+        ));
+        jar.save("./test/cookies.txt");
+    }
+    {
+        let mut jar = ManagedCookieJar::new();
+        assert!(jar.read("./test/cookies.txt"));
+        assert_eq!(jar.jar.get_mut().get("test").unwrap()._value, "de");
+        let mut jar2 = ManagedCookieJar::new();
+        assert!(jar2.read("./test/cookies.txt"));
+        jar2.jar.get_mut().add(Cookie::new(
+            "test2",
+            "de",
+            "example.com",
+            true,
+            "/",
+            false,
+            None,
+        ));
+        assert_eq!(jar.jar.get_mut().get("test2").unwrap()._value, "de");
+    }
+    {
+        let mut jar = CookieJar::new();
+        assert!(jar.read("./test/cookies.txt"));
+        assert_eq!(jar.get("test").unwrap()._value, "de");
+        assert_eq!(jar.get("test2").unwrap()._value, "de");
     }
 }

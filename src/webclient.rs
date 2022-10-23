@@ -1,5 +1,5 @@
 use crate::cookies::Cookie;
-use crate::cookies::CookieJar;
+use crate::cookies::ManagedCookieJar;
 use crate::ext::atomic::AtomicQuick;
 use crate::ext::json::ToJson;
 use crate::ext::rw_lock::GetRwLock;
@@ -59,10 +59,10 @@ impl ToHeaders for JsonValue {
 /// * `c` - Cookies
 /// * `url` - URL
 pub fn gen_cookie_header<U: IntoUrl>(c: &WebClient, url: U) -> String {
-    c.get_cookies_as_mut().check_expired();
+    c.get_cookies_as_mut().jar.get_mut().check_expired();
     let mut s = String::from("");
     let u = url.as_str();
-    for a in c.get_cookies().iter() {
+    for a in c.get_cookies().jar.get_ref().iter() {
         if a.matched(u) {
             if s.len() > 0 {
                 s += " ";
@@ -81,7 +81,7 @@ pub struct WebClient {
     /// HTTP Headers
     headers: RwLock<HashMap<String, String>>,
     /// Cookies
-    cookies: RwLock<CookieJar>,
+    cookies: RwLock<ManagedCookieJar>,
     /// Verbose logging
     verbose: Arc<AtomicBool>,
     /// Retry times, 0 means disable, < 0 means always retry
@@ -98,18 +98,18 @@ impl WebClient {
         Self {
             client,
             headers: RwLock::new(HashMap::new()),
-            cookies: RwLock::new(CookieJar::new()),
+            cookies: RwLock::new(ManagedCookieJar::new()),
             verbose: Arc::new(AtomicBool::new(false)),
             retry: Arc::new(AtomicI64::new(3)),
             retry_interval: RwLock::new(None),
         }
     }
 
-    pub fn get_cookies_as_mut<'a>(&'a self) -> RwLockWriteGuard<'a, CookieJar> {
+    pub fn get_cookies_as_mut<'a>(&'a self) -> RwLockWriteGuard<'a, ManagedCookieJar> {
         self.cookies.get_mut()
     }
 
-    pub fn get_cookies<'a>(&'a self) -> RwLockReadGuard<'a, CookieJar> {
+    pub fn get_cookies<'a>(&'a self) -> RwLockReadGuard<'a, ManagedCookieJar> {
         self.cookies.get_ref()
     }
 
@@ -153,7 +153,7 @@ impl WebClient {
                     let c = Cookie::from_set_cookie(u.as_str(), val);
                     match c {
                         Some(c) => {
-                            self.get_cookies_as_mut().add(c);
+                            self.get_cookies_as_mut().jar.get_mut().add(c);
                         }
                         None => {
                             println!("{}", gettext("Failed to parse Set-Cookie header."));
@@ -177,17 +177,9 @@ impl WebClient {
         let mut c = self.get_cookies_as_mut();
         let r = c.read(file_name);
         if !r {
-            c.clear();
+            c.jar.get_mut().clear();
         }
         r
-    }
-
-    /// Save cookies to file
-    /// * `file_name`: File name
-    ///
-    /// returns true if saved successfully.
-    pub fn save_cookies(&self, file_name: &str) -> bool {
-        self.get_cookies_as_mut().save(file_name)
     }
 
     /// Set new HTTP header
