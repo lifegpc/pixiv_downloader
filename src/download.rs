@@ -277,7 +277,11 @@ pub async fn download_artwork(
                 tasks
                     .add_task(download_file(
                         dh,
-                        Some(get_progress_bar()),
+                        if helper.enable_multi_progress_bar() {
+                            Some(get_progress_bar())
+                        } else {
+                            None
+                        },
                         Arc::clone(&base),
                     ))
                     .await;
@@ -346,7 +350,6 @@ pub async fn download_artwork(
     if pages_data.is_some() && helper.download_multiple_files() {
         let mut np = 0u16;
         let pages_data = pages_data.as_ref().unwrap();
-        let progress_bars = get_progress_bar();
         let tasks = TaskManager::default();
         let mut re: Result<(), PixivDownloaderError> = Ok(());
         for page in pages_data.members() {
@@ -362,7 +365,11 @@ pub async fn download_artwork(
                 .add_task(download_artwork_link(
                     url.unwrap().to_owned(),
                     np,
-                    Some(Arc::clone(&progress_bars)),
+                    if helper.enable_multi_progress_bar() {
+                        Some(get_progress_bar())
+                    } else {
+                        None
+                    },
                     Arc::clone(&datas),
                     Arc::clone(&base),
                 ))
@@ -392,7 +399,11 @@ pub async fn download_artwork(
                 .add_task(download_artwork_link(
                     link.to_owned(),
                     np,
-                    Some(get_progress_bar()),
+                    if helper.enable_multi_progress_bar() {
+                        Some(get_progress_bar())
+                    } else {
+                        None
+                    },
                     Arc::clone(&datas),
                     Arc::clone(&base),
                 ))
@@ -423,7 +434,11 @@ pub async fn download_artwork(
             .add_task(download_artwork_link(
                 link.to_owned(),
                 0,
-                Some(get_progress_bar()),
+                if helper.enable_multi_progress_bar() {
+                    Some(get_progress_bar())
+                } else {
+                    None
+                },
                 Arc::clone(&datas),
                 Arc::clone(&base),
             ))
@@ -610,7 +625,11 @@ pub async fn download_fanbox_post(
                             .add_task(download_fanbox_image(
                                 dh,
                                 np,
-                                Some(get_progress_bar()),
+                                if helper.enable_multi_progress_bar() {
+                                    Some(get_progress_bar())
+                                } else {
+                                    None
+                                },
                                 Arc::clone(&datas),
                                 Arc::clone(&base),
                             ))
@@ -675,7 +694,11 @@ pub async fn download_fanbox_post(
                 tasks
                     .add_task(download_file(
                         dh,
-                        Some(get_progress_bar()),
+                        if helper.enable_multi_progress_bar() {
+                            Some(get_progress_bar())
+                        } else {
+                            None
+                        },
                         Arc::clone(&base),
                     ))
                     .await;
@@ -705,7 +728,11 @@ pub async fn download_fanbox_post(
                     .add_task(download_fanbox_image(
                         dh,
                         np,
-                        Some(get_progress_bar()),
+                        if helper.enable_multi_progress_bar() {
+                            Some(get_progress_bar())
+                        } else {
+                            None
+                        },
                         Arc::clone(&datas),
                         Arc::clone(&base),
                     ))
@@ -821,7 +848,11 @@ pub async fn download_fanbox_creator_info(
                     .add_task(download_fanbox_image(
                         dh,
                         np,
-                        Some(get_progress_bar()),
+                        if helper.enable_multi_progress_bar() {
+                            Some(get_progress_bar())
+                        } else {
+                            None
+                        },
                         Arc::clone(&fdata),
                         Arc::clone(&base),
                     ))
@@ -844,7 +875,11 @@ pub async fn download_fanbox_creator_info(
                     .add_task(download_fanbox_image(
                         dh,
                         np,
-                        Some(get_progress_bar()),
+                        if helper.enable_multi_progress_bar() {
+                            Some(get_progress_bar())
+                        } else {
+                            None
+                        },
                         Arc::clone(&fdata),
                         Arc::clone(&base),
                     ))

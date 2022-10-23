@@ -149,6 +149,11 @@ impl OptHelper {
         self.retry_interval()
     }
 
+    /// Whether to enable multiple progress bars.
+    pub fn enable_multi_progress_bar(&self) -> bool {
+        self.download_multiple_files() && self.max_download_tasks() > 1
+    }
+
     #[cfg(feature = "ugoira")]
     /// Return whether to force yuv420p as output pixel format when converting ugoira(GIF) to video.
     pub fn force_yuv420p(&self) -> bool {
