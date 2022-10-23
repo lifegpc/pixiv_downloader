@@ -1,8 +1,9 @@
-#[cfg(feature = "server")]
-use super::super::{PixivArtwork, PixivArtworkLock, Token, User};
+use super::super::{PixivArtwork, PixivArtworkLock};
 use super::super::{
     PixivDownloaderDb, PixivDownloaderDbConfig, PixivDownloaderDbError, PixivDownloaderSqliteConfig,
 };
+#[cfg(feature = "server")]
+use super::super::{Token, User};
 use super::SqliteError;
 use bytes::BytesMut;
 use chrono::{DateTime, Utc};
