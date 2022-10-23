@@ -5,6 +5,7 @@ A pixiv downloader written in Rust.
 * Merge ugoira(GIF) pictures to video files.
 ### TODO
 See [issues](https://github.com/lifegpc/pixiv_downloader/issues) or [projects](https://github.com/lifegpc/pixiv_downloader/projects)
+## Rust features flags
 ### all
 Enable all unconflicted features, this will enable [`exif`](#exif) and [`ugoira`](#ugoira).
 ### exif
