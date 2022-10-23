@@ -1,5 +1,6 @@
 from argparse import ArgumentParser
 from hashlib import sha256 as _sha256
+from os import environ
 from os.path import exists
 import sys
 from time import gmtime, time, strftime
@@ -55,7 +56,12 @@ try:
         h = hash_file(i, args.prefix)
         d += f"{i}={dt}:{h}\n"
     print(d)
-    print(f"::set-output name=cache_key::{sha256(d)}")
+    github_output = environ.get('GITHUB_OUTPUT', '')
+    if github_output != '':
+        with open(github_output, 'a') as f:
+            f.write(f"cache_key={sha256(d)}\n")
+    else:
+        print(f"::set-output name=cache_key::{sha256(d)}")
 except Exception:
     from traceback import print_exc
     from sys import exit
