@@ -1,11 +1,12 @@
+#[cfg(feature = "server")]
+use super::super::{PixivArtwork, PixivArtworkLock, Token, User};
 use super::super::{
     PixivDownloaderDb, PixivDownloaderDbConfig, PixivDownloaderDbError, PixivDownloaderSqliteConfig,
 };
-#[cfg(feature = "server")]
-use super::super::{Token, User};
 use super::SqliteError;
 use bytes::BytesMut;
 use chrono::{DateTime, Utc};
+use flagset::FlagSet;
 use futures_util::lock::Mutex;
 use rusqlite::{Connection, OpenFlags, OptionalExtension, Transaction};
 use std::collections::HashMap;
@@ -24,7 +25,6 @@ const FILES_TABLE: &'static str = "CREATE TABLE files (
 id INTEGER PRIMARY KEY AUTOINCREMENT,
 path TEXT,
 last_modified DATETIME,
-etag TEXT,
 url TEXT
 );";
 const PIXIV_ARTWORK_TAGS_TABLE: &'static str = "CREATE TABLE pixiv_artwork_tags (
@@ -37,7 +37,9 @@ title TEXT,
 author TEXT,
 uid INT,
 description TEXT,
-count INT
+count INT,
+is_nsfw BOOLEAN,
+lock INT
 );";
 const PIXIV_FILES_TABLE: &'static str = "CREATE TABLE pixiv_files (
 id INT,
@@ -75,13 +77,40 @@ v3 INT,
 v4 INT,
 PRIMARY KEY (id)
 );";
-const VERSION: [u8; 4] = [1, 0, 0, 4];
+const VERSION: [u8; 4] = [1, 0, 0, 5];
 
 pub struct PixivDownloaderSqlite {
     db: Mutex<Connection>,
 }
 
 impl PixivDownloaderSqlite {
+    fn _add_pixiv_artwork(
+        ts: &Transaction,
+        id: u64,
+        title: &str,
+        author: &str,
+        uid: u64,
+        description: &str,
+        count: u64,
+        is_nsfw: bool,
+        lock: &FlagSet<PixivArtworkLock>,
+    ) -> Result<(), SqliteError> {
+        ts.execute(
+            "INSERT INTO pixiv_artworks (id, title, author, uid, description, count, is_nsfw, lock) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                id,
+                title,
+                author,
+                uid,
+                description,
+                count,
+                is_nsfw,
+                lock.bits(),
+            ),
+        )?;
+        Ok(())
+    }
+
     #[cfg(feature = "server")]
     async fn _add_root_user(
         &self,
@@ -172,6 +201,12 @@ impl PixivDownloaderSqlite {
                     tx.execute(TOKEN_TABLE, [])?;
                     tx.execute(USERS_TABLE, [])?;
                 }
+                if db_version < [1, 0, 0, 5] {
+                    tx.execute("DROP TABLE files;", [])?;
+                    tx.execute(FILES_TABLE, [])?;
+                    tx.execute("ALTER TABLE pixiv_artworks ADD is_nsfw BOOLEAN;", [])?;
+                    tx.execute("ALTER TABLE pixiv_artworks ADD lock INT;", [])?;
+                }
                 self._write_version(&tx)?;
                 tx.commit()?;
             }
@@ -256,6 +291,35 @@ impl PixivDownloaderSqlite {
             tables.insert(row.get(0)?, ());
         }
         Ok(tables)
+    }
+
+    async fn get_pixiv_artwork(&self, id: u64) -> Result<Option<PixivArtwork>, SqliteError> {
+        let con = self.db.lock().await;
+        Ok(con
+            .query_row("SELECT * FROM pixiv_artworks WHERE id = ?;", [id], |row| {
+                let lock: u8 = row.get(7)?;
+                Ok(PixivArtwork {
+                    id: row.get(0)?,
+                    title: row.get(1)?,
+                    author: row.get(2)?,
+                    uid: row.get(3)?,
+                    description: row.get(4)?,
+                    count: row.get(5)?,
+                    is_nsfw: row.get(6)?,
+                    lock: match FlagSet::<PixivArtworkLock>::new(lock) {
+                        Ok(f) => f,
+                        Err(_) => {
+                            return Err(rusqlite::Error::FromSqlConversionFailure(
+                                7,
+                                rusqlite::types::Type::Integer,
+                                "Failed to parse lock bit.".into(),
+                            )
+                            .into())
+                        }
+                    },
+                })
+            })
+            .optional()?)
     }
 
     #[cfg(feature = "server")]
@@ -555,6 +619,36 @@ impl PixivDownloaderDb for PixivDownloaderSqlite {
         }
     }
 
+    async fn add_pixiv_artwork(
+        &self,
+        id: u64,
+        title: &str,
+        author: &str,
+        uid: u64,
+        description: &str,
+        count: u64,
+        is_nsfw: bool,
+        lock: &FlagSet<PixivArtworkLock>,
+    ) -> Result<PixivArtwork, PixivDownloaderDbError> {
+        {
+            let mut con = self.db.lock().await;
+            let mut ts = con.transaction()?;
+            Self::_add_pixiv_artwork(
+                &mut ts,
+                id,
+                title,
+                author,
+                uid,
+                description,
+                count,
+                is_nsfw,
+                lock,
+            )?;
+            ts.commit()?;
+        }
+        Ok(self.get_pixiv_artwork(id).await?.expect("User not found:"))
+    }
+
     #[cfg(feature = "server")]
     async fn add_root_user(
         &self,
@@ -642,6 +736,13 @@ impl PixivDownloaderDb for PixivDownloaderSqlite {
         Self::_extend_token(&mut tx, id, expired_at)?;
         tx.commit()?;
         Ok(())
+    }
+
+    async fn get_pixiv_artwork(
+        &self,
+        id: u64,
+    ) -> Result<Option<PixivArtwork>, PixivDownloaderDbError> {
+        Ok(self.get_pixiv_artwork(id).await?)
     }
 
     #[cfg(feature = "server")]

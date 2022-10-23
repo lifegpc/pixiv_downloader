@@ -1,8 +1,10 @@
 use super::PixivDownloaderDbConfig;
 use super::PixivDownloaderDbError;
+use super::{PixivArtwork, PixivArtworkLock};
 #[cfg(feature = "server")]
 use super::{Token, User};
 use chrono::{DateTime, Utc};
+use flagset::FlagSet;
 
 #[async_trait]
 pub trait PixivDownloaderDb {
@@ -13,6 +15,26 @@ pub trait PixivDownloaderDb {
     ) -> Result<Self, PixivDownloaderDbError>
     where
         Self: Sized + Send + Sync;
+    /// Add/Update an artwork to the database
+    /// * `id` - The artwork ID
+    /// * `title` - The artwork title
+    /// * `author` - The artwork author
+    /// * `uid` - The author's ID
+    /// * `description` - The artwork description
+    /// * `count` - The artwork's page count
+    /// * `is_nsfw` - Whether the artwork is NSFW
+    /// * `lock` - Specify which part should not be updated.
+    async fn add_pixiv_artwork(
+        &self,
+        id: u64,
+        title: &str,
+        author: &str,
+        uid: u64,
+        description: &str,
+        count: u64,
+        is_nsfw: bool,
+        lock: &FlagSet<PixivArtworkLock>,
+    ) -> Result<PixivArtwork, PixivDownloaderDbError>;
     #[cfg(feature = "server")]
     /// Add root user to database.
     /// * `name` - User name
@@ -73,6 +95,12 @@ pub trait PixivDownloaderDb {
         id: u64,
         expired_at: &DateTime<Utc>,
     ) -> Result<(), PixivDownloaderDbError>;
+    /// Get an artwork from database
+    /// * `id` - The artwork ID
+    async fn get_pixiv_artwork(
+        &self,
+        id: u64,
+    ) -> Result<Option<PixivArtwork>, PixivDownloaderDbError>;
     #[cfg(feature = "server")]
     /// Get token by ID
     /// * `id` - The token ID

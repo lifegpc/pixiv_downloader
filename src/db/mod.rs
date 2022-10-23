@@ -1,4 +1,5 @@
 pub mod config;
+pub mod pixiv_artworks;
 #[cfg(feature = "db_sqlite")]
 pub mod sqlite;
 #[cfg(feature = "server")]
@@ -11,6 +12,7 @@ pub use config::check_db_config;
 pub use config::PixivDownloaderDbConfig;
 #[cfg(feature = "db_sqlite")]
 pub use config::PixivDownloaderSqliteConfig;
+pub use pixiv_artworks::{PixivArtwork, PixivArtworkLock};
 #[cfg(feature = "db_sqlite")]
 pub use sqlite::{PixivDownloaderSqlite, SqliteError};
 #[cfg(feature = "server")]
