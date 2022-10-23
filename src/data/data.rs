@@ -18,6 +18,8 @@ pub struct PixivData {
     /// The author
     pub author: Option<String>,
     pub description: Option<String>,
+    /// Tags (Original, translated)
+    pub tags: Option<Vec<(String, Option<String>)>>,
 }
 
 impl PixivData {
@@ -31,6 +33,7 @@ impl PixivData {
             title: None,
             author: None,
             description: None,
+            tags: None,
         })
     }
 
@@ -84,6 +87,19 @@ impl PixivData {
                 }
             }
         }
+        let mut tags = Vec::new();
+        for tag in value["tags"]["tags"].members() {
+            if let Some(ori) = tag["tag"].as_str() {
+                tags.push((
+                    ori.to_owned(),
+                    match tag["translation"]["en"].as_str() {
+                        Some(s) => Some(s.to_owned()),
+                        None => None,
+                    },
+                ));
+            }
+        }
+        self.tags.replace(tags);
     }
 }
 

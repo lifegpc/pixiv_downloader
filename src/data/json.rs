@@ -105,6 +105,23 @@ impl From<&PixivData> for JSONDataFile {
                 f.add("parsed_description", pd.unwrap()).unwrap();
             }
         }
+        match p.tags.as_ref() {
+            Some(tags) => {
+                let mut t = JsonValue::new_array();
+                for tag in tags {
+                    t.push(json::array![
+                        tag.0.as_str(),
+                        match &tag.1 {
+                            Some(s) => JsonValue::String(s.to_owned()),
+                            None => JsonValue::Null,
+                        }
+                    ])
+                    .unwrap();
+                }
+                f.add("tags", t).unwrap();
+            }
+            None => {}
+        }
         f
     }
 }
