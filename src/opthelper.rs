@@ -85,6 +85,23 @@ impl OptHelper {
         }
     }
 
+    /// The base directory to save downloaded files
+    pub fn download_base(&self) -> String {
+        match self.opt.get_ref().download_base {
+            Some(ref r) => {
+                return r.clone();
+            }
+            None => {}
+        }
+        match self.settings.get_ref().get_str("download-base") {
+            Some(r) => {
+                return r;
+            }
+            None => {}
+        }
+        String::from("./")
+    }
+
     /// Whether to download multiple posts/artworks at the same time.
     pub fn download_multiple_posts(&self) -> bool {
         match self.opt.get_ref().download_multiple_posts {

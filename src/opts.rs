@@ -106,6 +106,8 @@ pub struct CommandOpts {
     #[cfg(feature = "ugoira")]
     /// The x264 profile when converting ugoira(GIF) to video.
     pub x264_profile: Option<X264Profile>,
+    /// The base directory to save downloaded files.
+    pub download_base: Option<String>,
 }
 
 impl CommandOpts {
@@ -141,6 +143,7 @@ impl CommandOpts {
             force_yuv420p: None,
             #[cfg(feature = "ugoira")]
             x264_profile: None,
+            download_base: None,
         }
     }
 
@@ -510,6 +513,12 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         HasArg::Maybe,
         getopts::Occur::Optional,
     );
+    opts.optopt(
+        "d",
+        "download-base",
+        gettext("The base directory to download files."),
+        "DIR",
+    );
     let result = match opts.parse(&argv[1..]) {
         Ok(m) => m,
         Err(err) => {
@@ -793,6 +802,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
             return None;
         }
     }
+    re.as_mut().unwrap().download_base = result.opt_str("download-base");
     re
 }
 

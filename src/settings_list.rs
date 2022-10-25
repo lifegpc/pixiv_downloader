@@ -53,6 +53,7 @@ pub fn get_settings_list() -> Vec<SettingDes> {
         SettingDes::new("x264-profile", gettext("The x264 profile when converting ugoira(GIF) to video."), JsonValueType::Str, Some(check_x264_profile)).unwrap(),
         #[cfg(feature = "db")]
         SettingDes::new("db", gettext("Database settings."), JsonValueType::Object, Some(check_db_config)).unwrap(),
+        SettingDes::new("download-base", gettext("The base directory to save downloaded files."), JsonValueType::Str, None).unwrap(),
     ]
 }
 

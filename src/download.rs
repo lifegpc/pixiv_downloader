@@ -237,7 +237,7 @@ pub async fn download_artwork(
             "Failed to get pages' data.",
         )));
     }
-    let base = Arc::new(PathBuf::from("."));
+    let base = Arc::new(PathBuf::from(helper.download_base()));
     let json_file = base.join(format!("{}.json", id));
     let mut datas = PixivData::new(id).unwrap();
     if ajax_ver {
