@@ -567,7 +567,7 @@ pub async fn download_fanbox_post(
         return Ok(());
     }
     let base = Arc::new(
-        PathBuf::from(".")
+        PathBuf::from(helper.download_base())
             .join(&id.creator_id)
             .join(format!("{}", id.post_id)),
     );
