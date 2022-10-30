@@ -104,6 +104,8 @@ pub struct DownloaderInternal<
     part_size: AtomicU32,
     /// Is outter [Downloader] dropped
     dropped: AtomicBool,
+    /// true if the progress bar has length
+    progress_has_length: AtomicBool,
 }
 
 impl DownloaderInternal<LocalFile> {
@@ -192,6 +194,7 @@ impl DownloaderInternal<LocalFile> {
             max_threads: AtomicU64::new(8),
             part_size: AtomicU32::new(0x10000),
             dropped: AtomicBool::new(false),
+            progress_has_length: AtomicBool::new(false),
         }))
     }
 }
@@ -334,7 +337,12 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + SetLen> Dow
     /// Advances the position of the progress bar by `delta`
     pub fn inc_progress_bar(&self, delta: u64) {
         match self.progress.get_ref().deref() {
-            Some(p) => p.inc(delta),
+            Some(p) => {
+                if !self.progress_has_length.qload() {
+                    p.inc_length(delta);
+                }
+                p.inc(delta);
+            }
             None => {}
         }
     }
@@ -436,6 +444,7 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + SetLen> Dow
     #[inline]
     /// Sets the length of the progress bar
     pub fn set_progress_bar_length(&self, length: u64) {
+        self.progress_has_length.qstore(true);
         match self.progress.get_ref().deref() {
             Some(p) => p.set_length(length),
             None => {}
@@ -446,7 +455,12 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + SetLen> Dow
     /// Sets the position of the progress bar
     pub fn set_progress_bar_position(&self, pos: u64) {
         match self.progress.get_ref().deref() {
-            Some(p) => p.set_position(pos),
+            Some(p) => {
+                if !self.progress_has_length.qload() {
+                    p.set_length(pos);
+                }
+                p.set_position(pos);
+            }
             None => {}
         }
     }
