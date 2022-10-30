@@ -154,6 +154,9 @@ impl Main {
                 }
                 return 0;
             }
+            Command::DownloadFile => {
+                return self.download_files().await;
+            }
             Command::None => {
                 return 0;
             }

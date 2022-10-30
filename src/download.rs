@@ -135,6 +135,49 @@ impl Main {
         }
         re
     }
+
+    pub async fn download_files(&mut self) -> i32 {
+        let tasks = TaskManager::<Result<(), PixivDownloaderError>>::default();
+        let helper = get_helper();
+        let base = Arc::new(PathBuf::from(helper.download_base()));
+        let enable_multi_progress_bar = helper.enable_multi_progress_bar();
+        for url in self.cmd.as_ref().unwrap().urls.as_ref().unwrap().iter() {
+            let url = url.clone();
+            let base = Arc::clone(&base);
+            tasks
+                .add_task(async move {
+                    let d = DownloaderHelper::builder(url)?.build();
+                    download_file(
+                        d,
+                        if enable_multi_progress_bar {
+                            Some(get_progress_bar())
+                        } else {
+                            None
+                        },
+                        base.clone(),
+                    )
+                    .await
+                })
+                .await;
+        }
+        let mut re = 0;
+        tasks.join().await;
+        let tasks = tasks.take_finished_tasks();
+        for task in tasks {
+            let result = match task.await {
+                Ok(result) => result,
+                Err(e) => Err(PixivDownloaderError::from(e)),
+            };
+            match result {
+                Ok(_) => {}
+                Err(e) => {
+                    println!("{} {}", gettext("Failed to download url:"), e);
+                    re = 1;
+                }
+            }
+        }
+        re
+    }
 }
 
 /// Download artwork link

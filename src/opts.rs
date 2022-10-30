@@ -25,6 +25,8 @@ pub enum Command {
     Config,
     /// Download an artwork
     Download,
+    /// Download files from urls
+    DownloadFile,
     #[cfg(feature = "server")]
     /// Run as a server
     Server,
@@ -108,6 +110,8 @@ pub struct CommandOpts {
     pub x264_profile: Option<X264Profile>,
     /// The base directory to save downloaded files.
     pub download_base: Option<String>,
+    /// Urls want to download
+    pub urls: Option<Vec<String>>,
 }
 
 impl CommandOpts {
@@ -144,6 +148,7 @@ impl CommandOpts {
             #[cfg(feature = "ugoira")]
             x264_profile: None,
             download_base: None,
+            urls: None,
         }
     }
 
@@ -158,6 +163,9 @@ impl CommandOpts {
         #[cfg(feature = "server")]
         if cmd == "server" || cmd == "s" {
             return Some(CommandOpts::new(Command::Server));
+        }
+        if cmd == "download-file" || cmd == "df" {
+            return Some(CommandOpts::new(Command::DownloadFile));
         }
         None
     }
@@ -193,7 +201,8 @@ pub fn print_usage(prog: &str, opts: &Options) {
         "{}
 {} download/d [options] <id/url> [<id/url>]  {}
 {} config fix [options] {}
-{} config help [options] {}",
+{} config help [options] {}
+{} download-file/df [options] <url> [<url>] {}",
         gettext("Usage:"),
         prog,
         gettext("Download an artwork"),
@@ -201,6 +210,8 @@ pub fn print_usage(prog: &str, opts: &Options) {
         gettext("Fix the config file"),
         prog,
         gettext("Print all available settings"),
+        prog,
+        gettext("Download files from url"),
     );
     #[cfg(feature = "server")]
     {
@@ -586,6 +597,18 @@ pub fn parse_cmd() -> Option<CommandOpts> {
                     }
                 }
             }
+        }
+        Command::DownloadFile => {
+            let mut urls = Vec::new();
+            for url in result.free.iter().skip(1) {
+                urls.push(url.to_owned());
+            }
+            if urls.is_empty() {
+                println!("{}", gettext("No URL specified."));
+                print_usage(&argv[0], &opts);
+                return None;
+            }
+            re.as_mut().unwrap().urls.replace(urls);
         }
         Command::None => {}
     }
