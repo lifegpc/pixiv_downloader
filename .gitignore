@@ -4,3 +4,4 @@
 test/
 .workspace/
 expand.rs
+*.log

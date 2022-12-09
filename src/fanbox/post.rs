@@ -1009,6 +1009,242 @@ impl ExifDataSource for FanboxPostImage {
     }
 }
 
+/// Fanbox text post
+pub struct FanboxPostText {
+    /// Raw data
+    pub data: JsonValue,
+    /// The api client
+    client: Arc<FanboxClientInternal>,
+}
+
+impl FanboxPostText {
+    #[inline]
+    pub fn text(&self) -> Option<&str> {
+        self.data["body"]["text"].as_str()
+    }
+
+    #[inline]
+    pub fn comment_count(&self) -> Option<u64> {
+        self.data["commentCount"].as_u64()
+    }
+
+    #[inline]
+    pub fn comment_list(&self) -> Option<FanboxCommentList> {
+        FanboxCommentList::new(&self.data["commentList"], Arc::clone(&self.client))
+    }
+
+    #[inline]
+    pub fn cover_image_url(&self) -> Option<&str> {
+        self.data["coverImageUrl"].as_str()
+    }
+
+    #[inline]
+    pub fn creator_id(&self) -> Option<&str> {
+        self.data["creatorId"].as_str()
+    }
+
+    #[inline]
+    pub fn excerpt(&self) -> Option<&str> {
+        self.data["excerpt"].as_str()
+    }
+
+    #[inline]
+    pub fn fee_required(&self) -> Option<u64> {
+        self.data["feeRequired"].as_u64()
+    }
+
+    #[inline]
+    pub fn has_adult_content(&self) -> Option<bool> {
+        self.data["hasAdultContent"].as_bool()
+    }
+
+    #[inline]
+    pub fn id(&self) -> Option<u64> {
+        parse_u64(&self.data["id"])
+    }
+
+    #[inline]
+    pub fn image_for_share(&self) -> Option<&str> {
+        self.data["imageForShare"].as_str()
+    }
+
+    #[inline]
+    pub fn is_liked(&self) -> Option<bool> {
+        self.data["isLiked"].as_bool()
+    }
+
+    #[inline]
+    pub fn is_restricted(&self) -> Option<bool> {
+        self.data["isRestricted"].as_bool()
+    }
+
+    #[inline]
+    pub fn like_count(&self) -> Option<u64> {
+        self.data["likeCount"].as_u64()
+    }
+
+    #[inline]
+    /// Create a new instance
+    pub fn new(data: &JsonValue, client: Arc<FanboxClientInternal>) -> Self {
+        Self {
+            data: data.clone(),
+            client,
+        }
+    }
+
+    #[inline]
+    pub fn next_post(&self) -> Option<FanboxPostRef> {
+        let obj = &self.data["nextPost"];
+        if obj.is_object() {
+            Some(FanboxPostRef::new(obj, Arc::clone(&self.client)))
+        } else {
+            None
+        }
+    }
+
+    #[inline]
+    pub fn prev_post(&self) -> Option<FanboxPostRef> {
+        let obj = &self.data["prevPost"];
+        if obj.is_object() {
+            Some(FanboxPostRef::new(obj, Arc::clone(&self.client)))
+        } else {
+            None
+        }
+    }
+
+    #[inline]
+    pub fn published_datetime(&self) -> Option<&str> {
+        self.data["publishedDatetime"].as_str()
+    }
+
+    #[inline]
+    pub fn tags(&self) -> Option<Vec<&str>> {
+        let mut list = Vec::new();
+        let tags = &self.data["tags"];
+        if tags.is_array() {
+            for i in tags.members() {
+                match i.as_str() {
+                    Some(tag) => {
+                        list.push(tag);
+                    }
+                    None => {
+                        return None;
+                    }
+                }
+            }
+            Some(list)
+        } else {
+            None
+        }
+    }
+
+    #[inline]
+    pub fn title(&self) -> Option<&str> {
+        self.data["title"].as_str()
+    }
+
+    #[inline]
+    pub fn updated_datetime(&self) -> Option<&str> {
+        self.data["updatedDatetime"].as_str()
+    }
+
+    #[inline]
+    pub fn user_icon_url(&self) -> Option<&str> {
+        self.data["user"]["iconUrl"].as_str()
+    }
+
+    #[inline]
+    pub fn user_id(&self) -> Option<u64> {
+        parse_u64(&self.data["user"]["userId"])
+    }
+
+    #[inline]
+    pub fn user_name(&self) -> Option<&str> {
+        self.data["user"]["name"].as_str()
+    }
+}
+
+impl CheckUnknown for FanboxPostText {
+    fn check_unknown(&self) -> Result<(), FanboxAPIError> {
+        check_json_keys!(
+            "id"+,
+            "body": [
+                "text"+text,
+            ],
+            "commentCount"+,
+            "commentList",
+            "coverImageUrl",
+            "creatorId"+,
+            "excerpt"+,
+            "feeRequired"+,
+            "hasAdultContent"+,
+            "imageForShare",
+            "isLiked"+,
+            "isRestricted"+,
+            "likeCount"+,
+            "nextPost",
+            "prevPost",
+            "publishedDatetime"+,
+            "restrictedFor",
+            "tags"+,
+            "title"+,
+            "type",
+            "updatedDatetime"+,
+            "user": [
+                "userId"+user_id,
+                "iconUrl",
+                "name"+,
+            ],
+        );
+        match self.comment_list() {
+            Some(list) => {
+                for i in list.items {
+                    i.check_unknown()?;
+                }
+            }
+            None => {}
+        }
+        match self.next_post() {
+            Some(post) => post.check_unknown()?,
+            None => {}
+        }
+        match self.prev_post() {
+            Some(post) => post.check_unknown()?,
+            None => {}
+        }
+        Ok(())
+    }
+}
+
+impl Debug for FanboxPostText {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("FanboxPostText")
+            .field("id", &self.id())
+            .field("text", &self.text())
+            .field("comment_count", &self.comment_count())
+            .field("comment_list", &self.comment_list())
+            .field("cover_image_url", &self.cover_image_url())
+            .field("creator_id", &self.creator_id())
+            .field("excerpt", &self.excerpt())
+            .field("fee_required", &self.fee_required())
+            .field("has_adult_content", &self.has_adult_content())
+            .field("image_for_share", &self.image_for_share())
+            .field("is_liked", &self.is_liked())
+            .field("is_restricted", &self.is_restricted())
+            .field("like_count", &self.like_count())
+            .field("next_post", &self.next_post())
+            .field("prev_post", &self.prev_post())
+            .field("published_datetime", &self.published_datetime())
+            .field("tags", &self.tags())
+            .field("title", &self.title())
+            .field("updated_datetime", &self.updated_datetime())
+            .field("user_icon_url", &self.user_icon_url())
+            .field("user_id", &self.user_id())
+            .field("user_name", &self.user_name())
+            .finish_non_exhaustive()
+    }
+}
+
 /// A reference to another post
 pub struct FanboxPostRef {
     /// Raw data
@@ -1143,6 +1379,8 @@ pub enum FanboxPost {
     File(FanboxPostFile),
     /// Image
     Image(FanboxPostImage),
+    /// Text
+    Text(FanboxPostText),
     /// Unknown
     Unknown(FanboxPostUnknown),
 }
@@ -1156,6 +1394,7 @@ impl FanboxPost {
                 "article" => Self::Article(FanboxPostArticle::new(data, client)),
                 "file" => Self::File(FanboxPostFile::new(data, client)),
                 "image" => Self::Image(FanboxPostImage::new(data, client)),
+                "text" => Self::Text(FanboxPostText::new(data, client)),
                 _ => Self::Unknown(FanboxPostUnknown::new(data, client)),
             },
             _ => Self::Unknown(FanboxPostUnknown::new(data, client)),
@@ -1176,6 +1415,7 @@ impl FanboxPost {
             Self::Article(a) => a.comment_list(),
             Self::File(f) => f.comment_list(),
             Self::Image(i) => i.comment_list(),
+            Self::Text(t) => t.comment_list(),
             Self::Unknown(u) => u.comment_list(),
         }
     }
@@ -1206,6 +1446,7 @@ impl FanboxPost {
             Self::Article(a) => &a.data,
             Self::File(f) => &f.data,
             Self::Image(a) => &a.data,
+            Self::Text(a) => &a.data,
             Self::Unknown(a) => &a.data,
         }
     }
@@ -1246,6 +1487,7 @@ impl FanboxPost {
             Self::Article(a) => a.next_post(),
             Self::File(f) => f.next_post(),
             Self::Image(i) => i.next_post(),
+            Self::Text(t) => t.next_post(),
             Self::Unknown(u) => u.next_post(),
         }
     }
@@ -1256,6 +1498,7 @@ impl FanboxPost {
             Self::Article(a) => a.prev_post(),
             Self::File(f) => f.prev_post(),
             Self::Image(i) => i.prev_post(),
+            Self::Text(t) => t.prev_post(),
             Self::Unknown(u) => u.prev_post(),
         }
     }
@@ -1392,6 +1635,9 @@ fanbox_api_test!(test_get_post_info2, {
                     println!("{:#?}", data);
                 }
             }
+            if data.is_restricted().unwrap() {
+                return;
+            }
             match data.check_unknown() {
                 Ok(_) => {}
                 Err(e) => {
@@ -1419,6 +1665,9 @@ fanbox_api_test!(test_get_post_info3, {
                 _ => {
                     println!("{:#?}", data);
                 }
+            }
+            if data.is_restricted().unwrap() {
+                return;
             }
             match data.check_unknown() {
                 Ok(_) => {}

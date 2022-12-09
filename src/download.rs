@@ -35,7 +35,8 @@ use crate::Main;
 use indicatif::MultiProgress;
 use json::JsonValue;
 use reqwest::IntoUrl;
-use std::fs::create_dir_all;
+use std::fs::{create_dir_all, File};
+use std::io::Write;
 use std::ops::Deref;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -785,6 +786,14 @@ pub async fn download_fanbox_post(
                 }
                 np += 1;
             }
+        }
+        FanboxPost::Text(t) => {
+            let text = t
+                .text()
+                .ok_or(gettext("Failed to get text from text post."))?;
+            let text_file = base.join("data.txt");
+            let mut f = File::create(&text_file)?;
+            f.write_all(text.as_bytes())?;
         }
         FanboxPost::Unknown(_) => {
             return Err(PixivDownloaderError::from(gettext(
