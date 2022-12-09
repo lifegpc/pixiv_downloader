@@ -230,8 +230,44 @@ impl Debug for FanboxArticleHeaderBlock {
     }
 }
 
+pub struct FanboxArticleFileBlock {
+    pub data: JsonValue,
+}
+
+impl FanboxArticleFileBlock {
+    #[inline]
+    /// Create a new instance
+    pub fn new(data: &JsonValue) -> Self {
+        Self { data: data.clone() }
+    }
+
+    #[inline]
+    pub fn file_id(&self) -> Option<&str> {
+        self.data["fileId"].as_str()
+    }
+}
+
+impl CheckUnknown for FanboxArticleFileBlock {
+    fn check_unknown(&self) -> Result<(), FanboxAPIError> {
+        check_json_keys!(
+            "type",
+            "fileId"+,
+        );
+        Ok(())
+    }
+}
+
+impl Debug for FanboxArticleFileBlock {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("FanboxArticleFileBlock")
+            .field("file_id", &self.file_id())
+            .finish_non_exhaustive()
+    }
+}
+
 #[derive(proc_macros::CheckUnknown, Debug)]
 pub enum FanboxArticleBlock {
+    File(FanboxArticleFileBlock),
     Header(FanboxArticleHeaderBlock),
     Image(FanboxArticleImageBlock),
     Paragraph(FanboxArticleParagraphBlock),
@@ -245,6 +281,7 @@ impl FanboxArticleBlock {
     pub fn new(data: &JsonValue) -> Self {
         match data["type"].as_str() {
             Some(t) => match t {
+                "file" => Self::File(FanboxArticleFileBlock::new(data)),
                 "header" => Self::Header(FanboxArticleHeaderBlock::new(data)),
                 "image" => Self::Image(FanboxArticleImageBlock::new(data)),
                 "p" => Self::Paragraph(FanboxArticleParagraphBlock::new(data)),

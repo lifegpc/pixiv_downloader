@@ -1,6 +1,7 @@
 use super::super::check::CheckUnknown;
 use super::super::error::FanboxAPIError;
 use super::block::FanboxArticleBlock;
+use super::file::FanboxArticleFileMap;
 use super::image::FanboxArticleImageMap;
 use super::url_embed::FanboxArticleUrlEmbedMap;
 use crate::fanbox_api::FanboxClientInternal;
@@ -26,6 +27,16 @@ impl FanboxArticleBody {
                 list.push(FanboxArticleBlock::new(i))
             }
             Some(list)
+        } else {
+            None
+        }
+    }
+
+    #[inline]
+    pub fn file_map(&self) -> Option<FanboxArticleFileMap> {
+        let map = &self.data["fileMap"];
+        if map.is_object() {
+            Some(FanboxArticleFileMap::new(map, Arc::clone(&self.client)))
         } else {
             None
         }
@@ -66,7 +77,7 @@ impl CheckUnknown for FanboxArticleBody {
         check_json_keys!(
             "blocks"+,
             "imageMap"+,
-            "fileMap": [],
+            "fileMap"+,
             "embedMap": [],
             "urlEmbedMap"+,
         );
@@ -75,6 +86,12 @@ impl CheckUnknown for FanboxArticleBody {
                 for i in blocks {
                     i.check_unknown()?;
                 }
+            }
+            None => {}
+        }
+        match self.file_map() {
+            Some(map) => {
+                map.check_unknown()?;
             }
             None => {}
         }

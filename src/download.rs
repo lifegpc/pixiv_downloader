@@ -648,6 +648,9 @@ pub async fn download_fanbox_post(
             let url_embed_map = body
                 .url_embed_map()
                 .try_err(gettext("Failed to get embed url map from article."))?;
+            let file_map = body
+                .file_map()
+                .ok_or(gettext("Failed to get file map from article."))?;
             let mut np = 0;
             let mut datas = data.clone();
             #[cfg(feature = "exif")]
@@ -718,6 +721,31 @@ pub async fn download_fanbox_post(
                                 }
                             }
                             _ => {}
+                        }
+                    }
+                    FanboxArticleBlock::File(f) => {
+                        let file = file_map
+                            .get_file(
+                                f.file_id()
+                                    .try_err(gettext("Failed to get file id from block."))?,
+                            )
+                            .try_err(gettext("Failed to get file from file map."))?;
+                        let dh = file
+                            .download_url()?
+                            .ok_or(gettext("Failed to get download url from file information."))?;
+                        tasks
+                            .add_task(download_file(
+                                dh,
+                                if helper.enable_multi_progress_bar() {
+                                    Some(get_progress_bar())
+                                } else {
+                                    None
+                                },
+                                Arc::clone(&base),
+                            ))
+                            .await;
+                        if !download_multiple_files {
+                            tasks.join().await;
                         }
                     }
                     _ => {}
