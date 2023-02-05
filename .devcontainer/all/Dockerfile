@@ -21,6 +21,7 @@ RUN apt update && apt install -y \
 RUN cd ~ && git clone --depth 1 'https://github.com/Exiv2/exiv2' \
     && cd exiv2 && mkdir -p build && cd build \
     && cmake -DCMAKE_BUILD_TYPE=Release .. "-DCMAKE_INSTALL_PREFIX=/usr" \
+    -DEXIV2_ENABLE_BROTLI=OFF -DEXIV2_ENABLE_INIH=OFF \
     && make -j$(grep -c ^processor /proc/cpuinfo) && make install \
     && cd ~ && rm -rf exiv2
 RUN cd ~ && git clone --depth 1 'https://github.com/nih-at/libzip' \
