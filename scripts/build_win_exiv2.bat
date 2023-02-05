@@ -22,6 +22,7 @@ cmake ^
     -DCMAKE_INSTALL_PREFIX=%PREFIX% ^
     -DINSTALL_PKGCONFIG_DIR=%PKG_CONFIG_DIR% ^
     -DEXIV2_ENABLE_BROTLI=OFF ^
+    -DEXIV2_ENABLE_INIH=OFF ^
     ../ || EXIT /B %ERRORLEVEL%
 ninja && ninja install || ninja && ninja install || EXIT /B %ERRORLEVEL%
 ENDLOCAL
