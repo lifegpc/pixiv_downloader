@@ -1,8 +1,8 @@
 diff --git a/src/basicio.cpp b/src/basicio.cpp
-index 0e99c292..e400ff24 100644
+index 97a481ce..c506485d 100644
 --- a/src/basicio.cpp
 +++ b/src/basicio.cpp
-@@ -59,6 +59,64 @@ void ReplaceStringInPlace(std::string& subject, std::string_view search, std::st
+@@ -64,6 +64,64 @@ void ReplaceStringInPlace(std::string& subject, std::string_view search, std::st
  }  // namespace
  
  namespace Exiv2 {
@@ -66,8 +66,8 @@ index 0e99c292..e400ff24 100644
 +#endif
  void BasicIo::readOrThrow(byte* buf, size_t rcount, ErrorCode err) {
    const size_t nread = read(buf, rcount);
-   enforce(nread == rcount, err);
-@@ -165,7 +223,11 @@ int FileIo::Impl::switchMode(OpMode opMode) {
+   Internal::enforce(nread == rcount, err);
+@@ -170,7 +228,11 @@ int FileIo::Impl::switchMode(OpMode opMode) {
    }
    openMode_ = "r+b";
    opMode_ = opSeek;
@@ -79,7 +79,7 @@ index 0e99c292..e400ff24 100644
    if (!fp_)
      return 1;
    return std::fseek(fp_, offset, SEEK_SET);
-@@ -491,7 +553,11 @@ int FileIo::open(const std::string& mode) {
+@@ -501,7 +563,11 @@ int FileIo::open(const std::string& mode) {
    close();
    p_->openMode_ = mode;
    p_->opMode_ = Impl::opSeek;
