@@ -54,6 +54,7 @@ pub fn get_settings_list() -> Vec<SettingDes> {
         #[cfg(feature = "db")]
         SettingDes::new("db", gettext("Database settings."), JsonValueType::Object, Some(check_db_config)).unwrap(),
         SettingDes::new("download-base", gettext("The base directory to save downloaded files."), JsonValueType::Str, None).unwrap(),
+        SettingDes::new("user-agent", gettext("The User-Agent header."), JsonValueType::Str, None).unwrap(),
     ]
 }
 

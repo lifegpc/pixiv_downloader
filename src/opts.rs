@@ -110,6 +110,7 @@ pub struct CommandOpts {
     pub x264_profile: Option<X264Profile>,
     /// The base directory to save downloaded files.
     pub download_base: Option<String>,
+    pub user_agent: Option<String>,
     /// Urls want to download
     pub urls: Option<Vec<String>>,
 }
@@ -148,6 +149,7 @@ impl CommandOpts {
             #[cfg(feature = "ugoira")]
             x264_profile: None,
             download_base: None,
+            user_agent: None,
             urls: None,
         }
     }
@@ -530,6 +532,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         gettext("The base directory to download files."),
         "DIR",
     );
+    opts.optopt("", "user-agent", gettext("The User-Agent header."), "UA");
     let result = match opts.parse(&argv[1..]) {
         Ok(m) => m,
         Err(err) => {
@@ -826,6 +829,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         }
     }
     re.as_mut().unwrap().download_base = result.opt_str("download-base");
+    re.as_mut().unwrap().user_agent = result.opt_str("user-agent");
     re
 }
 

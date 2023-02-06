@@ -376,6 +376,18 @@ impl OptHelper {
         false
     }
 
+    pub fn user_agent(&self) -> String {
+        match self.opt.get_ref().user_agent.as_ref() {
+            Some(ua) => return ua.to_owned(),
+            None => {}
+        }
+        match self.settings.get_ref().get("user-agent") {
+            Some(ua) => return ua.as_str().unwrap().to_owned(),
+            None => {}
+        }
+        String::from("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36")
+    }
+
     #[cfg(feature = "exif")]
     /// Return whether to add/update exif information to image files even
     /// when overwrite are disabled.

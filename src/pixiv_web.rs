@@ -42,7 +42,7 @@ impl PixivWebClient {
                 return false;
             }
         }
-        self.client.set_header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36");
+        self.client.set_header("User-Agent", &helper.user_agent());
         let l = helper.language();
         if l.is_some() {
             self.client

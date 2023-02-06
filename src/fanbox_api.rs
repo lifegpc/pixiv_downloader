@@ -84,7 +84,8 @@ impl FanboxClientInternal {
             }
             None => {}
         }
-        self.client.set_header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36");
+        let helper = get_helper();
+        self.client.set_header("User-Agent", &helper.user_agent());
         self.client.set_header("referer", "https://www.fanbox.cc/");
         self.client.set_header("origin", "https://www.fanbox.cc");
         self.inited.qstore(true);
