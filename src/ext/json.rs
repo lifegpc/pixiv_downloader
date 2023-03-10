@@ -92,6 +92,46 @@ impl<T: ToJson2> ToJson2 for RwLockWriteGuard<'_, T> {
     }
 }
 
+impl ToJson for bool {
+    #[inline]
+    fn to_json(&self) -> Option<JsonValue> {
+        Some(JsonValue::from(self.clone()))
+    }
+}
+
+impl ToJson2 for bool {
+    #[inline]
+    fn to_json2(&self) -> JsonValue {
+        JsonValue::from(self.clone())
+    }
+}
+
+macro_rules! impl_tojson_for_int {
+    ($int:ty) => {
+        impl ToJson for $int {
+            #[inline]
+            fn to_json(&self) -> Option<JsonValue> {
+                Some(JsonValue::from(self.clone()))
+            }
+        }
+        impl ToJson2 for $int {
+            #[inline]
+            fn to_json2(&self) -> JsonValue {
+                JsonValue::from(self.clone())
+            }
+        }
+    };
+}
+
+impl_tojson_for_int!(i8);
+impl_tojson_for_int!(i16);
+impl_tojson_for_int!(i32);
+impl_tojson_for_int!(i64);
+impl_tojson_for_int!(u8);
+impl_tojson_for_int!(u16);
+impl_tojson_for_int!(u32);
+impl_tojson_for_int!(u64);
+
 pub trait FromJson
 where
     Self: Sized,

@@ -1,10 +1,11 @@
 use super::fanbox::FanboxData;
 use crate::data::data::PixivData;
-use crate::ext::json::ToJson;
+use crate::ext::json::{ToJson, ToJson2};
 use crate::gettext;
 use crate::parser::description::parse_description;
 use crate::pixiv_link::PixivID;
 use crate::pixiv_link::ToPixivID;
+use int_enum::IntEnum;
 use json::JsonValue;
 use std::collections::HashMap;
 use std::convert::From;
@@ -34,14 +35,9 @@ impl JSONDataFile {
         })
     }
 
-    pub fn add<T: ToJson>(&mut self, key: &str, value: T) -> Result<(), ()> {
-        let v = value.to_json();
-        if v.is_some() {
-            self.maps.insert(String::from(key), v.unwrap());
-            Ok(())
-        } else {
-            Err(())
-        }
+    pub fn add<T: ToJson2>(&mut self, key: &str, value: T) {
+        let v = value.to_json2();
+        self.maps.insert(String::from(key), v);
     }
 
     pub fn save<S: AsRef<OsStr> + ?Sized>(&self, path: &S) -> bool {
@@ -92,17 +88,16 @@ impl From<&PixivData> for JSONDataFile {
             maps: HashMap::new(),
         };
         if p.title.is_some() {
-            f.add("title", p.title.as_ref().unwrap()).unwrap();
+            f.add("title", p.title.as_ref().unwrap());
         }
         if p.author.is_some() {
-            f.add("author", p.author.as_ref().unwrap()).unwrap();
+            f.add("author", p.author.as_ref().unwrap());
         }
         if p.description.is_some() {
-            f.add("description", p.description.as_ref().unwrap())
-                .unwrap();
+            f.add("description", p.description.as_ref().unwrap());
             let pd = parse_description(p.description.as_ref().unwrap());
             if pd.is_some() {
-                f.add("parsed_description", pd.unwrap()).unwrap();
+                f.add("parsed_description", pd.unwrap());
             }
         }
         match p.tags.as_ref() {
@@ -118,9 +113,19 @@ impl From<&PixivData> for JSONDataFile {
                     ])
                     .unwrap();
                 }
-                f.add("tags", t).unwrap();
+                f.add("tags", t);
             }
             None => {}
+        }
+        match &p.ai_type {
+            Some(ai_type) => {
+                f.add("is_ai", ai_type.is_ai());
+                f.add("ai_type", ai_type.int_value());
+            }
+            None => {
+                f.add("is_ai", JsonValue::Null);
+                f.add("ai_type", JsonValue::Null);
+            }
         }
         f
     }
@@ -132,7 +137,7 @@ impl From<FanboxData> for JSONDataFile {
             id: d.id.clone(),
             maps: HashMap::new(),
         };
-        f.add("raw", d.raw).unwrap();
+        f.add("raw", d.raw);
         f
     }
 }
@@ -143,7 +148,7 @@ impl From<&FanboxData> for JSONDataFile {
             id: d.id.clone(),
             maps: HashMap::new(),
         };
-        f.add("raw", d.raw.clone()).unwrap();
+        f.add("raw", d.raw.clone());
         f
     }
 }
