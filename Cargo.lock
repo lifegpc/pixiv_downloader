@@ -194,8 +194,7 @@ dependencies = [
 [[package]]
 name = "buf_redux"
 version = "0.8.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b953a6887648bb07a535631f2bc00fbdb2a2216f135552cb3f534ed136b9c07f"
+source = "git+https://github.com/lifegpc/buf_redux#cf2f433e51c356830dface0d0baa92f13c0b9ca7"
 dependencies = [
  "memchr",
  "safemem",
@@ -1106,7 +1105,7 @@ dependencies = [
 [[package]]
 name = "multipart"
 version = "0.18.0"
-source = "git+https://github.com/lifegpc/multipart#8275a9008f6d355d3cd433eb9bc4b20f25eec3bd"
+source = "git+https://github.com/lifegpc/multipart#f82bff2c94547151c84b5a94cd0919a220678345"
 dependencies = [
  "buf_redux",
  "httparse",
