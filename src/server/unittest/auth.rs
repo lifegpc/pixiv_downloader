@@ -2,6 +2,7 @@ use super::UnitTestContext;
 use crate::error::PixivDownloaderError;
 use crate::ext::json::FromJson;
 use crate::server::result::JSONResult;
+use base64::{engine::general_purpose::STANDARD as base64, Engine};
 use bytes::BytesMut;
 use hyper::{Body, Request};
 use openssl::rsa::{Padding, Rsa};
@@ -35,7 +36,7 @@ pub async fn test(ctx: &UnitTestContext) -> Result<[(u64, Vec<u8>); 2], PixivDow
     let mut encypted = BytesMut::with_capacity(tosize);
     encypted.resize(tosize, 0);
     key.public_encrypt(&password, &mut encypted, Padding::PKCS1)?;
-    let b64_password = base64::encode(&encypted);
+    let b64_password = base64.encode(&encypted);
     let re = ctx
         .request_json2(
             "/auth/user/add",
@@ -69,7 +70,7 @@ pub async fn test(ctx: &UnitTestContext) -> Result<[(u64, Vec<u8>); 2], PixivDow
         .unwrap();
     let result = JSONResult::from_json(re)?.expect("Failed to add token:");
     assert_eq!(Some(0), result["user_id"].as_u64());
-    let token = base64::decode(result["token"].as_str().unwrap()).unwrap();
+    let token = base64.decode(result["token"].as_str().unwrap()).unwrap();
     assert_eq!(token.len(), 64);
     let token_id = result["id"].as_u64().unwrap();
     let mut password2 = BytesMut::with_capacity(64);
@@ -78,7 +79,7 @@ pub async fn test(ctx: &UnitTestContext) -> Result<[(u64, Vec<u8>); 2], PixivDow
     let mut encypted2 = BytesMut::with_capacity(tosize);
     encypted2.resize(tosize, 0);
     key.public_encrypt(&password2, &mut encypted2, Padding::PKCS1)?;
-    let b64_password2 = base64::encode(&encypted2);
+    let b64_password2 = base64.encode(&encypted2);
     let re = ctx
         .request_json2_sign(
             "/auth/user/add",
@@ -164,7 +165,7 @@ pub async fn test(ctx: &UnitTestContext) -> Result<[(u64, Vec<u8>); 2], PixivDow
         .unwrap();
     let result = JSONResult::from_json(re)?.expect("Failed to add token:");
     assert_eq!(Some(1), result["user_id"].as_u64());
-    let token2 = base64::decode(result["token"].as_str().unwrap()).unwrap();
+    let token2 = base64.decode(result["token"].as_str().unwrap()).unwrap();
     assert_eq!(token2.len(), 64);
     let token2_id = result["id"].as_u64().unwrap();
     let re = ctx
@@ -302,12 +303,12 @@ pub async fn test(ctx: &UnitTestContext) -> Result<[(u64, Vec<u8>); 2], PixivDow
         .unwrap();
     let result = JSONResult::from_json(re)?.expect("Failed to add token:");
     assert_eq!(Some(1), result["user_id"].as_u64());
-    let token3 = base64::decode(result["token"].as_str().unwrap()).unwrap();
+    let token3 = base64.decode(result["token"].as_str().unwrap()).unwrap();
     assert_eq!(token2.len(), 64);
     let token3_id = result["id"].as_u64().unwrap();
     openssl::rand::rand_bytes(&mut password2)?;
     key.public_encrypt(&password2, &mut encypted2, Padding::PKCS1)?;
-    let b64_password2 = base64::encode(&encypted2);
+    let b64_password2 = base64.encode(&encypted2);
     let re = ctx
         .request_json2_sign(
             "/auth/user/change/password",
@@ -450,7 +451,7 @@ pub async fn test(ctx: &UnitTestContext) -> Result<[(u64, Vec<u8>); 2], PixivDow
     let mut encypted3 = BytesMut::with_capacity(tosize);
     encypted3.resize(tosize, 0);
     key.public_encrypt(&password3, &mut encypted3, Padding::PKCS1)?;
-    let b64_password3 = base64::encode(&encypted3);
+    let b64_password3 = base64.encode(&encypted3);
     let re = ctx
         .request_json2_sign(
             "/auth/user/add",
@@ -487,7 +488,7 @@ pub async fn test(ctx: &UnitTestContext) -> Result<[(u64, Vec<u8>); 2], PixivDow
     let result = JSONResult::from_json(re)?.unwrap();
     assert_eq!(Some(2), result["user_id"].as_u64());
     let token3_id = result["id"].as_u64().unwrap();
-    let token3 = base64::decode(result["token"].as_str().unwrap()).unwrap();
+    let token3 = base64.decode(result["token"].as_str().unwrap()).unwrap();
     let re = ctx
         .request_json2_sign(
             "/auth/user/info",
@@ -603,7 +604,7 @@ pub async fn test(ctx: &UnitTestContext) -> Result<[(u64, Vec<u8>); 2], PixivDow
         .unwrap();
     let result = JSONResult::from_json(re)?.expect("Failed to add token:");
     assert_eq!(Some(1), result["user_id"].as_u64());
-    let token3 = base64::decode(result["token"].as_str().unwrap()).unwrap();
+    let token3 = base64.decode(result["token"].as_str().unwrap()).unwrap();
     assert_eq!(token3.len(), 64);
     let token3_id = result["id"].as_u64().unwrap();
     let re = ctx
@@ -634,7 +635,7 @@ pub async fn test(ctx: &UnitTestContext) -> Result<[(u64, Vec<u8>); 2], PixivDow
         .unwrap();
     let result = JSONResult::from_json(re)?.expect("Failed to add token:");
     assert_eq!(Some(1), result["user_id"].as_u64());
-    let token3 = base64::decode(result["token"].as_str().unwrap()).unwrap();
+    let token3 = base64.decode(result["token"].as_str().unwrap()).unwrap();
     assert_eq!(token3.len(), 64);
     let token3_id = result["id"].as_u64().unwrap();
     let re = ctx
@@ -649,7 +650,7 @@ pub async fn test(ctx: &UnitTestContext) -> Result<[(u64, Vec<u8>); 2], PixivDow
         .unwrap();
     let result = JSONResult::from_json(re)?.expect("Failed to add token:");
     assert_eq!(Some(0), result["user_id"].as_u64());
-    let token4 = base64::decode(result["token"].as_str().unwrap()).unwrap();
+    let token4 = base64.decode(result["token"].as_str().unwrap()).unwrap();
     assert_eq!(token4.len(), 64);
     let token4_id = result["id"].as_u64().unwrap();
     let re = ctx

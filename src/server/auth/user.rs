@@ -3,6 +3,7 @@ use super::{PASSWORD_ITER, PASSWORD_SALT};
 use crate::ext::json::ToJson2;
 use crate::ext::try_err::{TryErr, TryErr3};
 use crate::gettext;
+use base64::{engine::general_purpose::STANDARD as base64, Engine};
 use bytes::BytesMut;
 use openssl::{hash::MessageDigest, pkcs5::pbkdf2_hmac};
 
@@ -83,7 +84,8 @@ impl AuthUserContext {
                     let password = params
                         .get("password")
                         .try_err((3, gettext("No password specified.")))?;
-                    let password = base64::decode(password)
+                    let password = base64
+                        .decode(password)
                         .try_err3(4, gettext("Failed to decode password with base64:"))?;
                     let rsa_key = self.ctx.rsa_key.lock().await;
                     match *rsa_key {
@@ -188,7 +190,8 @@ impl AuthUserContext {
                     let password = params
                         .get("password")
                         .try_err3(3, "No password specified.")?;
-                    let password = base64::decode(password)
+                    let password = base64
+                        .decode(password)
                         .try_err3(4, gettext("Failed to decode password with base64:"))?;
                     let rsa_key = self.ctx.rsa_key.lock().await;
                     match *rsa_key {
@@ -380,7 +383,8 @@ impl AuthUserContext {
                         }
                     }
                     if let Some(password) = params.get("password") {
-                        let password = base64::decode(password)
+                        let password = base64
+                            .decode(password)
                             .try_err3(4, gettext("Failed to decode password with base64:"))?;
                         let rsa_key = self.ctx.rsa_key.lock().await;
                         match *rsa_key {

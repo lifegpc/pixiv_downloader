@@ -4,6 +4,7 @@ use crate::db::User;
 use crate::ext::json::ToJson2;
 use crate::ext::try_err::TryErr3;
 use crate::gettext;
+use base64::{engine::general_purpose::STANDARD as base64, Engine};
 use openssl::{hash::MessageDigest, pkcs5::pbkdf2_hmac};
 
 /// Action to perform about token
@@ -45,7 +46,8 @@ impl AuthTokenContext {
                     let password = params
                         .get("password")
                         .ok_or((2, gettext("No password specified.")))?;
-                    let password = base64::decode(password)
+                    let password = base64
+                        .decode(password)
                         .try_err3(3, gettext("Failed to decode password with base64:"))?;
                     let rsa_key = self.ctx.rsa_key.lock().await;
                     let key = rsa_key.as_ref().ok_or((4, gettext("No RSA key found.")))?;
@@ -95,7 +97,7 @@ impl AuthTokenContext {
                             break token;
                         }
                     };
-                    let b64token = base64::encode(&token.token);
+                    let b64token = base64.encode(&token.token);
                     Ok(
                         json::object! { "id": token.id, "user_id": token.user_id, "token": b64token, "created_at": token.created_at.timestamp(), "expired_at": token.expired_at.timestamp() },
                     )
