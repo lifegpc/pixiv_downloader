@@ -181,7 +181,10 @@ impl Cookie {
         let expired = if expired == 0 {
             None
         } else {
-            Some(Utc.timestamp(expired, 0))
+            match Utc.timestamp_opt(expired, 0) {
+                chrono::LocalResult::Single(t) => Some(t),
+                _ => None,
+            }
         };
         Some(Self::new(
             key,
@@ -407,7 +410,10 @@ impl CookieJar {
             let expired = if tmp == 0 {
                 None
             } else {
-                Some(Utc.timestamp(tmp, 0))
+                match Utc.timestamp_opt(tmp, 0) {
+                    chrono::LocalResult::Single(t) => Some(t),
+                    _ => None,
+                }
             };
             let c = Cookie::new(name, value, domain, subdomains, path, http_only, expired);
             self.add(c);
