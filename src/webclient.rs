@@ -1,4 +1,5 @@
 use crate::cookies::Cookie;
+use crate::cookies::CookieJarLine;
 use crate::cookies::ManagedCookieJar;
 use crate::ext::atomic::AtomicQuick;
 use crate::ext::json::ToJson;
@@ -63,11 +64,16 @@ pub fn gen_cookie_header<U: IntoUrl>(c: &WebClient, url: U) -> String {
     let mut s = String::from("");
     let u = url.as_str();
     for a in c.get_cookies().jar.get_ref().iter() {
-        if a.matched(u) {
-            if s.len() > 0 {
-                s += " ";
+        match a {
+            CookieJarLine::Cookie(a) => {
+                if a.matched(u) {
+                    if s.len() > 0 {
+                        s += " ";
+                    }
+                    s += a.get_name_value().as_str();
+                }
             }
-            s += a.get_name_value().as_str();
+            _ => {}
         }
     }
     s

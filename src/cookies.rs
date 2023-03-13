@@ -274,10 +274,42 @@ impl Cookie {
     }
 }
 
+#[derive(Clone, Debug, derive_more::From)]
+/// Line of a netscape cookie
+pub enum CookieJarLine {
+    /// Comment
+    Comment(String),
+    /// Cookie
+    Cookie(Cookie),
+}
+
+impl CookieJarLine {
+    pub fn is_expired(&self) -> bool {
+        match self {
+            Self::Cookie(c) => c.is_expired(),
+            _ => false,
+        }
+    }
+
+    pub fn is_same_key(&self, c: &Cookie) -> bool {
+        match self {
+            Self::Cookie(a) => a.is_same_key(c),
+            _ => false,
+        }
+    }
+
+    pub fn to_netscape_str(&self) -> String {
+        match self {
+            Self::Cookie(c) => c.to_netscape_str(),
+            Self::Comment(c) => format!("{}\n", c.as_str()),
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 /// Cookies Jar
 pub struct CookieJar {
-    cookies: Vec<Cookie>,
+    cookies: Vec<CookieJarLine>,
 }
 
 impl CookieJar {
@@ -292,12 +324,12 @@ impl CookieJar {
         while i < self.cookies.len() {
             let a = &self.cookies[i];
             if a.is_same_key(&c) {
-                self.cookies[i] = c;
+                self.cookies[i] = CookieJarLine::from(c);
                 return;
             }
             i += 1;
         }
-        self.cookies.push(c);
+        self.cookies.push(CookieJarLine::from(c));
     }
 
     /// Check and remove all expired cookies
@@ -321,8 +353,13 @@ impl CookieJar {
     pub fn get<S: AsRef<str> + ?Sized>(&self, name: &S) -> Option<&Cookie> {
         let name = name.as_ref();
         for i in self.cookies.iter() {
-            if i._name == name {
-                return Some(i);
+            match i {
+                CookieJarLine::Cookie(i) => {
+                    if i._name == name {
+                        return Some(i);
+                    }
+                }
+                _ => {}
             }
         }
         None
@@ -346,6 +383,7 @@ impl CookieJar {
             let mut l = line.unwrap();
             l = l.trim().to_string();
             if l.starts_with("#") {
+                self.cookies.push(CookieJarLine::Comment(l));
                 continue;
             }
             let mut s = l.split('\t');
@@ -404,7 +442,7 @@ impl CookieJar {
         true
     }
 
-    pub fn iter(&self) -> core::slice::Iter<Cookie> {
+    pub fn iter(&self) -> core::slice::Iter<CookieJarLine> {
         self.cookies.iter()
     }
 }
