@@ -164,7 +164,7 @@ UgoiraError convert_ugoira_to_mp4(const char* src, const char* dest, const Ugoir
     int err = UGOIRA_OK;
     int zip_err = 0;
     zip_t* zip = NULL;
-    int dcrf = 18;
+    float dcrf = 18.0;
     AVDictionaryEntry* tmp_ent = NULL;
     if (max_fps <= 0) {
         return RERR(UGOIRA_INVALID_MAX_FPS);
@@ -174,8 +174,8 @@ UgoiraError convert_ugoira_to_mp4(const char* src, const char* dest, const Ugoir
     }
     tmp_ent = av_dict_get(opts, "crf", NULL, 0);
     if (tmp_ent) {
-        int tmp = 0;
-        if (sscanf(tmp_ent->value, "%i", &tmp) != 1) {
+        float tmp = 0;
+        if (sscanf(tmp_ent->value, "%f", &tmp) != 1) {
             return RERR(UGOIRA_INVALID_CRF);
         }
         dcrf = tmp;
@@ -331,7 +331,7 @@ UgoiraError convert_ugoira_to_mp4(const char* src, const char* dest, const Ugoir
                 } else {
                     av_opt_set(eoc->priv_data, "preset", "slow", 0);
                 }
-                av_opt_set_int(eoc->priv_data, "crf", dcrf, 0);
+                av_opt_set_double(eoc->priv_data, "crf", dcrf, 0);
                 if (opts) {
                     tmp = av_dict_get(opts, "level", NULL, 0);
                 }

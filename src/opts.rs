@@ -13,6 +13,8 @@ use std::convert::TryFrom;
 use std::env;
 #[cfg(feature = "server")]
 use std::net::SocketAddr;
+#[cfg(feature = "ugoira")]
+use std::num::ParseFloatError;
 use std::num::ParseIntError;
 use std::num::TryFromIntError;
 use std::str::FromStr;
@@ -113,6 +115,9 @@ pub struct CommandOpts {
     pub user_agent: Option<String>,
     /// Urls want to download
     pub urls: Option<Vec<String>>,
+    #[cfg(feature = "ugoira")]
+    /// The Constant Rate Factor when converting ugoira(GIF) to video.
+    pub x264_crf: Option<f32>,
 }
 
 impl CommandOpts {
@@ -151,6 +156,8 @@ impl CommandOpts {
             download_base: None,
             user_agent: None,
             urls: None,
+            #[cfg(feature = "ugoira")]
+            x264_crf: None,
         }
     }
 
@@ -255,6 +262,20 @@ pub fn parse_bool<T: AsRef<str>>(s: Option<T>) -> Result<Option<bool>, String> {
             } else {
                 Err(format!("{} {}", gettext("Invalid boolean value:"), t))
             }
+        }
+        None => Ok(None),
+    }
+}
+
+#[cfg(feature = "ugoira")]
+/// Parse [f32] from string
+pub fn parse_f32<T: AsRef<str>>(s: Option<T>) -> Result<Option<f32>, ParseFloatError> {
+    match s {
+        Some(s) => {
+            let s = s.as_ref();
+            let s = s.trim();
+            let c = s.parse::<f32>()?;
+            Ok(Some(c))
         }
         None => Ok(None),
     }
@@ -533,6 +554,13 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         "DIR",
     );
     opts.optopt("", "user-agent", gettext("The User-Agent header."), "UA");
+    #[cfg(feature = "ugoira")]
+    opts.optopt(
+        "",
+        "x264-crf",
+        gettext("The Constant Rate Factor when converting ugoira(GIF) to video."),
+        "float",
+    );
     let result = match opts.parse(&argv[1..]) {
         Ok(m) => m,
         Err(err) => {
@@ -830,6 +858,30 @@ pub fn parse_cmd() -> Option<CommandOpts> {
     }
     re.as_mut().unwrap().download_base = result.opt_str("download-base");
     re.as_mut().unwrap().user_agent = result.opt_str("user-agent");
+    #[cfg(feature = "ugoira")]
+    match parse_optional_opt(&result, "x264-crf", -1f32, parse_f32) {
+        Ok(r) => match r {
+            Some(crf) => {
+                if crf < -1f32 {
+                    println!("{}", gettext("x264-crf can not less than -1."));
+                    return None;
+                } else {
+                    re.as_mut().unwrap().x264_crf.replace(crf);
+                }
+            }
+            None => {}
+        },
+        Err(e) => {
+            println!(
+                "{} {}",
+                ("Failed to parse <opt>:")
+                    .replace("<opt>", "x264-crf")
+                    .as_str(),
+                e
+            );
+            return None;
+        }
+    }
     re
 }
 

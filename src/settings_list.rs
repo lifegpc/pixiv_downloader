@@ -7,6 +7,8 @@ use crate::retry_interval::check_retry_interval;
 use crate::settings::SettingDes;
 use crate::settings::JsonValueType;
 use crate::opt::author_name_filter::check_author_name_filters;
+#[cfg(feature = "ugoira")]
+use crate::opt::crf::check_crf;
 use crate::opt::proxy::check_proxy;
 use crate::opt::size::parse_u32_size;
 #[cfg(feature = "server")]
@@ -55,6 +57,8 @@ pub fn get_settings_list() -> Vec<SettingDes> {
         SettingDes::new("db", gettext("Database settings."), JsonValueType::Object, Some(check_db_config)).unwrap(),
         SettingDes::new("download-base", gettext("The base directory to save downloaded files."), JsonValueType::Str, None).unwrap(),
         SettingDes::new("user-agent", gettext("The User-Agent header."), JsonValueType::Str, None).unwrap(),
+        #[cfg(feature = "ugoira")]
+        SettingDes::new("x264-crf", gettext("The Constant Rate Factor when converting ugoira(GIF) to video."), JsonValueType::Number, Some(check_crf)).unwrap(),
     ]
 }
 

@@ -360,6 +360,12 @@ pub async fn download_artwork(
                     if !profile.is_auto() {
                         options.set("profile", profile.as_str(), None)?;
                     }
+                    match helper.x264_crf() {
+                        Some(crf) => {
+                            options.set("crf", format!("{}", crf), None)?;
+                        }
+                        None => {}
+                    }
                     let frames = UgoiraFrames::from_json(&ugoira_data["frames"])?;
                     let output_file_name = base.join(format!("{}.mp4", id));
                     convert_ugoira_to_mp4(

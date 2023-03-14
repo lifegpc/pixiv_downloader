@@ -440,6 +440,22 @@ impl OptHelper {
     }
 
     #[cfg(feature = "ugoira")]
+    /// The Constant Rate Factor when converting ugoira(GIF) to video.
+    pub fn x264_crf(&self) -> Option<f32> {
+        match self.opt.get_ref().x264_crf {
+            Some(r) => {
+                return Some(r);
+            }
+            None => {}
+        }
+        if self.settings.get_ref().have("x264-crf") {
+            let v = self.settings.get_ref().get("x264-crf").unwrap();
+            return v.as_f32();
+        }
+        None
+    }
+
+    #[cfg(feature = "ugoira")]
     /// Return the x264 profile when converting ugoira(GIF) to video.
     pub fn x264_profile(&self) -> X264Profile {
         match self.opt.get_ref().x264_profile {
@@ -449,7 +465,7 @@ impl OptHelper {
             None => {}
         }
         if self.settings.get_ref().have("x264-profile") {
-            let v = self.settings.get_ref().get("server").unwrap();
+            let v = self.settings.get_ref().get("x264-profile").unwrap();
             return X264Profile::from_str(v.as_str().unwrap()).unwrap();
         }
         X264Profile::default()
