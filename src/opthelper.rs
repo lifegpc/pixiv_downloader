@@ -440,6 +440,22 @@ impl OptHelper {
     }
 
     #[cfg(feature = "ugoira")]
+    /// The max fps when converting ugoira(GIF) to video.
+    pub fn ugoira_max_fps(&self) -> f32 {
+        match self.opt.get_ref().ugoira_max_fps {
+            Some(r) => {
+                return r;
+            }
+            None => {}
+        }
+        if self.settings.get_ref().have("ugoira-max-fps") {
+            let v = self.settings.get_ref().get("ugoira-max-fps").unwrap();
+            return v.as_f32().unwrap();
+        }
+        60f32
+    }
+
+    #[cfg(feature = "ugoira")]
     /// The Constant Rate Factor when converting ugoira(GIF) to video.
     pub fn x264_crf(&self) -> Option<f32> {
         match self.opt.get_ref().x264_crf {

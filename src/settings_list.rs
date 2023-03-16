@@ -59,6 +59,8 @@ pub fn get_settings_list() -> Vec<SettingDes> {
         SettingDes::new("user-agent", gettext("The User-Agent header."), JsonValueType::Str, None).unwrap(),
         #[cfg(feature = "ugoira")]
         SettingDes::new("x264-crf", gettext("The Constant Rate Factor when converting ugoira(GIF) to video."), JsonValueType::Number, Some(check_crf)).unwrap(),
+        #[cfg(feature = "ugoira")]
+        SettingDes::new("ugoira-max-fps", gettext("The max fps when converting ugoira(GIF) to video."), JsonValueType::Number, Some(check_ugoira_max_fps)).unwrap(),
     ]
 }
 
@@ -118,6 +120,14 @@ fn check_user_or_not(obj: &JsonValue) -> bool {
 fn check_x264_profile(obj: &JsonValue) -> bool {
     match obj.as_str() {
         Some(profile) => X264Profile::from_str(profile).is_ok(),
+        None => false,
+    }
+}
+
+#[cfg(feature = "ugoira")]
+fn check_ugoira_max_fps(obj: &JsonValue) -> bool {
+    match obj.as_f32() {
+        Some(fps) => fps > 0f32 && fps <= 1000f32,
         None => false,
     }
 }

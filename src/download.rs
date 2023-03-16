@@ -372,7 +372,7 @@ pub async fn download_artwork(
                         &file_name,
                         &output_file_name,
                         &frames,
-                        60f32,
+                        helper.ugoira_max_fps(),
                         &options,
                         &metadata,
                     )?;

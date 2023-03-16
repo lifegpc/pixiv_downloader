@@ -118,6 +118,8 @@ pub struct CommandOpts {
     #[cfg(feature = "ugoira")]
     /// The Constant Rate Factor when converting ugoira(GIF) to video.
     pub x264_crf: Option<f32>,
+    #[cfg(feature = "ugoira")]
+    pub ugoira_max_fps: Option<f32>,
 }
 
 impl CommandOpts {
@@ -158,6 +160,8 @@ impl CommandOpts {
             urls: None,
             #[cfg(feature = "ugoira")]
             x264_crf: None,
+            #[cfg(feature = "ugoira")]
+            ugoira_max_fps: None,
         }
     }
 
@@ -555,11 +559,28 @@ pub fn parse_cmd() -> Option<CommandOpts> {
     );
     opts.optopt("", "user-agent", gettext("The User-Agent header."), "UA");
     #[cfg(feature = "ugoira")]
-    opts.optopt(
+    opts.opt(
         "",
         "x264-crf",
         gettext("The Constant Rate Factor when converting ugoira(GIF) to video."),
         "float",
+        HasArg::Maybe,
+        getopts::Occur::Optional,
+    );
+    #[cfg(feature = "ugoira")]
+    opts.opt(
+        "",
+        "ugoira-max-fps",
+        format!(
+            "{} ({} {})",
+            gettext("The max fps when converting ugoira(GIF) to video."),
+            gettext("Default:"),
+            "60"
+        )
+        .as_str(),
+        "float",
+        HasArg::Maybe,
+        getopts::Occur::Optional,
     );
     let result = match opts.parse(&argv[1..]) {
         Ok(m) => m,
@@ -876,6 +897,33 @@ pub fn parse_cmd() -> Option<CommandOpts> {
                 "{} {}",
                 ("Failed to parse <opt>:")
                     .replace("<opt>", "x264-crf")
+                    .as_str(),
+                e
+            );
+            return None;
+        }
+    }
+    #[cfg(feature = "ugoira")]
+    match parse_optional_opt(&result, "ugoira-max-fps", 60f32, parse_f32) {
+        Ok(r) => match r {
+            Some(crf) => {
+                if crf <= 0f32 || crf > 1000f32 {
+                    println!(
+                        "{}",
+                        gettext("ugoira-max-fps can not less than 0 or greater than 1000.")
+                    );
+                    return None;
+                } else {
+                    re.as_mut().unwrap().ugoira_max_fps.replace(crf);
+                }
+            }
+            None => {}
+        },
+        Err(e) => {
+            println!(
+                "{} {}",
+                ("Failed to parse <opt>:")
+                    .replace("<opt>", "ugoira-max-fps")
                     .as_str(),
                 e
             );
