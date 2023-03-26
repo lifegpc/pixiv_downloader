@@ -1052,6 +1052,11 @@ fn test_exif_data() {
         }
     }
     assert_eq!(i, 2);
+    let mut i = d.iter().unwrap();
+    let f = i.next().unwrap();
+    let f2 = i.next().unwrap();
+    assert_eq!(f.key(), Some(String::from("Exif.Image.XPTitle")));
+    assert_eq!(f2.key(), Some(String::from("Exif.Image.PageName")));
 }
 
 #[test]
