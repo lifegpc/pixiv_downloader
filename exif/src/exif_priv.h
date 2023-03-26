@@ -19,6 +19,17 @@ typedef struct ExifData {
     ExifDataRef ref;
 } ExifData;
 typedef struct ExifDatum {
-    Exiv2::Exifdatum* data;
+    Exiv2::Exifdatum data;
+    ExifDataRef ref;
 } ExifDatum;
+typedef struct ExifDatumRef {
+    Exiv2::Exifdatum* data;
+} ExifDatumRef;
+typedef struct ExifDataItor {
+    ExifDataRef ref;
+    ExifDatumRef ref2;
+    Exiv2::ExifMetadata::const_iterator begin;
+    Exiv2::ExifMetadata::const_iterator itor;
+    Exiv2::ExifMetadata::const_iterator end;
+} ExifDataItor;
 #endif

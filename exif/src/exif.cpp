@@ -307,7 +307,43 @@ void exif_free_data(ExifData* d) {
     delete d;
 }
 
-void exif_free_datum(ExifDatum* d) {
-    if (!d) return;
-    if (d->data) delete d->data;
+void exif_data_ref_sort_by_key(ExifDataRef* d) {
+    if (!d || !d->data) return;
+    d->data->sortByKey();
+}
+
+void exif_data_ref_sort_by_tag(ExifDataRef* d) {
+    if (!d || !d->data) return;
+    d->data->sortByTag();
+}
+
+ExifDataItor* exif_data_ref_iter(ExifDataRef* d) {
+    if (!d || !d->data) return nullptr;
+    auto re = new ExifDataItor;
+    re->ref.data = d->data;
+    re->itor = re->ref.data->begin();
+    re->begin = re->ref.data->begin();
+    re->end = re->ref.data->end();
+    return re;
+}
+
+void exif_free_data_itor(ExifDataItor* itor) {
+    if (!itor) return;
+    delete itor;
+}
+
+ExifDatumRef* exif_data_itor_next(ExifDataItor* itor) {
+    if (!itor->ref.data) return nullptr;
+    if (itor->itor == itor->end) return nullptr;
+    auto& data = (*itor->itor);
+    itor->ref2.data = (Exiv2::Exifdatum*)&data;
+    itor->itor++;
+    return &itor->ref2;
+}
+
+char* exif_datum_key(ExifDatumRef* d) {
+    if (!d->data) return nullptr;
+    char* re = nullptr;
+    if (!string2char(d->data->key(), re)) return nullptr;
+    return re;
 }

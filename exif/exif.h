@@ -17,6 +17,10 @@ typedef struct ExifData ExifData;
 typedef struct ExifDatum ExifDatum;
 /// <div rustbindgen opaque></div>
 typedef struct ExifDataRef ExifDataRef;
+/// <div rustbindgen opaque></div>
+typedef struct ExifDataItor ExifDataItor;
+/// <div rustbindgen opaque></div>
+typedef struct ExifDatumRef ExifDatumRef;
 #if defined _WIN32 && defined WIN32_DLL
 #if BUILD_DLL
 #define EXIF_API __declspec(dllexport)
@@ -63,9 +67,14 @@ EXIF_API ExifDataRef* exif_data_get_ref(ExifData* d);
 EXIF_API ExifData* exif_data_ref_clone(ExifDataRef* d);
 EXIF_API int exif_data_ref_is_empty(ExifDataRef* d);
 EXIF_API long exif_data_ref_get_count(ExifDataRef* d);
+EXIF_API void exif_data_ref_sort_by_key(ExifDataRef* d);
+EXIF_API void exif_data_ref_sort_by_tag(ExifDataRef* d);
+EXIF_API ExifDataItor* exif_data_ref_iter(ExifDataRef* d);
+EXIF_API ExifDatumRef* exif_data_itor_next(ExifDataItor* itor);
+EXIF_API char* exif_datum_key(ExifDatumRef* d);
 EXIF_API void exif_free_value(ExifValue* value);
 EXIF_API void exif_free_data(ExifData* d);
-EXIF_API void exif_free_datum(ExifDatum* d);
+EXIF_API void exif_free_data_itor(ExifDataItor* itor);
 #ifdef __cplusplus
 }
 #endif
