@@ -16,7 +16,7 @@ use std::ffi::OsStr;
 use std::fs::copy;
 #[cfg(test)]
 use std::fs::create_dir;
-use std::iter::Iterator;
+use std::iter::{DoubleEndedIterator, Iterator};
 use std::marker::PhantomData;
 use std::ops::Deref;
 use std::ops::DerefMut;
@@ -829,6 +829,19 @@ impl<'a> Iterator for ExifDataItor<'a> {
     }
 }
 
+impl<'a> DoubleEndedIterator for ExifDataItor<'a> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.itor.is_null() {
+            return None;
+        }
+        let r = unsafe { _exif::exif_data_itor_next_back(self.itor) };
+        if r.is_null() {
+            return None;
+        }
+        Some(unsafe { ExifDatumRef::from_const_handle(r as *const ExifDatumRef) })
+    }
+}
+
 /// An image
 pub struct ExifImage {
     img: *mut _exif::ExifImage,
@@ -1057,6 +1070,16 @@ fn test_exif_data() {
     let f2 = i.next().unwrap();
     assert_eq!(f.key(), Some(String::from("Exif.Image.XPTitle")));
     assert_eq!(f2.key(), Some(String::from("Exif.Image.PageName")));
+    let mut i = d.iter().unwrap();
+    assert_eq!(
+        i.next_back().unwrap().key(),
+        Some(String::from("Exif.Image.PageName"))
+    );
+    assert_eq!(
+        i.next().unwrap().key(),
+        Some(String::from("Exif.Image.XPTitle"))
+    );
+    assert!(i.next().is_none());
 }
 
 #[test]

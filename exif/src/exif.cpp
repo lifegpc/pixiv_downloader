@@ -358,7 +358,6 @@ ExifDataItor* exif_data_ref_iter(ExifDataRef* d) {
     auto re = new ExifDataItor;
     re->ref = (Exiv2::ExifData*)d;
     re->itor = re->ref->begin();
-    re->begin = re->ref->begin();
     re->end = re->ref->end();
     return re;
 }
@@ -373,6 +372,14 @@ ExifDatumRef* exif_data_itor_next(ExifDataItor* itor) {
     if (itor->itor == itor->end) return nullptr;
     auto& data = (*itor->itor);
     itor->itor++;
+    return (ExifDatumRef*)&data;
+}
+
+ExifDatumRef* exif_data_itor_next_back(ExifDataItor* itor) {
+    if (!itor->ref) return nullptr;
+    if (itor->itor == itor->end) return nullptr;
+    itor->end--;
+    auto& data = (*itor->end);
     return (ExifDatumRef*)&data;
 }
 

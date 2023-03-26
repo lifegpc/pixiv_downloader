@@ -75,6 +75,7 @@ EXIF_API void exif_data_ref_sort_by_key(ExifDataRef* d);
 EXIF_API void exif_data_ref_sort_by_tag(ExifDataRef* d);
 EXIF_API ExifDataItor* exif_data_ref_iter(ExifDataRef* d);
 EXIF_API ExifDatumRef* exif_data_itor_next(ExifDataItor* itor);
+EXIF_API ExifDatumRef* exif_data_itor_next_back(ExifDataItor* itor);
 EXIF_API char* exif_datum_key(ExifDatumRef* d);
 EXIF_API ExifValueRef* exif_datum_value(ExifDatumRef *d);
 EXIF_API void exif_free_value(ExifValue* value);
