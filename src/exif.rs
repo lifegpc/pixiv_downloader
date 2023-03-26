@@ -472,7 +472,7 @@ impl ExifValue {
     }
 
     /// Check the ok status indicator.
-    /// After a to<Type> conversion, this indicator shows whether the conversion was successful.
+    /// After a `to<Type>` conversion, this indicator shows whether the conversion was successful.
     pub fn ok(&self) -> bool {
         if self.value.is_null() {
             return false;

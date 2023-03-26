@@ -178,7 +178,7 @@ impl WebClient {
     ///
     /// returns true if readed successfully.
     /// # Note
-    /// If read failed, will clean all entries in the current [CookieJar]
+    /// If read failed, will clean all entries in the current [ManagedCookieJar]
     pub fn read_cookies(&self, file_name: &str) -> bool {
         let mut c = self.get_cookies_as_mut();
         let r = c.read(file_name);
