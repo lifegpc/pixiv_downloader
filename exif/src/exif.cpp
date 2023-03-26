@@ -196,38 +196,44 @@ end:
     return nullptr;
 }
 
-int exif_get_value_type_id(ExifValue* value) {
-    if (!value) return -1;
+ExifValueRef* exif_value_get_ref(ExifValue* value) {
+    if (!value) return nullptr;
+    value->ref.value = value->value.get();
+    return &value->ref;
+}
+
+int exif_get_value_type_id(ExifValueRef* value) {
+    if (!value || !value->value) return -1;
     return value->value->typeId();
 }
 
-long exif_get_value_count(ExifValue* value) {
-    if (!value) return -1;
+long exif_get_value_count(ExifValueRef* value) {
+    if (!value || !value->value) return -1;
     return value->value->count();
 }
 
-long exif_get_value_size(ExifValue* value) {
-    if (!value) return -1;
+long exif_get_value_size(ExifValueRef* value) {
+    if (!value || !value->value) return -1;
     return value->value->size();
 }
 
-long exif_get_value_size_data_area(ExifValue* value) {
-    if (!value) return -1;
+long exif_get_value_size_data_area(ExifValueRef* value) {
+    if (!value || !value->value) return -1;
     return value->value->sizeDataArea();
 }
 
-int exif_value_read(ExifValue* value, const uint8_t* bytes, long len, int byte_order) {
-    if (!value || !bytes) return -1;
+int exif_value_read(ExifValueRef* value, const uint8_t* bytes, long len, int byte_order) {
+    if (!value || !bytes || !value->value) return -1;
     return value->value->read(bytes, len, static_cast<Exiv2::ByteOrder>(byte_order));
 }
 
-int exif_get_value_ok(ExifValue* value) {
-    if (!value) return 0;
+int exif_get_value_ok(ExifValueRef* value) {
+    if (!value || !value->value) return 0;
     return value->value->ok() ? 1 : 0;
 }
 
-char* exif_value_to_string(ExifValue* value, size_t* len) {
-    if (!value || !len) return nullptr;
+char* exif_value_to_string(ExifValueRef* value, size_t* len) {
+    if (!value || !len || !value->value) return nullptr;
     auto s = value->value->toString();
     *len = s.size();
     char* tmp = nullptr;
@@ -235,8 +241,8 @@ char* exif_value_to_string(ExifValue* value, size_t* len) {
     return tmp;
 }
 
-char* exif_value_to_string2(ExifValue* value, size_t* len, long i) {
-    if (!value || !len) return nullptr;
+char* exif_value_to_string2(ExifValueRef* value, size_t* len, long i) {
+    if (!value || !len || !value->value) return nullptr;
     auto s = value->value->toString(i);
     *len = s.size();
     char* tmp = nullptr;
@@ -244,9 +250,24 @@ char* exif_value_to_string2(ExifValue* value, size_t* len, long i) {
     return tmp;
 }
 
-int64_t exif_value_to_int64(ExifValue* value, long i) {
-    if (!value) return -1;
+int64_t exif_value_to_int64(ExifValueRef* value, long i) {
+    if (!value || !value->value) return -1;
     return value->value->toInt64(i);
+}
+
+ExifValue* exif_value_ref_clone(ExifValueRef* value) {
+    if (!value || !value->value) return nullptr;
+    ExifValue* v = new ExifValue;
+    try {
+        v->value = value->value->clone();
+    } catch (std::exception& e) {
+        printf("%s\n", e.what());
+        goto end;
+    }
+    return v;
+end:
+    if (v) delete v;
+    return nullptr;
 }
 
 ExifData* exif_data_new() {
@@ -299,6 +320,7 @@ long exif_data_ref_get_count(ExifDataRef* d) {
 
 void exif_free_value(ExifValue* value) {
     if (!value) return;
+    value->ref.value = nullptr;
     delete value;
 }
 
@@ -342,8 +364,19 @@ ExifDatumRef* exif_data_itor_next(ExifDataItor* itor) {
 }
 
 char* exif_datum_key(ExifDatumRef* d) {
-    if (!d->data) return nullptr;
+    if (!d || !d->data) return nullptr;
     char* re = nullptr;
     if (!string2char(d->data->key(), re)) return nullptr;
     return re;
+}
+
+ExifValueRef* exif_datum_value(ExifDatumRef *d) {
+    if (!d || !d->data) return nullptr;
+    try {
+        d->ref.value = (Exiv2::Value*)&d->data->value();
+    } catch (std::exception& e) {
+        printf("%s\n", e.what());
+        return nullptr;
+    }
+    return &d->ref;
 }

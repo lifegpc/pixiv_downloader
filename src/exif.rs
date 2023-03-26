@@ -1,5 +1,5 @@
 use crate::_exif;
-use crate::_exif::{ExifDataRef, ExifDatumRef};
+use crate::_exif::{ExifDataRef, ExifDatumRef, ExifValueRef};
 use crate::ext::rawhandle::FromRawHandle;
 use crate::ext::rawhandle::ToRawHandle;
 use c_fixed_string::CFixedStr;
@@ -323,6 +323,12 @@ pub struct ExifValue {
     value: *mut _exif::ExifValue,
 }
 
+impl ExifValue {
+    pub unsafe fn from_raw_pointer(value: *mut _exif::ExifValue) -> Self {
+        Self { value }
+    }
+}
+
 impl TryFrom<ExifTypeID> for ExifValue {
     type Error = ();
     fn try_from(value: ExifTypeID) -> Result<Self, Self::Error> {
@@ -346,10 +352,40 @@ impl TryFrom<i32> for ExifValue {
     }
 }
 
+impl Borrow<ExifValueRef> for ExifValue {
+    fn borrow(&self) -> &ExifValueRef {
+        self.deref()
+    }
+}
+
+impl BorrowMut<ExifValueRef> for ExifValue {
+    fn borrow_mut(&mut self) -> &mut ExifValueRef {
+        self.deref_mut()
+    }
+}
+
+impl Deref for ExifValue {
+    type Target = ExifValueRef;
+    fn deref(&self) -> &Self::Target {
+        unsafe {
+            ExifValueRef::from_const_handle(
+                _exif::exif_value_get_ref(self.to_raw_handle()) as *const ExifValueRef
+            )
+        }
+    }
+}
+
+impl DerefMut for ExifValue {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe { ExifValueRef::from_raw_handle(_exif::exif_value_get_ref(self.to_raw_handle())) }
+    }
+}
+
 impl Drop for ExifValue {
     fn drop(&mut self) {
         if !self.value.is_null() {
             unsafe { _exif::exif_free_value(self.value) };
+            self.value = std::ptr::null_mut();
         }
     }
 }
@@ -361,13 +397,14 @@ impl ToRawHandle<_exif::ExifValue> for ExifValue {
 }
 
 #[allow(dead_code)]
-impl ExifValue {
+impl ExifValueRef {
     /// Return the type identifier (Exif data format type).
     pub fn type_id(&self) -> Option<ExifTypeID> {
-        if self.value.is_null() {
+        let value = unsafe { self.to_raw_handle() };
+        if value.is_null() {
             return None;
         }
-        let r = unsafe { _exif::exif_get_value_type_id(self.value) };
+        let r = unsafe { _exif::exif_get_value_type_id(value) };
         if r == 0 {
             return None;
         }
@@ -380,10 +417,11 @@ impl ExifValue {
 
     /// Return the number of components of the value.
     pub fn count(&self) -> Option<usize> {
-        if self.value.is_null() {
+        let value = unsafe { self.to_raw_handle() };
+        if value.is_null() {
             return None;
         }
-        let r = unsafe { _exif::exif_get_value_count(self.value) };
+        let r = unsafe { _exif::exif_get_value_count(value) };
         if r < 0 {
             return None;
         }
@@ -392,10 +430,11 @@ impl ExifValue {
 
     /// Return the size of the value in bytes.
     pub fn size(&self) -> Option<usize> {
-        if self.value.is_null() {
+        let value = unsafe { self.to_raw_handle() };
+        if value.is_null() {
             return None;
         }
-        let r = unsafe { _exif::exif_get_value_size(self.value) };
+        let r = unsafe { _exif::exif_get_value_size(value) };
         if r < 0 {
             return None;
         }
@@ -404,10 +443,11 @@ impl ExifValue {
 
     /// Return the size of the data area, 0 if there is none.
     pub fn size_data_area(&self) -> Option<usize> {
-        if self.value.is_null() {
+        let value = unsafe { self.to_raw_handle() };
+        if value.is_null() {
             return None;
         }
-        let r = unsafe { _exif::exif_get_value_size_data_area(self.value) };
+        let r = unsafe { _exif::exif_get_value_size_data_area(value) };
         if r < 0 {
             return None;
         }
@@ -418,7 +458,8 @@ impl ExifValue {
     /// * `buf` - Buffer
     /// * `byte_order` - Applicable byte order (little or big endian). Default: invaild.
     pub fn read(&mut self, buf: &[u8], byte_order: Option<ExifByteOrder>) -> Result<(), ()> {
-        if self.value.is_null() {
+        let value = unsafe { self.to_raw_handle() };
+        if value.is_null() {
             return Err(());
         }
         let buf_len = buf.len() as c_long;
@@ -428,7 +469,7 @@ impl ExifValue {
         };
         let order = order.int_value();
         let ptr = buf.as_ptr();
-        let r = unsafe { _exif::exif_value_read(self.value, ptr, buf_len, order) };
+        let r = unsafe { _exif::exif_value_read(value, ptr, buf_len, order) };
         if r == 0 {
             Ok(())
         } else {
@@ -439,7 +480,8 @@ impl ExifValue {
     /// Return the value / n-th component of the value as a string
     /// * `n` - specify the component, if None, return whole value
     pub fn to_string(&self, n: Option<usize>) -> Option<CString> {
-        if self.value.is_null() {
+        let value = unsafe { self.to_raw_handle() };
+        if value.is_null() {
             return None;
         }
         if n.is_some() {
@@ -457,9 +499,9 @@ impl ExifValue {
             return None;
         }
         let r = if n.is_none() {
-            unsafe { _exif::exif_value_to_string(self.value, ptr) }
+            unsafe { _exif::exif_value_to_string(value, ptr) }
         } else {
-            unsafe { _exif::exif_value_to_string2(self.value, ptr, n.unwrap() as c_long) }
+            unsafe { _exif::exif_value_to_string2(value, ptr, n.unwrap() as c_long) }
         };
         if r.is_null() {
             return None;
@@ -476,16 +518,18 @@ impl ExifValue {
     /// Check the ok status indicator.
     /// After a `to<Type>` conversion, this indicator shows whether the conversion was successful.
     pub fn ok(&self) -> bool {
-        if self.value.is_null() {
+        let value = unsafe { self.to_raw_handle() };
+        if value.is_null() {
             return false;
         }
-        let r = unsafe { _exif::exif_get_value_ok(self.value) };
+        let r = unsafe { _exif::exif_get_value_ok(value) };
         r != 0
     }
 
     /// Convert the n-th component of the value to a int64
     pub fn to_int64(&self, n: usize) -> Option<i64> {
-        if self.value.is_null() {
+        let value = unsafe { self.to_raw_handle() };
+        if value.is_null() {
             return None;
         }
         let c = self.count();
@@ -496,11 +540,35 @@ impl ExifValue {
         if n >= c {
             return None;
         }
-        let r = unsafe { _exif::exif_value_to_int64(self.value, n as c_long) };
+        let r = unsafe { _exif::exif_value_to_int64(value, n as c_long) };
         if !self.ok() {
             return None;
         }
         Some(r)
+    }
+}
+
+impl ToRawHandle<ExifValueRef> for ExifValueRef {
+    unsafe fn to_raw_handle(&self) -> *mut ExifValueRef {
+        self.to_const_handle() as *mut ExifValueRef
+    }
+    unsafe fn to_const_handle(&self) -> *const ExifValueRef {
+        self
+    }
+}
+
+impl ToOwned for ExifValueRef {
+    type Owned = ExifValue;
+    fn to_owned(&self) -> Self::Owned {
+        let v = unsafe { self.to_raw_handle() };
+        if v.is_null() {
+            panic!("ExifValue reference is null.");
+        }
+        let r = unsafe { _exif::exif_value_ref_clone(v) };
+        if r.is_null() {
+            panic!("Failed to convert ExifValueRef to ExifValue");
+        }
+        unsafe { ExifValue::from_raw_pointer(r) }
     }
 }
 
@@ -525,6 +593,22 @@ impl ExifDatumRef {
         }
         let s = s.unwrap();
         Some(s.to_owned())
+    }
+
+    /// Return a constant reference to the value.
+    ///
+    /// This method is provided mostly for convenient and versatile output of the value which can (to some extent) be formatted through standard stream manipulators.
+    /// An Error is thrown if the value is not set; as an alternative to catching it, one can use count() to check if there is any data before calling this method.
+    pub fn value<'a>(&'a self) -> Option<&'a ExifValueRef> {
+        let data = unsafe { self.to_raw_handle() };
+        if data.is_null() {
+            return None;
+        }
+        let r = unsafe { _exif::exif_datum_value(data) };
+        if r.is_null() {
+            return None;
+        }
+        Some(unsafe { ExifValueRef::from_const_handle(r as *const ExifValueRef) })
     }
 }
 
@@ -731,20 +815,8 @@ impl<'a> Drop for ExifDataItor<'a> {
     }
 }
 
-pub struct ExifDatumConstRef<'a> {
-    r: *mut ExifDatumRef,
-    phantom: PhantomData<&'a ExifDatumRef>,
-}
-
-impl<'a> Deref for ExifDatumConstRef<'a> {
-    type Target = ExifDatumRef;
-    fn deref(&self) -> &Self::Target {
-        unsafe { ExifDatumRef::from_const_handle(self.r as *const ExifDatumRef) }
-    }
-}
-
 impl<'a> Iterator for ExifDataItor<'a> {
-    type Item = ExifDatumConstRef<'a>;
+    type Item = &'a ExifDatumRef;
     fn next(&mut self) -> Option<Self::Item> {
         if self.itor.is_null() {
             return None;
@@ -753,10 +825,7 @@ impl<'a> Iterator for ExifDataItor<'a> {
         if r.is_null() {
             return None;
         }
-        Some(ExifDatumConstRef {
-            r,
-            phantom: PhantomData,
-        })
+        Some(unsafe { ExifDatumRef::from_const_handle(r as *const ExifDatumRef) })
     }
 }
 
@@ -793,7 +862,7 @@ impl ExifImage {
 
     /// Returns a read only [ExifData] ([ExifDataRef]) instance containing currently buffered Exif data.
     /// The Exif data in the returned instance will be written to the image when [Self::write_metadata()] is called.
-    pub fn exif_data(&self) -> Option<&ExifDataRef> {
+    pub fn exif_data<'a>(&'a self) -> Option<&'a ExifDataRef> {
         if self.img.is_null() {
             return None;
         }
@@ -806,7 +875,7 @@ impl ExifImage {
 
     /// Returns an ExifData instance containing currently buffered Exif data.
     /// The Exif data in the returned instance will be written to the image when [Self::write_metadata()] is called.
-    pub fn exif_data_as_mut(&mut self) -> Option<&mut ExifDataRef> {
+    pub fn exif_data_as_mut<'a>(&'a mut self) -> Option<&'a mut ExifDataRef> {
         if self.img.is_null() {
             return None;
         }
@@ -920,9 +989,25 @@ fn test_exif_value() {
     assert_eq!(Some(4), v.size());
     assert_eq!(Some(CString::new("116").unwrap()), v.to_string(Some(0)));
     let mut v2 = ExifValue::try_from(ExifTypeID::SLongLong).unwrap();
-    v2.read(&(102345 as i64).to_le_bytes(), Some(ExifByteOrder::Little))
+    v2.read(&(102345i64).to_le_bytes(), Some(ExifByteOrder::Little))
         .unwrap();
     assert_eq!(Some(8), v2.count());
+    let v3: &ExifValueRef = &v2;
+    assert_eq!(
+        v3.to_string(None),
+        Some(CString::new("201 143 1 0 0 0 0 0").unwrap())
+    );
+    let mut v4 = v3.to_owned();
+    v4.read(&(102346i64).to_le_bytes(), Some(ExifByteOrder::Little))
+        .unwrap();
+    assert_eq!(
+        v3.to_string(None),
+        Some(CString::new("201 143 1 0 0 0 0 0").unwrap())
+    );
+    assert_eq!(
+        v4.to_string(None),
+        Some(CString::new("202 143 1 0 0 0 0 0").unwrap())
+    );
 }
 
 #[test]
@@ -953,6 +1038,20 @@ fn test_exif_data() {
         Some(String::from("Exif.Image.PageName"))
     );
     assert!(i.next().is_none());
+    let mut i = 0;
+    for data in d.iter().unwrap() {
+        i += 1;
+        match data.key().unwrap().as_str() {
+            "Exif.Image.PageName" => {
+                assert_eq!(i, 2);
+                let v = data.value().unwrap();
+                assert_eq!(v.to_string(None), Some(CString::new("p1").unwrap()));
+            }
+            "Exif.Image.XPTitle" => assert_eq!(i, 1),
+            _ => {}
+        }
+    }
+    assert_eq!(i, 2);
 }
 
 #[test]

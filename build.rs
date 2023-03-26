@@ -154,6 +154,8 @@ fn main() {
             // included header files changed.
             .parse_callbacks(Box::new(bindgen::CargoCallbacks))
             .no_copy("ExifDataRef")
+            .no_copy("ExifDatumRef")
+            .no_copy("ExifValueRef")
             // Finish the builder and generate the bindings.
             .generate()
             // Unwrap the Result and panic on failure.

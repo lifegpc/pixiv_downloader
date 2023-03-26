@@ -21,6 +21,8 @@ typedef struct ExifDataRef ExifDataRef;
 typedef struct ExifDataItor ExifDataItor;
 /// <div rustbindgen opaque></div>
 typedef struct ExifDatumRef ExifDatumRef;
+/// <div rustbindgen opaque></div>
+typedef struct ExifValueRef ExifValueRef;
 #if defined _WIN32 && defined WIN32_DLL
 #if BUILD_DLL
 #define EXIF_API __declspec(dllexport)
@@ -51,15 +53,17 @@ EXIF_API int exif_get_key_default_type_id(ExifKey* key);
 EXIF_API void exif_free(void* v);
 EXIF_API void exif_free_key(ExifKey* key);
 EXIF_API ExifValue* exif_create_value(int type_id);
-EXIF_API int exif_get_value_type_id(ExifValue* value);
-EXIF_API long exif_get_value_count(ExifValue* value);
-EXIF_API long exif_get_value_size(ExifValue* value);
-EXIF_API long exif_get_value_size_data_area(ExifValue *value);
-EXIF_API int exif_value_read(ExifValue* value, const uint8_t* bytes, long len, int byte_order);
-EXIF_API int exif_get_value_ok(ExifValue* value);
-EXIF_API char* exif_value_to_string(ExifValue* value, size_t* len);
-EXIF_API char* exif_value_to_string2(ExifValue* value, size_t* len, long i);
-EXIF_API int64_t exif_value_to_int64(ExifValue* value, long i);
+EXIF_API ExifValueRef* exif_value_get_ref(ExifValue* value);
+EXIF_API int exif_get_value_type_id(ExifValueRef* value);
+EXIF_API long exif_get_value_count(ExifValueRef* value);
+EXIF_API long exif_get_value_size(ExifValueRef* value);
+EXIF_API long exif_get_value_size_data_area(ExifValueRef *value);
+EXIF_API int exif_value_read(ExifValueRef* value, const uint8_t* bytes, long len, int byte_order);
+EXIF_API int exif_get_value_ok(ExifValueRef* value);
+EXIF_API char* exif_value_to_string(ExifValueRef* value, size_t* len);
+EXIF_API char* exif_value_to_string2(ExifValueRef* value, size_t* len, long i);
+EXIF_API int64_t exif_value_to_int64(ExifValueRef* value, long i);
+EXIF_API ExifValue* exif_value_ref_clone(ExifValueRef* value);
 EXIF_API ExifData* exif_data_new();
 EXIF_API int exif_data_ref_add(ExifDataRef* d, ExifKey* key, ExifValue* value);
 EXIF_API int exif_data_ref_clear(ExifDataRef* d);
@@ -72,6 +76,7 @@ EXIF_API void exif_data_ref_sort_by_tag(ExifDataRef* d);
 EXIF_API ExifDataItor* exif_data_ref_iter(ExifDataRef* d);
 EXIF_API ExifDatumRef* exif_data_itor_next(ExifDataItor* itor);
 EXIF_API char* exif_datum_key(ExifDatumRef* d);
+EXIF_API ExifValueRef* exif_datum_value(ExifDatumRef *d);
 EXIF_API void exif_free_value(ExifValue* value);
 EXIF_API void exif_free_data(ExifData* d);
 EXIF_API void exif_free_data_itor(ExifDataItor* itor);

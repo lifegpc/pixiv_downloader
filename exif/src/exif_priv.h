@@ -11,20 +11,25 @@ typedef struct ExifImage {
 typedef struct ExifKey {
     Exiv2::ExifKey* key = nullptr;
 } ExifKey;
+typedef struct ExifValueRef {
+    Exiv2::Value* value;
+} ExifValueRef;
 typedef struct ExifValue {
     Exiv2::Value::UniquePtr value;
+    ExifValueRef ref;
 } ExifValue;
 typedef struct ExifData {
     Exiv2::ExifData data;
     ExifDataRef ref;
 } ExifData;
-typedef struct ExifDatum {
-    Exiv2::Exifdatum data;
-    ExifDataRef ref;
-} ExifDatum;
 typedef struct ExifDatumRef {
     Exiv2::Exifdatum* data;
+    ExifValueRef ref;
 } ExifDatumRef;
+typedef struct ExifDatum {
+    Exiv2::Exifdatum data;
+    ExifDatumRef ref;
+} ExifDatum;
 typedef struct ExifDataItor {
     ExifDataRef ref;
     ExifDatumRef ref2;
