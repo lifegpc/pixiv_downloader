@@ -64,6 +64,7 @@ buf_redux = { git = "https://github.com/lifegpc/buf_redux" }
 openssl = { git = "https://github.com/lifegpc/rust-openssl" }
 openssl-sys = { git = "https://github.com/lifegpc/rust-openssl" }
 native-tls = { git = "https://github.com/lifegpc/rust-native-tls" }
+tempfile = { git = "https://github.com/Stebalien/tempfile" }
 
 [profile.release-with-debug]
 inherits = "release"
