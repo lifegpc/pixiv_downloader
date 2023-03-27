@@ -12,3 +12,7 @@ updates:
     open-pull-requests-limit: 25
     allow:
       - dependency-type: all
+  - package-ecosystem: "cargo" # See documentation for possible values
+    directory: "/proc_macros" # Location of package manifests
+    schedule:
+      interval: "daily"
