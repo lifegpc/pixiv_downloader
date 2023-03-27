@@ -330,13 +330,7 @@ impl ExifValueRef {
     /// Return the type identifier (Exif data format type).
     pub fn type_id(&self) -> Option<ExifTypeID> {
         let value = unsafe { self.to_raw_handle() };
-        if value.is_null() {
-            return None;
-        }
         let r = unsafe { _exif::exif_get_value_type_id(value) };
-        if r == 0 {
-            return None;
-        }
         let re = ExifTypeID::from_int(r);
         if re.is_err() {
             return None;
@@ -345,42 +339,21 @@ impl ExifValueRef {
     }
 
     /// Return the number of components of the value.
-    pub fn count(&self) -> Option<usize> {
+    pub fn count(&self) -> usize {
         let value = unsafe { self.to_raw_handle() };
-        if value.is_null() {
-            return None;
-        }
-        let r = unsafe { _exif::exif_get_value_count(value) };
-        if r < 0 {
-            return None;
-        }
-        Some(r as usize)
+        unsafe { _exif::exif_get_value_count(value) }
     }
 
     /// Return the size of the value in bytes.
-    pub fn size(&self) -> Option<usize> {
+    pub fn size(&self) -> usize {
         let value = unsafe { self.to_raw_handle() };
-        if value.is_null() {
-            return None;
-        }
-        let r = unsafe { _exif::exif_get_value_size(value) };
-        if r < 0 {
-            return None;
-        }
-        Some(r as usize)
+        unsafe { _exif::exif_get_value_size(value) }
     }
 
     /// Return the size of the data area, 0 if there is none.
-    pub fn size_data_area(&self) -> Option<usize> {
+    pub fn size_data_area(&self) -> usize {
         let value = unsafe { self.to_raw_handle() };
-        if value.is_null() {
-            return None;
-        }
-        let r = unsafe { _exif::exif_get_value_size_data_area(value) };
-        if r < 0 {
-            return None;
-        }
-        Some(r as usize)
+        unsafe { _exif::exif_get_value_size_data_area(value) }
     }
 
     /// Read the value from a character buffer.
@@ -388,9 +361,6 @@ impl ExifValueRef {
     /// * `byte_order` - Applicable byte order (little or big endian). Default: invaild.
     pub fn read(&mut self, buf: &[u8], byte_order: Option<ExifByteOrder>) -> Result<(), ()> {
         let value = unsafe { self.to_raw_handle() };
-        if value.is_null() {
-            return Err(());
-        }
         let buf_len = buf.len() as c_long;
         let order = match byte_order {
             Some(o) => o,
@@ -406,74 +376,66 @@ impl ExifValueRef {
         }
     }
 
-    /// Return the value / n-th component of the value as a string
-    /// * `n` - specify the component, if None, return whole value
-    pub fn to_string(&self, n: Option<usize>) -> Option<CString> {
+    /// Return the value as a string
+    pub fn to_string(&self) -> Result<CString, ()> {
         let value = unsafe { self.to_raw_handle() };
-        if value.is_null() {
-            return None;
-        }
-        if n.is_some() {
-            let c = self.count();
-            if c.is_none() {
-                return None;
-            }
-            if n.as_ref().unwrap() >= c.as_ref().unwrap() {
-                return None;
-            }
-        }
         let mut size: Vec<usize> = vec![0];
         let ptr = size.as_mut_ptr();
-        if ptr.is_null() {
-            return None;
-        }
-        let r = if n.is_none() {
-            unsafe { _exif::exif_value_to_string(value, ptr) }
-        } else {
-            unsafe { _exif::exif_value_to_string2(value, ptr, n.unwrap() as c_long) }
-        };
+        let r = unsafe { _exif::exif_value_to_string(value, ptr) };
         if r.is_null() {
-            return None;
+            panic!("Out of memory.");
         }
-        let s = unsafe { CFixedStr::from_mut_ptr(r, size[0] as usize) };
+        let s = unsafe { CFixedStr::from_mut_ptr(r, size[0]) };
         let s = s.to_owned();
         unsafe { _exif::exif_free(r as *mut ::std::os::raw::c_void) };
         if !self.ok() {
-            return None;
+            return Err(());
         }
-        Some(s.into_c_string())
+        Ok(s.into_c_string())
+    }
+
+    /// Return the n-th component of the value as a string.
+    pub fn to_nth_string(&self, n: usize) -> Result<Option<CString>, ()> {
+        let value = unsafe { self.to_raw_handle() };
+        let count = self.count();
+        if n >= count {
+            return Ok(None);
+        }
+        let mut size: Vec<usize> = vec![0];
+        let ptr = size.as_mut_ptr();
+        let r = unsafe { _exif::exif_value_to_string2(value, ptr, n) };
+        if r.is_null() {
+            panic!("Out of memory.");
+        }
+        let s = unsafe { CFixedStr::from_mut_ptr(r, size[0]) };
+        let s = s.to_owned();
+        unsafe { _exif::exif_free(r as *mut ::std::os::raw::c_void) };
+        if !self.ok() {
+            return Err(());
+        }
+        Ok(Some(s.into_c_string()))
     }
 
     /// Check the ok status indicator.
     /// After a `to<Type>` conversion, this indicator shows whether the conversion was successful.
     pub fn ok(&self) -> bool {
         let value = unsafe { self.to_raw_handle() };
-        if value.is_null() {
-            return false;
-        }
         let r = unsafe { _exif::exif_get_value_ok(value) };
         r != 0
     }
 
     /// Convert the n-th component of the value to a int64
-    pub fn to_int64(&self, n: usize) -> Option<i64> {
+    pub fn to_int64(&self, n: usize) -> Result<Option<i64>, ()> {
         let value = unsafe { self.to_raw_handle() };
-        if value.is_null() {
-            return None;
-        }
         let c = self.count();
-        if c.is_none() {
-            return None;
-        }
-        let c = c.unwrap();
         if n >= c {
-            return None;
+            return Ok(None);
         }
-        let r = unsafe { _exif::exif_value_to_int64(value, n as c_long) };
+        let r = unsafe { _exif::exif_value_to_int64(value, n) };
         if !self.ok() {
-            return None;
+            return Err(());
         }
-        Some(r)
+        Ok(Some(r))
     }
 }
 
@@ -1016,36 +978,39 @@ fn test_exif_value() {
     assert!(v.is_ok());
     let mut v = v.unwrap();
     assert_eq!(Some(ExifTypeID::BYTE), v.type_id());
-    assert_eq!(Some(0), v.count());
-    assert_eq!(Some(0), v.size());
-    assert_eq!(Some(0), v.size_data_area());
+    assert_eq!(0, v.count());
+    assert_eq!(0, v.size());
+    assert_eq!(0, v.size_data_area());
     assert!(v.read("test".as_bytes(), None).is_ok());
-    assert_eq!(Some(4), v.count());
-    assert_eq!(Some(4), v.size());
+    assert_eq!(4, v.count());
+    assert_eq!(4, v.size());
     let c = CString::new("116 101 115 116").unwrap();
-    assert_eq!(Some(c), v.to_string(None));
-    assert_eq!(Some(4), v.count());
-    assert_eq!(Some(4), v.size());
-    assert_eq!(Some(CString::new("116").unwrap()), v.to_string(Some(0)));
+    assert_eq!(Ok(c), v.to_string());
+    assert_eq!(4, v.count());
+    assert_eq!(4, v.size());
+    assert_eq!(Ok(Some(CString::new("116").unwrap())), v.to_nth_string(0));
+    assert_eq!(Ok(None), v.to_nth_string(4));
+    assert_eq!(Ok(None), v.to_int64(4));
+    assert_eq!(Ok(Some(116)), v.to_int64(0));
     let mut v2 = ExifValue::try_from(ExifTypeID::SLongLong).unwrap();
     v2.read(&(102345i64).to_le_bytes(), Some(ExifByteOrder::Little))
         .unwrap();
-    assert_eq!(Some(8), v2.count());
+    assert_eq!(8, v2.count());
     let v3: &ExifValueRef = &v2;
     assert_eq!(
-        v3.to_string(None),
-        Some(CString::new("201 143 1 0 0 0 0 0").unwrap())
+        v3.to_string(),
+        Ok(CString::new("201 143 1 0 0 0 0 0").unwrap())
     );
     let mut v4 = v3.to_owned();
     v4.read(&(102346i64).to_le_bytes(), Some(ExifByteOrder::Little))
         .unwrap();
     assert_eq!(
-        v3.to_string(None),
-        Some(CString::new("201 143 1 0 0 0 0 0").unwrap())
+        v3.to_string(),
+        Ok(CString::new("201 143 1 0 0 0 0 0").unwrap())
     );
     assert_eq!(
-        v4.to_string(None),
-        Some(CString::new("202 143 1 0 0 0 0 0").unwrap())
+        v4.to_string(),
+        Ok(CString::new("202 143 1 0 0 0 0 0").unwrap())
     );
 }
 
@@ -1085,7 +1050,7 @@ fn test_exif_data() {
                 "Exif.Image.PageName" => {
                     assert_eq!(i, 2);
                     let v = data.value().unwrap();
-                    assert_eq!(v.to_string(None), Some(CString::new("p1").unwrap()));
+                    assert_eq!(v.to_string(), Ok(CString::new("p1").unwrap()));
                 }
                 "Exif.Image.XPTitle" => assert_eq!(i, 1),
                 _ => {}
@@ -1152,8 +1117,8 @@ fn test_exif_data() {
         .unwrap()
         .value()
         .unwrap()
-        .to_string(None);
-    assert_eq!(p, Some(CString::new("p2").unwrap()));
+        .to_string();
+    assert_eq!(p, Ok(CString::new("p2").unwrap()));
 }
 
 #[test]

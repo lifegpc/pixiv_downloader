@@ -207,19 +207,19 @@ int exif_get_value_type_id(ExifValueRef* value) {
     return v->typeId();
 }
 
-long exif_get_value_count(ExifValueRef* value) {
+size_t exif_get_value_count(ExifValueRef* value) {
     if (!value) return -1;
     auto v = (Exiv2::Value*)value;
     return v->count();
 }
 
-long exif_get_value_size(ExifValueRef* value) {
+size_t exif_get_value_size(ExifValueRef* value) {
     if (!value) return -1;
     auto v = (Exiv2::Value*)value;
     return v->size();
 }
 
-long exif_get_value_size_data_area(ExifValueRef* value) {
+size_t exif_get_value_size_data_area(ExifValueRef* value) {
     if (!value || !value) return -1;
     auto v = (Exiv2::Value*)value;
     return v->sizeDataArea();
@@ -247,7 +247,7 @@ char* exif_value_to_string(ExifValueRef* value, size_t* len) {
     return tmp;
 }
 
-char* exif_value_to_string2(ExifValueRef* value, size_t* len, long i) {
+char* exif_value_to_string2(ExifValueRef* value, size_t* len, size_t i) {
     if (!value || !len) return nullptr;
     auto v = (Exiv2::Value*)value;
     auto s = v->toString(i);
@@ -257,7 +257,7 @@ char* exif_value_to_string2(ExifValueRef* value, size_t* len, long i) {
     return tmp;
 }
 
-int64_t exif_value_to_int64(ExifValueRef* value, long i) {
+int64_t exif_value_to_int64(ExifValueRef* value, size_t i) {
     if (!value) return -1;
     auto v = (Exiv2::Value*)value;
     return v->toInt64(i);
