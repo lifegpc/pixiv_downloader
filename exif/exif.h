@@ -23,6 +23,8 @@ typedef struct ExifDataItor ExifDataItor;
 typedef struct ExifDatumRef ExifDatumRef;
 /// <div rustbindgen opaque></div>
 typedef struct ExifValueRef ExifValueRef;
+/// <div rustbindgen opaque></div>
+typedef struct ExifDataMutItor ExifDataMutItor;
 #if defined _WIN32 && defined WIN32_DLL
 #if BUILD_DLL
 #define EXIF_API __declspec(dllexport)
@@ -65,7 +67,7 @@ EXIF_API char* exif_value_to_string2(ExifValueRef* value, size_t* len, long i);
 EXIF_API int64_t exif_value_to_int64(ExifValueRef* value, long i);
 EXIF_API ExifValue* exif_value_ref_clone(ExifValueRef* value);
 EXIF_API ExifData* exif_data_new();
-EXIF_API int exif_data_ref_add(ExifDataRef* d, ExifKey* key, ExifValue* value);
+EXIF_API int exif_data_ref_add(ExifDataRef* d, ExifKey* key, ExifValueRef* value);
 EXIF_API int exif_data_ref_clear(ExifDataRef* d);
 EXIF_API ExifDataRef* exif_data_get_ref(ExifData* d);
 EXIF_API ExifData* exif_data_ref_clone(ExifDataRef* d);
@@ -74,13 +76,18 @@ EXIF_API long exif_data_ref_get_count(ExifDataRef* d);
 EXIF_API void exif_data_ref_sort_by_key(ExifDataRef* d);
 EXIF_API void exif_data_ref_sort_by_tag(ExifDataRef* d);
 EXIF_API ExifDataItor* exif_data_ref_iter(ExifDataRef* d);
+EXIF_API ExifDataMutItor* exif_data_ref_iter_mut(ExifDataRef* d);
 EXIF_API ExifDatumRef* exif_data_itor_next(ExifDataItor* itor);
 EXIF_API ExifDatumRef* exif_data_itor_next_back(ExifDataItor* itor);
+EXIF_API ExifDatumRef* exif_data_mutitor_next(ExifDataMutItor* itor);
+EXIF_API ExifDatumRef* exif_data_mutitor_next_back(ExifDataMutItor* itor);
 EXIF_API char* exif_datum_key(ExifDatumRef* d);
 EXIF_API ExifValueRef* exif_datum_value(ExifDatumRef *d);
+EXIF_API void exif_datum_set_value(ExifDatumRef* d, ExifValueRef* v);
 EXIF_API void exif_free_value(ExifValue* value);
 EXIF_API void exif_free_data(ExifData* d);
 EXIF_API void exif_free_data_itor(ExifDataItor* itor);
+EXIF_API void exif_free_data_mutitor(ExifDataMutItor* itor);
 #ifdef __cplusplus
 }
 #endif

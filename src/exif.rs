@@ -1,5 +1,5 @@
 use crate::_exif;
-use crate::_exif::{ExifDataRef, ExifDatumRef, ExifValueRef};
+pub use crate::_exif::{ExifDataRef, ExifDatumRef, ExifValueRef};
 use crate::ext::rawhandle::FromRawHandle;
 use crate::ext::rawhandle::ToRawHandle;
 use c_fixed_string::CFixedStr;
@@ -16,7 +16,7 @@ use std::ffi::OsStr;
 use std::fs::copy;
 #[cfg(test)]
 use std::fs::create_dir;
-use std::iter::{DoubleEndedIterator, Iterator};
+use std::iter::{DoubleEndedIterator, ExactSizeIterator, Iterator};
 use std::marker::PhantomData;
 use std::ops::Deref;
 use std::ops::DerefMut;
@@ -595,6 +595,16 @@ impl ExifDatumRef {
         Some(s.to_owned())
     }
 
+    /// Set the value.
+    pub fn set_value<'a>(&'a mut self, value: &ExifValueRef) {
+        let data = unsafe { self.to_raw_handle() };
+        let v = unsafe { value.to_raw_handle() };
+        if data.is_null() || v.is_null() {
+            return;
+        }
+        unsafe { _exif::exif_datum_set_value(data, v) }
+    }
+
     /// Return a constant reference to the value.
     ///
     /// This method is provided mostly for convenient and versatile output of the value which can (to some extent) be formatted through standard stream manipulators.
@@ -689,7 +699,7 @@ impl ToRawHandle<_exif::ExifData> for ExifData {
 impl ExifDataRef {
     /// Add a data from the supplied key and value pair.
     /// No duplicate checks are performed, i.e., it is possible to add multiple metadata with the same key.
-    pub fn add(&mut self, key: &ExifKey, value: &ExifValue) -> Result<(), ()> {
+    pub fn add(&mut self, key: &ExifKey, value: &ExifValueRef) -> Result<(), ()> {
         let data = unsafe { self.to_raw_handle() };
         let k = unsafe { key.to_raw_handle() };
         let v = unsafe { value.to_raw_handle() };
@@ -750,12 +760,44 @@ impl ExifDataRef {
 
     pub fn iter<'a>(&'a self) -> Option<ExifDataItor<'a>> {
         let data = unsafe { self.to_raw_handle() };
+        let count = match self.count() {
+            Some(count) => count,
+            None => {
+                return None;
+            }
+        };
         if data.is_null() {
             return None;
         }
         let r = unsafe { _exif::exif_data_ref_iter(data) };
+        if r.is_null() {
+            return None;
+        }
         Some(ExifDataItor {
             itor: r,
+            count,
+            phantom: PhantomData,
+        })
+    }
+
+    pub fn iter_mut<'a>(&'a mut self) -> Option<ExifDataMutItor<'a>> {
+        let data = unsafe { self.to_raw_handle() };
+        let count = match self.count() {
+            Some(count) => count,
+            None => {
+                return None;
+            }
+        };
+        if data.is_null() {
+            return None;
+        }
+        let r = unsafe { _exif::exif_data_ref_iter_mut(data) };
+        if r.is_null() {
+            return None;
+        }
+        Some(ExifDataMutItor {
+            itor: r,
+            count,
             phantom: PhantomData,
         })
     }
@@ -803,6 +845,7 @@ impl ToRawHandle<ExifDataRef> for ExifDataRef {
 
 pub struct ExifDataItor<'a> {
     itor: *mut _exif::ExifDataItor,
+    count: usize,
     phantom: PhantomData<&'a _exif::ExifDataItor>,
 }
 
@@ -839,6 +882,60 @@ impl<'a> DoubleEndedIterator for ExifDataItor<'a> {
             return None;
         }
         Some(unsafe { ExifDatumRef::from_const_handle(r as *const ExifDatumRef) })
+    }
+}
+
+impl<'a> ExactSizeIterator for ExifDataItor<'a> {
+    fn len(&self) -> usize {
+        self.count
+    }
+}
+
+pub struct ExifDataMutItor<'a> {
+    itor: *mut _exif::ExifDataMutItor,
+    count: usize,
+    phantom: PhantomData<&'a mut _exif::ExifDataMutItor>,
+}
+
+impl<'a> Drop for ExifDataMutItor<'a> {
+    fn drop(&mut self) {
+        if !self.itor.is_null() {
+            unsafe { _exif::exif_free_data_mutitor(self.itor) };
+            self.itor = std::ptr::null_mut();
+        }
+    }
+}
+
+impl<'a> Iterator for ExifDataMutItor<'a> {
+    type Item = &'a mut ExifDatumRef;
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.itor.is_null() {
+            return None;
+        }
+        let r = unsafe { _exif::exif_data_mutitor_next(self.itor) };
+        if r.is_null() {
+            return None;
+        }
+        Some(unsafe { ExifDatumRef::from_raw_handle(r) })
+    }
+}
+
+impl<'a> DoubleEndedIterator for ExifDataMutItor<'a> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.itor.is_null() {
+            return None;
+        }
+        let r = unsafe { _exif::exif_data_mutitor_next_back(self.itor) };
+        if r.is_null() {
+            return None;
+        }
+        Some(unsafe { ExifDatumRef::from_raw_handle(r) })
+    }
+}
+
+impl<'a> ExactSizeIterator for ExifDataMutItor<'a> {
+    fn len(&self) -> usize {
+        self.count
     }
 }
 
@@ -1043,43 +1140,91 @@ fn test_exif_data() {
     v2.read("p1".as_bytes(), None).unwrap();
     d.add(&k2, &v2).unwrap();
     assert_eq!(Some(2), d.count());
-    let mut i = d.iter().unwrap();
-    let f = i.next().unwrap();
-    assert_eq!(f.key(), Some(String::from("Exif.Image.XPTitle")));
-    assert_eq!(
-        i.next().unwrap().key(),
-        Some(String::from("Exif.Image.PageName"))
-    );
-    assert!(i.next().is_none());
-    let mut i = 0;
-    for data in d.iter().unwrap() {
-        i += 1;
-        match data.key().unwrap().as_str() {
-            "Exif.Image.PageName" => {
-                assert_eq!(i, 2);
-                let v = data.value().unwrap();
-                assert_eq!(v.to_string(None), Some(CString::new("p1").unwrap()));
+    {
+        let mut i = d.iter().unwrap();
+        let f = i.next().unwrap();
+        assert_eq!(f.key(), Some(String::from("Exif.Image.XPTitle")));
+        assert_eq!(
+            i.next().unwrap().key(),
+            Some(String::from("Exif.Image.PageName"))
+        );
+        assert!(i.next().is_none());
+        let mut i = 0;
+        for data in d.iter().unwrap() {
+            i += 1;
+            match data.key().unwrap().as_str() {
+                "Exif.Image.PageName" => {
+                    assert_eq!(i, 2);
+                    let v = data.value().unwrap();
+                    assert_eq!(v.to_string(None), Some(CString::new("p1").unwrap()));
+                }
+                "Exif.Image.XPTitle" => assert_eq!(i, 1),
+                _ => {}
             }
-            "Exif.Image.XPTitle" => assert_eq!(i, 1),
+        }
+        assert_eq!(i, 2);
+        let mut i = d.iter().unwrap();
+        let f = i.next().unwrap();
+        let f2 = i.next().unwrap();
+        assert_eq!(f.key(), Some(String::from("Exif.Image.XPTitle")));
+        assert_eq!(f2.key(), Some(String::from("Exif.Image.PageName")));
+        let mut i = d.iter().unwrap();
+        assert_eq!(
+            i.next_back().unwrap().key(),
+            Some(String::from("Exif.Image.PageName"))
+        );
+        assert_eq!(
+            i.next().unwrap().key(),
+            Some(String::from("Exif.Image.XPTitle"))
+        );
+        assert!(i.next().is_none());
+        assert_eq!(
+            d.iter().unwrap().position(|d| match d.key() {
+                Some(key) => {
+                    match key.as_str() {
+                        "Exif.Image.PageName" => true,
+                        _ => false,
+                    }
+                }
+                None => false,
+            }),
+            Some(1)
+        );
+        assert_eq!(
+            d.iter().unwrap().rposition(|d| match d.key() {
+                Some(key) => {
+                    match key.as_str() {
+                        "Exif.Image.XPTitle" => true,
+                        _ => false,
+                    }
+                }
+                None => false,
+            }),
+            Some(0)
+        );
+    }
+    for i in d.iter_mut().unwrap() {
+        match i.key() {
+            Some(key) => match key.as_str() {
+                "Exif.Image.PageName" => {
+                    let mut v = ExifValue::try_from(ExifTypeID::AsciiString).unwrap();
+                    v.read("p2".as_bytes(), None).unwrap();
+                    i.set_value(&v);
+                }
+                _ => {}
+            },
             _ => {}
         }
     }
-    assert_eq!(i, 2);
-    let mut i = d.iter().unwrap();
-    let f = i.next().unwrap();
-    let f2 = i.next().unwrap();
-    assert_eq!(f.key(), Some(String::from("Exif.Image.XPTitle")));
-    assert_eq!(f2.key(), Some(String::from("Exif.Image.PageName")));
-    let mut i = d.iter().unwrap();
-    assert_eq!(
-        i.next_back().unwrap().key(),
-        Some(String::from("Exif.Image.PageName"))
-    );
-    assert_eq!(
-        i.next().unwrap().key(),
-        Some(String::from("Exif.Image.XPTitle"))
-    );
-    assert!(i.next().is_none());
+    let p = d
+        .iter()
+        .unwrap()
+        .nth(1)
+        .unwrap()
+        .value()
+        .unwrap()
+        .to_string(None);
+    assert_eq!(p, Some(CString::new("p2").unwrap()));
 }
 
 #[test]

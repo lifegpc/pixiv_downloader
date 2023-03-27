@@ -283,10 +283,11 @@ ExifData* exif_data_new() {
     return new ExifData;
 }
 
-int exif_data_ref_add(ExifDataRef* d, ExifKey* key, ExifValue* value) {
+int exif_data_ref_add(ExifDataRef* d, ExifKey* key, ExifValueRef* value) {
     if (!d || !key || !value || !key->key) return 0;
     auto data = (Exiv2::ExifData*)d;
-    data->add(*key->key, value->value.get());
+    auto v = (Exiv2::Value*)value;
+    data->add(*key->key, v);
     return 1;
 }
 
@@ -362,6 +363,15 @@ ExifDataItor* exif_data_ref_iter(ExifDataRef* d) {
     return re;
 }
 
+ExifDataMutItor* exif_data_ref_iter_mut(ExifDataRef* d) {
+    if (!d) return nullptr;
+    auto re = new ExifDataMutItor;
+    re->ref = (Exiv2::ExifData*)d;
+    re->itor = re->ref->begin();
+    re->end = re->ref->end();
+    return re;
+}
+
 void exif_free_data_itor(ExifDataItor* itor) {
     if (!itor) return;
     delete itor;
@@ -376,6 +386,22 @@ ExifDatumRef* exif_data_itor_next(ExifDataItor* itor) {
 }
 
 ExifDatumRef* exif_data_itor_next_back(ExifDataItor* itor) {
+    if (!itor->ref) return nullptr;
+    if (itor->itor == itor->end) return nullptr;
+    itor->end--;
+    auto& data = (*itor->end);
+    return (ExifDatumRef*)&data;
+}
+
+ExifDatumRef* exif_data_mutitor_next(ExifDataMutItor* itor) {
+    if (!itor->ref) return nullptr;
+    if (itor->itor == itor->end) return nullptr;
+    auto& data = (*itor->itor);
+    itor->itor++;
+    return (ExifDatumRef*)&data;
+}
+
+ExifDatumRef* exif_data_mutitor_next_back(ExifDataMutItor* itor) {
     if (!itor->ref) return nullptr;
     if (itor->itor == itor->end) return nullptr;
     itor->end--;
@@ -400,4 +426,16 @@ ExifValueRef* exif_datum_value(ExifDatumRef *d) {
         printf("%s\n", e.what());
         return nullptr;
     }
+}
+
+void exif_free_data_mutitor(ExifDataMutItor* itor) {
+    if (!itor) return;
+    delete itor;
+}
+
+void exif_datum_set_value(ExifDatumRef* d, ExifValueRef* v) {
+    if (!d || !v) return;
+    auto da = (Exiv2::Exifdatum*)d;
+    auto va = (Exiv2::Value*)v;
+    da->setValue(va);
 }

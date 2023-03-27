@@ -22,4 +22,9 @@ typedef struct ExifDataItor {
     Exiv2::ExifMetadata::const_iterator itor;
     Exiv2::ExifMetadata::const_iterator end;
 } ExifDataItor;
+typedef struct ExifDataMutItor {
+    Exiv2::ExifData* ref;
+    Exiv2::ExifMetadata::iterator itor;
+    Exiv2::ExifMetadata::iterator end;
+} ExifDataMutItor;
 #endif
