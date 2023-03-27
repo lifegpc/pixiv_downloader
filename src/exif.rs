@@ -1,5 +1,6 @@
 use crate::_exif;
 pub use crate::_exif::{ExifDataRef, ExifDatumRef, ExifValueRef};
+use crate::ext::rawhandle::AsNonNullPtr;
 use crate::ext::rawhandle::FromRawHandle;
 use crate::ext::rawhandle::ToRawHandle;
 use c_fixed_string::CFixedStr;
@@ -23,6 +24,7 @@ use std::ops::DerefMut;
 use std::ops::Drop;
 use std::os::raw::c_long;
 use std::path::Path;
+use std::ptr::NonNull;
 
 /// Used primarily as identifiers when creating ExifValue
 #[repr(i32)]
@@ -98,7 +100,7 @@ pub enum ExifByteOrder {
 /// Exif Key<br>
 /// See [all available keys](https://exiv2.org/tags.html).
 pub struct ExifKey {
-    key: *mut _exif::ExifKey,
+    key: NonNull<_exif::ExifKey>,
 }
 
 impl TryFrom<CString> for ExifKey {
@@ -106,10 +108,9 @@ impl TryFrom<CString> for ExifKey {
     fn try_from(value: CString) -> Result<Self, Self::Error> {
         let ptr = value.as_ptr();
         let re = unsafe { _exif::exif_create_key_by_key(ptr) };
-        if re.is_null() {
-            return Err(());
-        }
-        Ok(Self { key: re })
+        Ok(Self {
+            key: NonNull::new(re).ok_or(())?,
+        })
     }
 }
 
@@ -126,25 +127,22 @@ impl TryFrom<&str> for ExifKey {
 
 impl Drop for ExifKey {
     fn drop(&mut self) {
-        if !self.key.is_null() {
-            unsafe { _exif::exif_free_key(self.key) };
-        }
+        unsafe { _exif::exif_free_key(self.key.as_ptr()) };
     }
 }
 
 impl Clone for ExifKey {
     fn clone(&self) -> Self {
-        let key = unsafe { _exif::exif_create_key_by_another(self.key) };
-        if key.is_null() {
-            panic!("Out of memory.");
+        let key = unsafe { _exif::exif_create_key_by_another(self.key.as_ptr()) };
+        Self {
+            key: NonNull::new(key).expect("Out of memory:"),
         }
-        Self { key }
     }
 }
 
-impl ToRawHandle<_exif::ExifKey> for ExifKey {
-    unsafe fn to_raw_handle(&self) -> *mut _exif::ExifKey {
-        self.key
+impl AsNonNullPtr<_exif::ExifKey> for ExifKey {
+    fn as_non_null(&self) -> &NonNull<_exif::ExifKey> {
+        &self.key
     }
 }
 
@@ -159,162 +157,95 @@ impl ExifKey {
         let p = p.unwrap();
         let ptr = p.as_ptr();
         let re = unsafe { _exif::exif_create_key_by_id(id, ptr) };
-        if re.is_null() {
-            return Err(());
-        }
-        Ok(Self { key: re })
+        Ok(Self {
+            key: NonNull::new(re).ok_or(())?,
+        })
     }
 
     /// Return the key of the metadatum as a string.
     /// The key is of the form `familyName.groupName.tagName`
     /// # Note
     /// However that the key is not necessarily unique, e.g., an ExifData may contain multiple metadata with the same key.
-    pub fn key(&self) -> Option<String> {
-        if self.key.is_null() {
-            return None;
-        }
-        let r = unsafe { _exif::exif_get_key_key(self.key) };
+    pub fn key(&self) -> String {
+        let r = unsafe { _exif::exif_get_key_key(self.key.as_ptr()) };
         if r.is_null() {
-            return None;
+            panic!("Out of memory.");
         }
         let s = unsafe { CStr::from_ptr(r) };
         let s = s.to_owned();
         unsafe { _exif::exif_free(r as *mut ::std::os::raw::c_void) };
-        let s = s.to_str();
-        if s.is_err() {
-            return None;
-        }
-        let s = s.unwrap();
-        Some(s.to_owned())
+        s.to_string_lossy().into_owned()
     }
 
     /// Return an identifier for the type of metadata (the first part of the key)
-    pub fn family_name(&self) -> Option<String> {
-        if self.key.is_null() {
-            return None;
-        }
-        let r = unsafe { _exif::exif_get_key_family_name(self.key) };
+    pub fn family_name(&self) -> String {
+        let r = unsafe { _exif::exif_get_key_family_name(self.key.as_ptr()) };
         if r.is_null() {
-            return None;
+            panic!("Out of memory.");
         }
         let s = unsafe { CStr::from_ptr(r) };
         let s = s.to_owned();
         unsafe { _exif::exif_free(r as *mut ::std::os::raw::c_void) };
-        let s = s.to_str();
-        if s.is_err() {
-            return None;
-        }
-        let s = s.unwrap();
-        Some(s.to_owned())
+        s.to_string_lossy().into_owned()
     }
 
     /// Return the name of the group (the second part of the key)
-    pub fn group_name(&self) -> Option<String> {
-        if self.key.is_null() {
-            return None;
-        }
-        let r = unsafe { _exif::exif_get_key_group_name(self.key) };
+    pub fn group_name(&self) -> String {
+        let r = unsafe { _exif::exif_get_key_group_name(self.key.as_ptr()) };
         if r.is_null() {
-            return None;
+            panic!("Out of memory.");
         }
         let s = unsafe { CStr::from_ptr(r) };
         let s = s.to_owned();
         unsafe { _exif::exif_free(r as *mut ::std::os::raw::c_void) };
-        let s = s.to_str();
-        if s.is_err() {
-            return None;
-        }
-        let s = s.unwrap();
-        Some(s.to_owned())
+        s.to_string_lossy().into_owned()
     }
 
     /// Return the name of the tag (which is also the third part of the key)
-    pub fn tag_name(&self) -> Option<String> {
-        if self.key.is_null() {
-            return None;
-        }
-        let r = unsafe { _exif::exif_get_key_tag_name(self.key) };
+    pub fn tag_name(&self) -> String {
+        let r = unsafe { _exif::exif_get_key_tag_name(self.key.as_ptr()) };
         if r.is_null() {
-            return None;
+            panic!("Out of memory.");
         }
         let s = unsafe { CStr::from_ptr(r) };
         let s = s.to_owned();
         unsafe { _exif::exif_free(r as *mut ::std::os::raw::c_void) };
-        let s = s.to_str();
-        if s.is_err() {
-            return None;
-        }
-        let s = s.unwrap();
-        Some(s.to_owned())
+        s.to_string_lossy().into_owned()
     }
 
     /// Return the tag number.
-    pub fn tag(&self) -> Option<u16> {
-        if self.key.is_null() {
-            return None;
-        }
-        let r = unsafe { _exif::exif_get_key_tag_tag(self.key) };
-        if r == 65535 {
-            None
-        } else {
-            Some(r)
-        }
+    pub fn tag(&self) -> u16 {
+        unsafe { _exif::exif_get_key_tag_tag(self.key.as_ptr()) }
     }
 
     /// Return a label for the tag.
-    pub fn tag_label(&self) -> Option<String> {
-        if self.key.is_null() {
-            return None;
-        }
-        let r = unsafe { _exif::exif_get_key_tag_label(self.key) };
+    pub fn tag_label(&self) -> String {
+        let r = unsafe { _exif::exif_get_key_tag_label(self.key.as_ptr()) };
         if r.is_null() {
-            return None;
+            panic!("Out of memory.");
         }
         let s = unsafe { CStr::from_ptr(r) };
         let s = s.to_owned();
         unsafe { _exif::exif_free(r as *mut ::std::os::raw::c_void) };
-        let s = s.to_str();
-        if s.is_err() {
-            return None;
-        }
-        let s = s.unwrap();
-        Some(s.to_owned())
+        s.to_string_lossy().into_owned()
     }
 
     /// Return the tag description.
-    pub fn tag_desc(&self) -> Option<String> {
-        if self.key.is_null() {
-            return None;
-        }
-        let r = unsafe { _exif::exif_get_key_tag_desc(self.key) };
+    pub fn tag_desc(&self) -> String {
+        let r = unsafe { _exif::exif_get_key_tag_desc(self.key.as_ptr()) };
         if r.is_null() {
-            return None;
+            panic!("Out of memory.");
         }
         let s = unsafe { CStr::from_ptr(r) };
         let s = s.to_owned();
         unsafe { _exif::exif_free(r as *mut ::std::os::raw::c_void) };
-        let s = s.to_str();
-        if s.is_err() {
-            return None;
-        }
-        let s = s.unwrap();
-        Some(s.to_owned())
+        s.to_string_lossy().into_owned()
     }
 
     /// Return the default type id for this tag.
     pub fn default_typeid(&self) -> Option<ExifTypeID> {
-        if self.key.is_null() {
-            return None;
-        }
-        let r = unsafe { _exif::exif_get_key_default_type_id(self.key) };
-        if r == -1 {
-            return None;
-        }
-        let re = ExifTypeID::from_int(r);
-        if re.is_err() {
-            return None;
-        }
-        Some(re.unwrap())
+        let r = unsafe { _exif::exif_get_key_default_type_id(self.key.as_ptr()) };
+        ExifTypeID::from_int(r).ok()
     }
 }
 
@@ -701,9 +632,9 @@ impl ExifDataRef {
     /// No duplicate checks are performed, i.e., it is possible to add multiple metadata with the same key.
     pub fn add(&mut self, key: &ExifKey, value: &ExifValueRef) -> Result<(), ()> {
         let data = unsafe { self.to_raw_handle() };
-        let k = unsafe { key.to_raw_handle() };
+        let k = key.as_ptr();
         let v = unsafe { value.to_raw_handle() };
-        if k.is_null() || v.is_null() || data.is_null() {
+        if v.is_null() || data.is_null() {
             return Err(());
         }
         let r = unsafe { _exif::exif_data_ref_add(data, k, v) };
@@ -1062,23 +993,23 @@ fn test_exif_key() {
     let k = ExifKey::try_from("Exif.Image.XPTitle");
     assert!(k.is_ok());
     let k = k.unwrap();
-    assert_eq!(Some(String::from("Exif.Image.XPTitle")), k.key());
-    assert_eq!(Some(String::from("Exif")), k.family_name());
-    assert_eq!(Some(String::from("Image")), k.group_name());
-    assert_eq!(Some(String::from("XPTitle")), k.tag_name());
-    assert_eq!(Some(40091), k.tag());
-    assert_eq!(Some(String::from("Windows Title")), k.tag_label());
+    assert_eq!(String::from("Exif.Image.XPTitle"), k.key());
+    assert_eq!(String::from("Exif"), k.family_name());
+    assert_eq!(String::from("Image"), k.group_name());
+    assert_eq!(String::from("XPTitle"), k.tag_name());
+    assert_eq!(40091, k.tag());
+    assert_eq!(String::from("Windows Title"), k.tag_label());
     assert_eq!(
-        Some(String::from("Title tag used by Windows, encoded in UCS2")),
+        String::from("Title tag used by Windows, encoded in UCS2"),
         k.tag_desc()
     );
     assert_eq!(Some(ExifTypeID::BYTE), k.default_typeid());
     let k2 = ExifKey::from_id(40091, "Image");
     assert!(k2.is_ok());
     let k2 = k2.unwrap();
-    assert_eq!(Some(String::from("Exif.Image.XPTitle")), k2.key());
+    assert_eq!(String::from("Exif.Image.XPTitle"), k2.key());
     let k3 = k2.clone();
-    assert_eq!(Some(String::from("Exif.Image.XPTitle")), k3.key());
+    assert_eq!(String::from("Exif.Image.XPTitle"), k3.key());
 }
 
 #[test]
