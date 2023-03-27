@@ -238,7 +238,7 @@ impl Parse for HTTPHeader {
             if input.cursor().eof() {
                 break;
             }
-            match token::Sub::parse(input) {
+            match token::Minus::parse(input) {
                 Ok(_) => {}
                 Err(_) => {
                     break;
@@ -544,7 +544,7 @@ impl Parse for CheckJsonKeys {
             return Ok(Self { keys });
         }
         let first: LitStr = input.parse()?;
-        match input.parse::<token::Add>() {
+        match input.parse::<token::Plus>() {
             Ok(_) => match input.parse::<Ident>() {
                 Ok(ident) => {
                     keys.push((first, true, Some(ident), None));
@@ -571,7 +571,7 @@ impl Parse for CheckJsonKeys {
                 break;
             }
             let key: LitStr = input.parse()?;
-            match input.parse::<token::Add>() {
+            match input.parse::<token::Plus>() {
                 Ok(_) => match input.parse::<Ident>() {
                     Ok(ident) => {
                         keys.push((key, true, Some(ident), None));
