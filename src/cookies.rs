@@ -355,14 +355,9 @@ impl CookieJar {
     #[allow(dead_code)]
     pub fn get<S: AsRef<str> + ?Sized>(&self, name: &S) -> Option<&Cookie> {
         let name = name.as_ref();
-        for i in self.cookies.iter() {
-            match i {
-                CookieJarLine::Cookie(i) => {
-                    if i._name == name {
-                        return Some(i);
-                    }
-                }
-                _ => {}
+        for i in self.iter() {
+            if i._name == name {
+                return Some(i);
             }
         }
         None
@@ -448,8 +443,34 @@ impl CookieJar {
         true
     }
 
-    pub fn iter(&self) -> core::slice::Iter<CookieJarLine> {
-        self.cookies.iter()
+    pub fn iter<'a>(&'a self) -> CookieJarItor<'a> {
+        CookieJarItor {
+            iter: self.cookies.iter(),
+        }
+    }
+}
+
+pub struct CookieJarItor<'a> {
+    iter: core::slice::Iter<'a, CookieJarLine>,
+}
+
+impl<'a> Iterator for CookieJarItor<'a> {
+    type Item = &'a Cookie;
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            match self.iter.next() {
+                Some(item) => match item {
+                    CookieJarLine::Cookie(c) => {
+                        return Some(c);
+                    }
+                    _ => {}
+                },
+                None => {
+                    break;
+                }
+            }
+        }
+        None
     }
 }
 
