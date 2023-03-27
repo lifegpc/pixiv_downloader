@@ -251,12 +251,14 @@ impl ExifKey {
 
 /// Common interface for all types of values used with metadata.
 pub struct ExifValue {
-    value: *mut _exif::ExifValue,
+    value: NonNull<_exif::ExifValue>,
 }
 
 impl ExifValue {
     pub unsafe fn from_raw_pointer(value: *mut _exif::ExifValue) -> Self {
-        Self { value }
+        Self {
+            value: unsafe { NonNull::new_unchecked(value) },
+        }
     }
 }
 
@@ -265,10 +267,9 @@ impl TryFrom<ExifTypeID> for ExifValue {
     fn try_from(value: ExifTypeID) -> Result<Self, Self::Error> {
         let d = value.int_value();
         let r = unsafe { _exif::exif_create_value(d) };
-        if r.is_null() {
-            return Err(());
-        }
-        Ok(Self { value: r })
+        Ok(Self {
+            value: NonNull::new(r).ok_or(())?,
+        })
     }
 }
 
@@ -300,7 +301,7 @@ impl Deref for ExifValue {
     fn deref(&self) -> &Self::Target {
         unsafe {
             ExifValueRef::from_const_handle(
-                _exif::exif_value_get_ref(self.to_raw_handle()) as *const ExifValueRef
+                _exif::exif_value_get_ref(self.as_ptr()) as *const ExifValueRef
             )
         }
     }
@@ -308,22 +309,19 @@ impl Deref for ExifValue {
 
 impl DerefMut for ExifValue {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        unsafe { ExifValueRef::from_raw_handle(_exif::exif_value_get_ref(self.to_raw_handle())) }
+        unsafe { ExifValueRef::from_raw_handle(_exif::exif_value_get_ref(self.as_ptr())) }
     }
 }
 
 impl Drop for ExifValue {
     fn drop(&mut self) {
-        if !self.value.is_null() {
-            unsafe { _exif::exif_free_value(self.value) };
-            self.value = std::ptr::null_mut();
-        }
+        unsafe { _exif::exif_free_value(self.value.as_ptr()) };
     }
 }
 
-impl ToRawHandle<_exif::ExifValue> for ExifValue {
-    unsafe fn to_raw_handle(&self) -> *mut _exif::ExifValue {
-        self.value
+impl AsNonNullPtr<_exif::ExifValue> for ExifValue {
+    fn as_non_null(&self) -> &NonNull<_exif::ExifValue> {
+        &self.value
     }
 }
 
