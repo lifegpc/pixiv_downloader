@@ -2,7 +2,6 @@ use crate::ext::json::ToJson;
 use json::JsonValue;
 use regex::Regex;
 use reqwest::IntoUrl;
-use std::convert::TryInto;
 
 lazy_static! {
     #[doc(hidden)]

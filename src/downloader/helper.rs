@@ -8,7 +8,6 @@ use crate::gettext;
 use crate::webclient::ToHeaders;
 use crate::webclient::WebClient;
 use reqwest::IntoUrl;
-use std::convert::TryFrom;
 use std::path::Path;
 use std::sync::Arc;
 use url::Url;

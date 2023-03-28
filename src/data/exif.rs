@@ -8,7 +8,6 @@ use crate::ext::try_err::TryErr;
 use crate::parser::description::parse_description;
 use proc_macros::call_parent_data_source_fun;
 use proc_macros::define_exif_data_source;
-use std::convert::TryFrom;
 use std::ffi::OsStr;
 use utf16string::LittleEndian;
 use utf16string::WString;

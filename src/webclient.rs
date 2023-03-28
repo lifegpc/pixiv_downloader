@@ -9,7 +9,6 @@ use crate::opthelper::get_helper;
 use json::JsonValue;
 use reqwest::{Client, ClientBuilder, IntoUrl, RequestBuilder, Response};
 use std::collections::HashMap;
-use std::convert::TryInto;
 use std::default::Default;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicI64;

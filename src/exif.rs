@@ -9,7 +9,6 @@ use std::borrow::Borrow;
 use std::borrow::BorrowMut;
 use std::borrow::ToOwned;
 use std::clone::Clone;
-use std::convert::TryFrom;
 use std::ffi::CStr;
 use std::ffi::CString;
 use std::ffi::OsStr;

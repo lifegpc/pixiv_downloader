@@ -5,7 +5,6 @@ use fancy_regex::Regex;
 use json::JsonValue;
 use std::cmp::PartialEq;
 use std::convert::From;
-use std::convert::TryFrom;
 use std::fmt::Display;
 
 #[derive(Debug, derive_more::From)]

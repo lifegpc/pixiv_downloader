@@ -1,7 +1,6 @@
 use crate::ext::try_err::TryErr;
 use crate::gettext;
 use json::JsonValue;
-use std::convert::TryFrom;
 use std::fmt::Display;
 use std::ops::Deref;
 use std::ops::DerefMut;

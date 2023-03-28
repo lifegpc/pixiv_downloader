@@ -7,7 +7,6 @@ use crate::pixiv_link::PixivID;
 use crate::pixiv_link::ToPixivID;
 use int_enum::IntEnum;
 use json::JsonValue;
-use std::convert::TryInto;
 use xml::unescape;
 
 /// The type of the artwork

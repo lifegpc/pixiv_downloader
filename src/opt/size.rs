@@ -1,5 +1,4 @@
 use json::JsonValue;
-use std::convert::TryFrom;
 
 /// Parse file size
 pub fn parse_size(obj: &JsonValue) -> Option<u64> {

@@ -6,7 +6,6 @@ use http::Uri;
 use json::JsonValue;
 use std::cmp::PartialEq;
 use std::convert::From;
-use std::convert::TryFrom;
 use std::default::Default;
 use std::fmt::Display;
 use std::net::SocketAddr;

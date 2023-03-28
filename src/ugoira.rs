@@ -8,7 +8,6 @@ use crate::ext::rawhandle::ToRawHandle;
 use crate::ext::try_err::TryErr;
 use crate::gettext;
 use std::convert::AsRef;
-use std::convert::TryFrom;
 use std::default::Default;
 use std::ffi::CStr;
 use std::ffi::OsStr;

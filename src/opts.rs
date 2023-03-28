@@ -9,7 +9,6 @@ use crate::utils::check_file_exists;
 use crate::utils::get_exe_path_else_current;
 use getopts::HasArg;
 use getopts::Options;
-use std::convert::TryFrom;
 use std::env;
 #[cfg(feature = "server")]
 use std::net::SocketAddr;

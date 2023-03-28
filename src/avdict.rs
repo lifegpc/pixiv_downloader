@@ -6,7 +6,6 @@ use crate::gettext;
 use std::collections::HashMap;
 use std::convert::AsMut;
 use std::convert::AsRef;
-use std::convert::TryFrom;
 use std::default::Default;
 use std::ffi::CStr;
 use std::ffi::CString;

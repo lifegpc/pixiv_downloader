@@ -19,7 +19,6 @@ use crate::server::cors::CorsEntry;
 use crate::settings::SettingStore;
 #[cfg(feature = "ugoira")]
 use crate::ugoira::X264Profile;
-use std::convert::TryFrom;
 #[cfg(feature = "server")]
 use std::net::IpAddr;
 #[cfg(feature = "server")]
