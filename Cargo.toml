@@ -40,7 +40,7 @@ regex = "1"
 reqwest = { version = "0.11", features = ["brotli", "deflate", "gzip", "socks", "stream"] }
 rusqlite = { version = "0.29", features = ["bundled", "chrono"], optional = true }
 RustyXML = "0.3"
-tokio = { version = "1.27", features = ["rt", "macros", "rt-multi-thread", "time"] }
+tokio = { version = "1.28", features = ["rt", "macros", "rt-multi-thread", "time"] }
 url = "2.3"
 urlparse = "0.7"
 utf16string = { version= "0.2", optional = true }
