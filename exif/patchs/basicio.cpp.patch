@@ -1,5 +1,5 @@
 diff --git a/src/basicio.cpp b/src/basicio.cpp
-index 97a481ce..c506485d 100644
+index 9ab953a3..68780d3a 100644
 --- a/src/basicio.cpp
 +++ b/src/basicio.cpp
 @@ -64,6 +64,64 @@ void ReplaceStringInPlace(std::string& subject, std::string_view search, std::st
@@ -67,7 +67,7 @@ index 97a481ce..c506485d 100644
  void BasicIo::readOrThrow(byte* buf, size_t rcount, ErrorCode err) {
    const size_t nread = read(buf, rcount);
    Internal::enforce(nread == rcount, err);
-@@ -170,7 +228,11 @@ int FileIo::Impl::switchMode(OpMode opMode) {
+@@ -173,7 +231,11 @@ int FileIo::Impl::switchMode(OpMode opMode) {
    }
    openMode_ = "r+b";
    opMode_ = opSeek;
@@ -78,8 +78,8 @@ index 97a481ce..c506485d 100644
 +#endif
    if (!fp_)
      return 1;
-   return std::fseek(fp_, offset, SEEK_SET);
-@@ -501,7 +563,11 @@ int FileIo::open(const std::string& mode) {
+ #ifdef _WIN32
+@@ -509,7 +571,11 @@ int FileIo::open(const std::string& mode) {
    close();
    p_->openMode_ = mode;
    p_->opMode_ = Impl::opSeek;
