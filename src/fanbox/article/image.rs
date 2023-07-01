@@ -108,6 +108,10 @@ impl FanboxArticleImageMap {
             None
         }
     }
+
+    pub fn len(&self) -> usize {
+        self.data.len()
+    }
 }
 
 impl CheckUnknown for FanboxArticleImageMap {

@@ -147,6 +147,29 @@ impl DownloaderHelperBuilder {
     }
 }
 
+impl Clone for DownloaderHelper {
+    fn clone(&self) -> Self {
+        Self {
+            url: self.url.clone(),
+            client: self.client.clone(),
+            headers: match &self.headers {
+                Some(headers) => match headers.to_headers() {
+                    Some(headers) => Some(Box::new(headers)),
+                    None => None,
+                },
+                None => None,
+            },
+            file_name: match &self.file_name {
+                Some(p) => {
+                    let path = p.as_ref().as_ref();
+                    Some(Box::new(path.to_owned()))
+                }
+                None => None,
+            },
+        }
+    }
+}
+
 impl From<Url> for DownloaderHelper {
     fn from(url: Url) -> Self {
         Self {

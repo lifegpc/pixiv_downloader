@@ -61,6 +61,7 @@ pub fn get_settings_list() -> Vec<SettingDes> {
         SettingDes::new("x264-crf", gettext("The Constant Rate Factor when converting ugoira(GIF) to video."), JsonValueType::Number, Some(check_crf)).unwrap(),
         #[cfg(feature = "ugoira")]
         SettingDes::new("ugoira-max-fps", gettext("The max fps when converting ugoira(GIF) to video."), JsonValueType::Number, Some(check_ugoira_max_fps)).unwrap(),
+        SettingDes::new("fanbox-page-number", gettext("Use page number for pictures' file name in fanbox."), JsonValueType::Boolean, None).unwrap(),
     ]
 }
 

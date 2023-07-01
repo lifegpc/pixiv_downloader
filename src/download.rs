@@ -534,18 +534,40 @@ pub async fn download_file(
 /// * `progress_bars` - Multiple progress bars
 /// * `datas` - The artwork's data
 /// * `base` - The directory of the target
+/// * `total_page` - The total count of pages
 pub async fn download_fanbox_image(
     dh: DownloaderHelper,
     np: u16,
     progress_bars: Option<Arc<MultiProgress>>,
     datas: Arc<FanboxData>,
     base: Arc<PathBuf>,
+    total_page: u16,
 ) -> Result<(), PixivDownloaderError> {
+    let mut ndh = dh.clone();
     let helper = get_helper();
-    let file_name = dh
+    if helper.fanbox_page_number() {
+        let len = format!("{}", total_page).len();
+        let basep = match &datas.id {
+            PixivID::Artwork(a) => format!("{}", a),
+            PixivID::FanboxCreator(f) => format!("{}", f),
+            PixivID::FanboxPost(p) => format!("{}", p.post_id),
+        };
+        let mut nps = format!("{}", np + 1);
+        while nps.len() < len {
+            nps = String::from("0") + &nps;
+        }
+        let ofn = ndh
+            .get_local_file_path(&*base)
+            .try_err(gettext("Failed to get file name from url."))?;
+        let ext = ofn
+            .extension()
+            .map_or("jpg", |v| v.to_str().unwrap_or("jpg"));
+        ndh.set_file_name(&format!("{}_{}.{}", basep, nps, ext));
+    }
+    let file_name = ndh
         .get_local_file_path(&*base)
         .try_err(gettext("Failed to get file name from url."))?;
-    match dh.download_local(helper.overwrite(), &*base)? {
+    match ndh.download_local(helper.overwrite(), &*base)? {
         DownloaderResult::Ok(d) => {
             d.handle_options(&helper, progress_bars);
             d.download();
@@ -658,6 +680,7 @@ pub async fn download_fanbox_post(
                 .file_map()
                 .ok_or(gettext("Failed to get file map from article."))?;
             let mut np = 0;
+            let total_page = image_map.len() as u16;
             let mut datas = data.clone();
             #[cfg(feature = "exif")]
             datas.exif_data.replace(Box::new(Arc::clone(&article)));
@@ -685,6 +708,7 @@ pub async fn download_fanbox_post(
                                 },
                                 Arc::clone(&datas),
                                 Arc::clone(&base),
+                                total_page,
                             ))
                             .await;
                         if !download_multiple_files {
@@ -794,6 +818,7 @@ pub async fn download_fanbox_post(
                 .images()
                 .try_err(gettext("Failed to get images from the image post."))?;
             let mut np = 0;
+            let total_page = images.len() as u16;
             let mut datas = data.clone();
             #[cfg(feature = "exif")]
             datas.exif_data.replace(Box::new(Arc::clone(&img)));
@@ -813,6 +838,7 @@ pub async fn download_fanbox_post(
                         },
                         Arc::clone(&datas),
                         Arc::clone(&base),
+                        total_page,
                     ))
                     .await;
                 if !download_multiple_files {
@@ -927,6 +953,14 @@ pub async fn download_fanbox_creator_info(
     let fdata = Arc::new(fdata);
     let download_multiple_files = helper.download_multiple_files();
     let mut np = 0u16;
+    let mut total_page = 0;
+    match data.download_cover_image_url()? {
+        Some(_) => {
+            total_page += 1;
+        }
+        None => {}
+    }
+    total_page += data.profile_items()?.len() as u16;
     {
         match data.download_cover_image_url()? {
             Some(dh) => {
@@ -941,6 +975,7 @@ pub async fn download_fanbox_creator_info(
                         },
                         Arc::clone(&fdata),
                         Arc::clone(&base),
+                        total_page,
                     ))
                     .await;
                 if !download_multiple_files {
@@ -968,6 +1003,7 @@ pub async fn download_fanbox_creator_info(
                         },
                         Arc::clone(&fdata),
                         Arc::clone(&base),
+                        total_page,
                     ))
                     .await;
                 if !download_multiple_files {

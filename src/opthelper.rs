@@ -485,6 +485,24 @@ impl OptHelper {
         }
         X264Profile::default()
     }
+
+    /// Use page number for pictures' file name in fanbox.
+    pub fn fanbox_page_number(&self) -> bool {
+        match self.opt.get_ref().fanbox_page_number {
+            Some(r) => {
+                return r;
+            }
+            None => {}
+        }
+        if self.settings.get_ref().have_bool("fanbox-page-number") {
+            return self
+                .settings
+                .get_ref()
+                .get_bool("fanbox-page-number")
+                .unwrap();
+        }
+        false
+    }
 }
 
 impl Default for OptHelper {

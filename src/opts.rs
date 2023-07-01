@@ -119,6 +119,7 @@ pub struct CommandOpts {
     pub x264_crf: Option<f32>,
     #[cfg(feature = "ugoira")]
     pub ugoira_max_fps: Option<f32>,
+    pub fanbox_page_number: Option<bool>,
 }
 
 impl CommandOpts {
@@ -161,6 +162,7 @@ impl CommandOpts {
             x264_crf: None,
             #[cfg(feature = "ugoira")]
             ugoira_max_fps: None,
+            fanbox_page_number: None,
         }
     }
 
@@ -581,6 +583,14 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         HasArg::Maybe,
         getopts::Occur::Optional,
     );
+    opts.opt(
+        "",
+        "fanbox-page-number",
+        gettext("Use page number for pictures' file name in fanbox."),
+        "BOOLEAN",
+        HasArg::Maybe,
+        getopts::Occur::Optional,
+    );
     let result = match opts.parse(&argv[1..]) {
         Ok(m) => m,
         Err(err) => {
@@ -923,6 +933,19 @@ pub fn parse_cmd() -> Option<CommandOpts> {
                 "{} {}",
                 ("Failed to parse <opt>:")
                     .replace("<opt>", "ugoira-max-fps")
+                    .as_str(),
+                e
+            );
+            return None;
+        }
+    }
+    match parse_optional_opt(&result, "fanbox-page-number", true, parse_bool) {
+        Ok(b) => re.as_mut().unwrap().fanbox_page_number = b,
+        Err(e) => {
+            println!(
+                "{} {}",
+                gettext("Failed to parse <opt>:")
+                    .replace("<opt>", "fanbox-page-number")
                     .as_str(),
                 e
             );
