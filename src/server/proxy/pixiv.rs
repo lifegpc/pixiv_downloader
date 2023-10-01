@@ -1,7 +1,6 @@
 use super::super::preclude::*;
 use crate::webclient::WebClient;
 use http::Uri;
-use std::collections::HashMap;
 
 pub struct ProxyPixivContext {
     ctx: Arc<ServerContext>,
@@ -39,11 +38,53 @@ impl ResponseFor<Body, Pin<Box<HttpBodyType>>> for ProxyPixivContext {
         }
         let client = WebClient::default();
         client.set_header("referer", "https://www.pixiv.net/");
-        let headers = HashMap::new();
+        let o = req.headers();
+        match o.get("user-agent") {
+            Some(v) => {
+                client.set_header(
+                    "user-agent",
+                    v.to_str()
+                        .unwrap_or("PixivAndroidApp/5.0.234 (Android 11; Pixel 5)"),
+                );
+            }
+            None => {}
+        }
+        let keys = ["Range", "Accept", "If-Modified-Since"];
+        for k in keys {
+            match o.get(k) {
+                Some(v) => {
+                    client.set_header(k, v.to_str().unwrap_or(""));
+                }
+                None => {}
+            }
+        }
         let re = http_error!(
             502,
-            client.get(url, headers).await.ok_or("Failed to get image.")
+            client.get(url, None).await.ok_or("Failed to get image.")
         );
+        builder = builder.status(re.status());
+        let keys = [
+            "cache-control",
+            "content-length",
+            "content-type",
+            "date",
+            "last-modified",
+            "content-range",
+            "age",
+            "expires",
+            "keep-alive",
+            "location",
+            "server",
+        ];
+        let o = re.headers();
+        for k in keys {
+            match o.get(k) {
+                Some(v) => {
+                    builder = builder.header(k, v.to_str().unwrap_or(""));
+                }
+                None => {}
+            }
+        }
         return Ok(builder.body::<Pin<Box<HttpBodyType>>>(Box::pin(ResponseBody::new(re)))?);
     }
 }
