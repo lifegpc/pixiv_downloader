@@ -216,7 +216,7 @@ impl AuthTokenRoute {
     }
 }
 
-impl MatchRoute<Body, Body> for AuthTokenRoute {
+impl MatchRoute<Body, Pin<Box<HttpBodyType>>> for AuthTokenRoute {
     fn match_route(
         &self,
         ctx: &Arc<ServerContext>,

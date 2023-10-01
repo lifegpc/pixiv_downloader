@@ -44,7 +44,7 @@ impl VersionRoute {
     }
 }
 
-impl MatchRoute<Body, Body> for VersionRoute {
+impl MatchRoute<Body, Pin<Box<HttpBodyType>>> for VersionRoute {
     fn match_route(
         &self,
         ctx: &Arc<ServerContext>,

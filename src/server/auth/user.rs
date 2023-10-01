@@ -507,7 +507,7 @@ impl AuthUserRoute {
     }
 }
 
-impl MatchRoute<Body, Body> for AuthUserRoute {
+impl MatchRoute<Body, Pin<Box<HttpBodyType>>> for AuthUserRoute {
     fn match_route(
         &self,
         ctx: &Arc<ServerContext>,

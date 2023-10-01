@@ -43,7 +43,7 @@ impl AuthStatusRoute {
     }
 }
 
-impl MatchRoute<Body, Body> for AuthStatusRoute {
+impl MatchRoute<Body, Pin<Box<HttpBodyType>>> for AuthStatusRoute {
     fn match_route(
         &self,
         ctx: &Arc<ServerContext>,

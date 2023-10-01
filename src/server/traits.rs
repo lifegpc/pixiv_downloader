@@ -1,10 +1,12 @@
 use super::context::ServerContext;
 use super::params::RequestParams;
+use super::preclude::HttpBodyType;
 use crate::error::PixivDownloaderError;
 use hyper::Body;
 use hyper::Request;
 use hyper::Response;
 use json::JsonValue;
+use std::pin::Pin;
 use std::sync::Arc;
 
 pub trait MatchRoute<T, R> {
@@ -36,18 +38,24 @@ pub trait GetRequestParams {
 }
 
 #[async_trait]
-impl<T, U> ResponseFor<T, Body> for U
+impl<T, U> ResponseFor<T, Pin<Box<HttpBodyType>>> for U
 where
     U: ResponseJsonFor<T> + Sync + Send,
     T: Sync + Send + 'static,
 {
-    async fn response(&self, req: Request<T>) -> Result<Response<Body>, PixivDownloaderError> {
+    async fn response(
+        &self,
+        req: Request<T>,
+    ) -> Result<Response<Pin<Box<HttpBodyType>>>, PixivDownloaderError> {
         let re = self.response_json(req).await?;
         let (mut parts, body) = re.into_parts();
         parts.headers.insert(
             hyper::header::CONTENT_TYPE,
             "application/json; charset=utf-8".parse()?,
         );
-        Ok(Response::from_parts(parts, Body::from(body.to_string())))
+        Ok(Response::from_parts(
+            parts,
+            Box::pin(Body::from(body.to_string())),
+        ))
     }
 }

@@ -1,9 +1,9 @@
 use super::context::ServerContext;
+use super::preclude::*;
 use super::route::ServerRoutes;
 use hyper::server::conn::AddrIncoming;
 use hyper::server::Server;
 use hyper::service::Service;
-use hyper::Body;
 use hyper::Request;
 use hyper::Response;
 use std::future::Future;
@@ -25,7 +25,7 @@ impl PixivDownloaderSvc {
 }
 
 impl Service<Request<Body>> for PixivDownloaderSvc {
-    type Response = Response<Body>;
+    type Response = Response<Pin<Box<HttpBodyType>>>;
     type Error = hyper::Error;
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
 
@@ -43,7 +43,9 @@ impl Service<Request<Body>> for PixivDownloaderSvc {
                         println!("{}", e);
                         Ok(Response::builder()
                             .status(500)
-                            .body(Body::from("Internal server error"))
+                            .body::<Pin<Box<HttpBodyType>>>(Box::pin(Body::from(
+                                "Internal server error",
+                            )))
                             .unwrap())
                     }
                 }
@@ -51,7 +53,7 @@ impl Service<Request<Body>> for PixivDownloaderSvc {
             None => Box::pin(async {
                 Ok(Response::builder()
                     .status(404)
-                    .body(Body::from("404 Not Found"))
+                    .body::<Pin<Box<HttpBodyType>>>(Box::pin(Body::from("404 Not Found")))
                     .unwrap())
             }),
         }

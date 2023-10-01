@@ -261,6 +261,7 @@ struct FilterHttpMethods {
     pub cors_methods: Option<Vec<Ident>>,
     pub expose_headers: Option<Vec<String>>,
     pub cors_allow_headers: Option<Vec<String>>,
+    pub typ_def: Option<syn::Type>,
 }
 
 impl Parse for FilterHttpMethods {
@@ -285,6 +286,7 @@ impl Parse for FilterHttpMethods {
         let mut cors_methods = None;
         let mut expose_headers = None;
         let mut cors_allow_headers = None;
+        let mut typ_def = None;
         loop {
             if input.cursor().eof() {
                 break;
@@ -330,6 +332,9 @@ impl Parse for FilterHttpMethods {
                     let m: HTTPHeader = content.parse()?;
                     cors_allow_headers.as_mut().unwrap().push(m.header);
                 }
+            } else if method.to_string() == "typ_def" {
+                token::Eq::parse(input)?;
+                typ_def.replace(input.parse()?);
             } else {
                 methods.push(method);
             }
@@ -343,6 +348,7 @@ impl Parse for FilterHttpMethods {
             cors_methods,
             expose_headers,
             cors_allow_headers,
+            typ_def,
         })
     }
 }
@@ -361,7 +367,12 @@ pub fn filter_http_methods(item: TokenStream) -> TokenStream {
         cors_methods,
         expose_headers,
         cors_allow_headers,
+        typ_def,
     } = parse_macro_input!(item as FilterHttpMethods);
+    let typ_def = match typ_def {
+        Some(t) => Some(quote!(::<#t>)),
+        None => None,
+    };
     let mut header_value = Vec::new();
     let mut streams = Vec::new();
     let mut enable_options = false;
@@ -429,7 +440,7 @@ pub fn filter_http_methods(item: TokenStream) -> TokenStream {
                                 .header(hyper::header::ACCESS_CONTROL_ALLOW_METHODS, #cors_methods_header);
                                 #expose_headers
                                 #cors_allow_headers
-                            return Ok(builder.status(200).header("Allow", #allow_header).body(#typ)?);
+                            return Ok(builder.status(200).header("Allow", #allow_header).body #typ_def(#typ)?);
                         }
                         crate::server::cors::CorsResult::AllowedAll => {
                             let builder = builder
@@ -437,15 +448,15 @@ pub fn filter_http_methods(item: TokenStream) -> TokenStream {
                                 .header(hyper::header::ACCESS_CONTROL_ALLOW_METHODS, #cors_methods_header);
                                 #expose_headers
                                 #cors_allow_headers
-                            return Ok(builder.status(200).header("Allow", #allow_header).body(#typ)?);
+                            return Ok(builder.status(200).header("Allow", #allow_header).body #typ_def(#typ)?);
                         }
                         _ => {
-                            return Ok(builder.status(400).header("Allow", #allow_header).body(#typ)?);
+                            return Ok(builder.status(400).header("Allow", #allow_header).body #typ_def(#typ)?);
                         }
                     }
                 }
                 None => {
-                    return Ok(builder.status(200).header("Allow", #allow_header).body(#typ)?);
+                    return Ok(builder.status(200).header("Allow", #allow_header).body #typ_def(#typ)?);
                 }
             }
         }));
@@ -509,7 +520,7 @@ pub fn filter_http_methods(item: TokenStream) -> TokenStream {
                             #cors_allow_headers
                         }
                         _ => {
-                            return Ok(builder.status(403).body(#typ)?);
+                            return Ok(builder.status(403).body #typ_def(#typ)?);
                         }
                     }
                 }
@@ -523,7 +534,7 @@ pub fn filter_http_methods(item: TokenStream) -> TokenStream {
         match #req.method() {
             #(#streams)*
             _ => {
-                return Ok(hyper::Response::builder().status(405).header("Allow", #allow_header).body(#typ)?)
+                return Ok(hyper::Response::builder().status(405).header("Allow", #allow_header).body #typ_def(#typ)?)
             }
         }
         #post_stream
@@ -886,6 +897,50 @@ pub fn call_parent_data_source_fun(item: TokenStream) -> TokenStream {
     }
     let stream = quote!(
         #(#streams)*
+    );
+    stream.into()
+}
+
+struct HttpError {
+    pub code: Option<LitInt>,
+    pub expr: Expr,
+}
+
+impl Parse for HttpError {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let mut code = None;
+        match input.parse::<LitInt>() {
+            Ok(c) => {
+                code.replace(c);
+                match input.parse::<token::Comma>() {
+                    Ok(_) => {}
+                    Err(_) => {
+                        panic!("Expr not found");
+                    }
+                };
+            }
+            Err(_) => {}
+        }
+        let expr = input.parse()?;
+        Ok(Self { code, expr })
+    }
+}
+
+#[proc_macro]
+pub fn http_error(item: TokenStream) -> TokenStream {
+    let HttpError { code, expr } = parse_macro_input!(item as HttpError);
+    let code = match code {
+        Some(code) => code,
+        None => LitInt::new("400", Span::call_site()),
+    };
+    let stream = quote!(
+        match (#expr) {
+            Ok(re) => re,
+            Err(e) => {
+                builder = builder.status(#code);
+                return Ok(builder.body::<Pin<Box<HttpBodyType>>>(Box::pin(Body::from(format!("{}", e))))?);
+            }
+        }
     );
     stream.into()
 }

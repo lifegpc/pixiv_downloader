@@ -7,6 +7,8 @@ pub mod cors;
 pub mod params;
 /// Predefined includes
 pub mod preclude;
+/// Routes about proxy
+pub mod proxy;
 /// Base result type for JSON response
 pub mod result;
 /// Routes

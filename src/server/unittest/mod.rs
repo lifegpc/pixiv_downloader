@@ -3,6 +3,7 @@ mod version;
 
 use super::context::ServerContext;
 use super::cors::CorsContext;
+use super::preclude::HttpBodyType;
 use super::route::ServerRoutes;
 use crate::db::{open_and_init_database, PixivDownloaderDbConfig};
 use crate::error::PixivDownloaderError;
@@ -14,6 +15,7 @@ use std::collections::BTreeMap;
 use std::fs::{create_dir, remove_file};
 #[cfg(test)]
 use std::path::Path;
+use std::pin::Pin;
 use std::sync::Arc;
 
 pub struct UnitTestContext {
@@ -44,7 +46,7 @@ impl UnitTestContext {
     pub async fn request(
         &self,
         req: Request<Body>,
-    ) -> Result<Option<Response<Body>>, PixivDownloaderError> {
+    ) -> Result<Option<Response<Pin<Box<HttpBodyType>>>>, PixivDownloaderError> {
         Ok(match self.routes.match_route(&req, &self.ctx) {
             Some(r) => Some(r.response(req).await?),
             None => None,

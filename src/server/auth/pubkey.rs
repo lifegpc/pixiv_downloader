@@ -107,7 +107,7 @@ impl AuthPubkeyRoute {
     }
 }
 
-impl MatchRoute<Body, Body> for AuthPubkeyRoute {
+impl MatchRoute<Body, Pin<Box<HttpBodyType>>> for AuthPubkeyRoute {
     fn match_route(
         &self,
         ctx: &Arc<ServerContext>,

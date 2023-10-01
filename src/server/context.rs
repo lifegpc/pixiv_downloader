@@ -136,4 +136,17 @@ impl ServerContext {
             .await?
             .ok_or(gettext("No corresponding user was found."))?)
     }
+
+    pub async fn verify(
+        &self,
+        req: &Request<Body>,
+        params: &RequestParams,
+    ) -> Result<Option<User>, PixivDownloaderError> {
+        let root_user = self.db.get_user(0).await?;
+        if root_user.is_some() {
+            Ok(Some(self.verify_token(req, params).await?))
+        } else {
+            Ok(None)
+        }
+    }
 }
