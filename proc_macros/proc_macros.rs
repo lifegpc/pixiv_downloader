@@ -938,7 +938,7 @@ pub fn http_error(item: TokenStream) -> TokenStream {
             Ok(re) => re,
             Err(e) => {
                 builder = builder.status(#code);
-                return Ok(builder.body::<Pin<Box<HttpBodyType>>>(Box::pin(Body::from(format!("{}", e))))?);
+                return Ok(builder.body::<Pin<Box<HttpBodyType>>>(Box::pin(HyperBody::from(format!("{}", e))))?);
             }
         }
     );

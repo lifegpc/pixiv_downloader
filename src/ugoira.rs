@@ -266,6 +266,7 @@ impl PartialEq for UgoiraZipError2 {
 }
 
 unsafe impl Send for UgoiraZipError2 {}
+unsafe impl Sync for UgoiraZipError2 {}
 
 impl ToRawHandle<_ugoira::zip_error_t> for UgoiraZipError2 {
     unsafe fn to_raw_handle(&self) -> *mut _ugoira::zip_error_t {

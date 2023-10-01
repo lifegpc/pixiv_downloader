@@ -1,3 +1,5 @@
+pub use super::body::hyper::HyperBody;
+pub use super::body::response::ResponseBody;
 pub use super::context::ServerContext;
 pub use super::params::RequestParams;
 pub use super::result::JSONResult;
@@ -15,4 +17,5 @@ pub use regex::Regex;
 pub use std::pin::Pin;
 pub use std::sync::Arc;
 
-pub type HttpBodyType = dyn HttpBody<Data = hyper::body::Bytes, Error = hyper::Error> + Send;
+pub type HttpBodyType =
+    dyn HttpBody<Data = hyper::body::Bytes, Error = PixivDownloaderError> + Send;

@@ -1,8 +1,8 @@
+use super::body::hyper::HyperBody;
 use super::context::ServerContext;
 use super::params::RequestParams;
 use super::preclude::HttpBodyType;
 use crate::error::PixivDownloaderError;
-use hyper::Body;
 use hyper::Request;
 use hyper::Response;
 use json::JsonValue;
@@ -55,7 +55,7 @@ where
         );
         Ok(Response::from_parts(
             parts,
-            Box::pin(Body::from(body.to_string())),
+            Box::pin(HyperBody::from(body.to_string())),
         ))
     }
 }

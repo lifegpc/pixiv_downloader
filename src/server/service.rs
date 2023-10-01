@@ -26,7 +26,7 @@ impl PixivDownloaderSvc {
 
 impl Service<Request<Body>> for PixivDownloaderSvc {
     type Response = Response<Pin<Box<HttpBodyType>>>;
-    type Error = hyper::Error;
+    type Error = PixivDownloaderError;
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
 
     fn poll_ready(&mut self, _: &mut Context) -> Poll<Result<(), Self::Error>> {
@@ -43,7 +43,7 @@ impl Service<Request<Body>> for PixivDownloaderSvc {
                         println!("{}", e);
                         Ok(Response::builder()
                             .status(500)
-                            .body::<Pin<Box<HttpBodyType>>>(Box::pin(Body::from(
+                            .body::<Pin<Box<HttpBodyType>>>(Box::pin(HyperBody::from(
                                 "Internal server error",
                             )))
                             .unwrap())
@@ -53,7 +53,7 @@ impl Service<Request<Body>> for PixivDownloaderSvc {
             None => Box::pin(async {
                 Ok(Response::builder()
                     .status(404)
-                    .body::<Pin<Box<HttpBodyType>>>(Box::pin(Body::from("404 Not Found")))
+                    .body::<Pin<Box<HttpBodyType>>>(Box::pin(HyperBody::from("404 Not Found")))
                     .unwrap())
             }),
         }

@@ -1,5 +1,7 @@
 use super::super::preclude::*;
+use crate::webclient::WebClient;
 use http::Uri;
+use std::collections::HashMap;
 
 pub struct ProxyPixivContext {
     ctx: Arc<ServerContext>,
@@ -19,7 +21,7 @@ impl ResponseFor<Body, Pin<Box<HttpBodyType>>> for ProxyPixivContext {
     ) -> Result<Response<Pin<Box<HttpBodyType>>>, PixivDownloaderError> {
         filter_http_methods!(
             req,
-            Box::pin(Body::empty()),
+            Box::pin(HyperBody::empty()),
             true,
             self.ctx,
             allow_headers = [X_SIGN, X_TOKEN_ID],
@@ -35,7 +37,14 @@ impl ResponseFor<Body, Pin<Box<HttpBodyType>>> for ProxyPixivContext {
         if !host.ends_with(".pximg.net") {
             http_error!(403, Err("Host is not allowed."));
         }
-        return Ok(builder.body::<Pin<Box<HttpBodyType>>>(Box::pin(Body::empty()))?);
+        let client = WebClient::default();
+        client.set_header("referer", "https://www.pixiv.net/");
+        let headers = HashMap::new();
+        let re = http_error!(
+            502,
+            client.get(url, headers).await.ok_or("Failed to get image.")
+        );
+        return Ok(builder.body::<Pin<Box<HttpBodyType>>>(Box::pin(ResponseBody::new(re)))?);
     }
 }
 

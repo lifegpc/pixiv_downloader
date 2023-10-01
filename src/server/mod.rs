@@ -1,5 +1,7 @@
 /// Routes about authentication
 pub mod auth;
+/// Body types which implements [hyper::body::HttpBody]
+pub mod body;
 pub mod context;
 /// CORS Handle
 pub mod cors;
