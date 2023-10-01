@@ -40,6 +40,7 @@ mod opts;
 mod parser;
 mod pixiv_link;
 mod pixiv_web;
+mod push;
 mod retry_interval;
 #[cfg(feature = "server")]
 mod server;

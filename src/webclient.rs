@@ -361,6 +361,103 @@ impl WebClient {
         }
         r
     }
+
+    pub async fn post<U: IntoUrl + Clone, H: ToHeaders + Clone>(
+        &self,
+        url: U,
+        headers: H,
+        form: Option<HashMap<String, String>>,
+    ) -> Option<Response> {
+        let mut count = 0i64;
+        let retry = self.get_retry();
+        while retry < 0 || count <= retry {
+            let r = self
+                ._apost2(url.clone(), headers.clone(), form.clone())
+                .await;
+            if r.is_some() {
+                return r;
+            }
+            count += 1;
+            if retry < 0 || count <= retry {
+                let t =
+                    self.get_retry_interval().as_ref().unwrap()[(count - 1).try_into().unwrap()];
+                if !t.is_zero() {
+                    println!(
+                        "{}",
+                        gettext("Retry after <num> seconds.")
+                            .replace("<num>", format!("{}", t.as_secs_f64()).as_str())
+                            .as_str()
+                    );
+                    tokio::time::sleep(t).await;
+                }
+            }
+            println!(
+                "{}",
+                gettext("Retry <count> times now.")
+                    .replace("<count>", format!("{}", count).as_str())
+                    .as_str()
+            );
+        }
+        None
+    }
+
+    pub async fn _apost2<U: IntoUrl, H: ToHeaders>(
+        &self,
+        url: U,
+        headers: H,
+        form: Option<HashMap<String, String>>,
+    ) -> Option<Response> {
+        let r = self._apost(url, headers, form);
+        let r = r.send().await;
+        match r {
+            Ok(_) => {}
+            Err(e) => {
+                println!("{} {}", gettext("Error when request:"), e);
+                return None;
+            }
+        }
+        let r = r.unwrap();
+        self.handle_set_cookie(&r);
+        if self.get_verbose() {
+            println!("{}", r.status());
+        }
+        Some(r)
+    }
+
+    /// Generate a POST request
+    pub fn _apost<U: IntoUrl, H: ToHeaders>(
+        &self,
+        url: U,
+        headers: H,
+        form: Option<HashMap<String, String>>,
+    ) -> RequestBuilder {
+        let s = url.as_str();
+        if self.get_verbose() {
+            println!("POST {}", s);
+        }
+        let mut r = self.client.post(s);
+        for (k, v) in self.get_headers().iter() {
+            r = r.header(k, v);
+        }
+        let headers = headers.to_headers();
+        if headers.is_some() {
+            let h = headers.unwrap();
+            for (k, v) in h.iter() {
+                r = r.header(k, v);
+            }
+        }
+        let c = gen_cookie_header(&self, s);
+        if c.len() > 0 {
+            r = r.header("Cookie", c.as_str());
+        }
+        match form {
+            Some(f) => {
+                r = r.form(&f);
+            }
+            None => {}
+        }
+        r
+    }
 }
 
 impl Default for WebClient {
