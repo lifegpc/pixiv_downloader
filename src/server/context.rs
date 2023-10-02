@@ -137,6 +137,60 @@ impl ServerContext {
             .ok_or(gettext("No corresponding user was found."))?)
     }
 
+    pub async fn verify_secrets(
+        &self,
+        req: &Request<Body>,
+        params: &RequestParams,
+        secrets: String,
+        time_needed: bool,
+    ) -> Result<(), PixivDownloaderError> {
+        let mut sign = None;
+        match req.headers().get("X-SIGN") {
+            Some(v) => {
+                sign.replace(v.to_str()?.to_owned());
+            }
+            None => match params.get("sign") {
+                Some(v) => {
+                    sign.replace(v.to_owned());
+                }
+                None => {}
+            },
+        }
+        let sign = match sign {
+            Some(sign) => sign,
+            None => return Err(PixivDownloaderError::from(gettext("Sign not found."))),
+        };
+        if time_needed {
+            let time = params
+                .get_u64_mult(&["time", "t"])?
+                .ok_or(gettext("Time not found."))?;
+            let now = chrono::Utc::now().timestamp() as u64;
+            if time < now - 300 || time > now + 300 {
+                return Err(PixivDownloaderError::from(gettext("Time out of range.")));
+            }
+        }
+        let mut par = BTreeMap::new();
+        for (k, v) in params.params.iter() {
+            if k == "sign" {
+                continue;
+            }
+            par.insert(k, v);
+        }
+        let mut sha = openssl::sha::Sha512::new();
+        sha.update(secrets.as_bytes());
+        for (k, v) in par {
+            for v in v {
+                sha.update(k.as_bytes());
+                sha.update(v.as_bytes());
+            }
+        }
+        let sha = hex::encode(sha.finish());
+        if sign != sha {
+            return Err(PixivDownloaderError::from(gettext("Sign not match.")));
+        }
+        Ok(())
+    }
+
     pub async fn verify(
         &self,
         req: &Request<Body>,

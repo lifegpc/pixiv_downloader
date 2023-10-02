@@ -20,7 +20,28 @@ pub use token::Token;
 pub use traits::PixivDownloaderDb;
 #[cfg(feature = "server")]
 pub use user::User;
-pub type PixivDownloaderDbError = anyhow::Error;
+
+#[derive(Debug, derive_more::Display)]
+pub struct PixivDownloaderDbError {
+    e: anyhow::Error,
+}
+
+impl PixivDownloaderDbError {
+    pub fn msg<S: std::fmt::Display + std::fmt::Debug + Send + Sync + 'static>(msg: S) -> Self {
+        Self {
+            e: anyhow::Error::msg(msg),
+        }
+    }
+}
+
+impl<T> From<T> for PixivDownloaderDbError
+where
+    T: Into<anyhow::Error>,
+{
+    fn from(e: T) -> Self {
+        Self { e: e.into() }
+    }
+}
 
 use crate::gettext;
 

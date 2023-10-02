@@ -22,6 +22,10 @@ background INT,
 comment TEXT,
 webpage TEXT
 );";
+const CONFIG_TABLE: &'static str = "CREATE TABLE config (
+key TEXT PRIMARY KEY,
+value TEXT
+);";
 const FILES_TABLE: &'static str = "CREATE TABLE files (
 id INTEGER PRIMARY KEY AUTOINCREMENT,
 path TEXT,
@@ -78,7 +82,7 @@ v3 INT,
 v4 INT,
 PRIMARY KEY (id)
 );";
-const VERSION: [u8; 4] = [1, 0, 0, 5];
+const VERSION: [u8; 4] = [1, 0, 0, 6];
 
 pub struct PixivDownloaderSqlite {
     db: Mutex<Connection>,
@@ -208,6 +212,9 @@ impl PixivDownloaderSqlite {
                     tx.execute("ALTER TABLE pixiv_artworks ADD is_nsfw BOOLEAN;", [])?;
                     tx.execute("ALTER TABLE pixiv_artworks ADD lock INT;", [])?;
                 }
+                if db_version < [1, 0, 0, 6] {
+                    tx.execute(CONFIG_TABLE, [])?;
+                }
                 self._write_version(&tx)?;
                 tx.commit()?;
             }
@@ -252,6 +259,9 @@ impl PixivDownloaderSqlite {
         if !tables.contains_key("users") {
             t.execute(USERS_TABLE, [])?;
         }
+        if !tables.contains_key("config") {
+            t.execute(CONFIG_TABLE, [])?;
+        }
         t.commit()?;
         Ok(())
     }
@@ -292,6 +302,15 @@ impl PixivDownloaderSqlite {
             tables.insert(row.get(0)?, ());
         }
         Ok(tables)
+    }
+
+    async fn get_config(&self, key: &str) -> Result<Option<String>, SqliteError> {
+        let con = self.db.lock().await;
+        Ok(con
+            .query_row("SELECT value FROM config WHERE key = ?;", [key], |row| {
+                row.get(0)
+            })
+            .optional()?)
     }
 
     async fn get_pixiv_artwork(&self, id: u64) -> Result<Option<PixivArtwork>, SqliteError> {
@@ -450,6 +469,14 @@ impl PixivDownloaderSqlite {
     fn _revoke_expired_tokens(ts: &Transaction) -> Result<usize, SqliteError> {
         let now = Utc::now();
         Ok(ts.execute("DELETE FROM token WHERE expired_at < ?;", [now])?)
+    }
+
+    fn _set_config(ts: &Transaction, key: &str, value: &str) -> Result<(), SqliteError> {
+        ts.execute(
+            "INSERT OR REPLACE INTO config (key, value) VALUES (?, ?);",
+            (key, value),
+        )?;
+        Ok(())
     }
 
     #[cfg(feature = "server")]
@@ -739,6 +766,10 @@ impl PixivDownloaderDb for PixivDownloaderSqlite {
         Ok(())
     }
 
+    async fn get_config(&self, key: &str) -> Result<Option<String>, PixivDownloaderDbError> {
+        Ok(self.get_config(key).await?)
+    }
+
     async fn get_pixiv_artwork(
         &self,
         id: u64,
@@ -796,6 +827,14 @@ impl PixivDownloaderDb for PixivDownloaderSqlite {
         let size = Self::_revoke_expired_tokens(&mut tx)?;
         tx.commit()?;
         Ok(size)
+    }
+
+    async fn set_config(&self, key: &str, value: &str) -> Result<(), PixivDownloaderDbError> {
+        let mut db = self.db.lock().await;
+        let mut tx = db.transaction()?;
+        Self::_set_config(&mut tx, key, value)?;
+        tx.commit()?;
+        Ok(())
     }
 
     #[cfg(feature = "server")]

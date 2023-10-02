@@ -29,7 +29,11 @@ impl ResponseFor<Body, Pin<Box<HttpBodyType>>> for ProxyPixivContext {
             OPTIONS
         );
         let params = req.get_params().await?;
-        let _ = http_error!(401, self.ctx.verify(&req, &params).await);
+        let secrets = self.ctx.db.get_proxy_pixiv_secrets().await?;
+        http_error!(
+            401,
+            self.ctx.verify_secrets(&req, &params, secrets, false).await
+        );
         let url = http_error!(params.get("url").ok_or("Url is required."));
         let uri = http_error!(Uri::try_from(url));
         let host = uri.host().ok_or("Host is needed.")?;

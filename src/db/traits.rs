@@ -95,12 +95,30 @@ pub trait PixivDownloaderDb {
         id: u64,
         expired_at: &DateTime<Utc>,
     ) -> Result<(), PixivDownloaderDbError>;
+    /// Get a config from database
+    /// * `key` - The config key
+    async fn get_config(&self, key: &str) -> Result<Option<String>, PixivDownloaderDbError>;
     /// Get an artwork from database
     /// * `id` - The artwork ID
     async fn get_pixiv_artwork(
         &self,
         id: u64,
     ) -> Result<Option<PixivArtwork>, PixivDownloaderDbError>;
+    #[cfg(feature = "server")]
+    /// Get proxy pixiv secrets
+    async fn get_proxy_pixiv_secrets(&self) -> Result<String, PixivDownloaderDbError> {
+        let key = "proxy_pixiv_secrets";
+        match self.get_config(key).await? {
+            Some(v) => Ok(v),
+            None => {
+                let mut buf = [0; 32];
+                openssl::rand::rand_bytes(&mut buf)?;
+                let v = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &buf);
+                self.set_config(key, &v).await?;
+                Ok(v)
+            }
+        }
+    }
     #[cfg(feature = "server")]
     /// Get token by ID
     /// * `id` - The token ID
@@ -140,6 +158,10 @@ pub trait PixivDownloaderDb {
     /// Remove all expired tokens
     /// Return the number of removed tokens
     async fn revoke_expired_tokens(&self) -> Result<usize, PixivDownloaderDbError>;
+    /// Set a config
+    /// * `key` - The config key
+    /// * `value` - The config value
+    async fn set_config(&self, key: &str, value: &str) -> Result<(), PixivDownloaderDbError>;
     #[cfg(feature = "server")]
     /// Set a user's information by ID
     /// * `id`: The user's ID
