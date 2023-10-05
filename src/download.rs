@@ -386,6 +386,16 @@ pub async fn download_artwork_app(
     let json_file = base.join(format!("{}.json", id));
     let mut datas = PixivData::new(id).unwrap();
     datas.from_app_illust(&data);
+    if data.caption_is_empty() && helper.use_web_description() {
+        if let Some(data) = pw.get_artwork_ajax(id).await {
+            if let Some(desc) = data["description"]
+                .as_str()
+                .or_else(|| data["illustComment"].as_str())
+            {
+                datas.description = Some(desc.to_owned());
+            }
+        }
+    }
     let datas = Arc::new(datas);
     let json_data = JSONDataFile::from(Arc::clone(&datas));
     if !json_data.save(&json_file) {

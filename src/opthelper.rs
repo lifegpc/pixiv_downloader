@@ -397,6 +397,24 @@ impl OptHelper {
         SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080)
     }
 
+    /// Return whether to use description from Web API when description from APP API is empty.
+    pub fn use_web_description(&self) -> bool {
+        match self.opt.get_ref().use_web_description {
+            Some(t) => {
+                return t;
+            }
+            None => {}
+        }
+        if self.settings.get_ref().have_bool("use-web-description") {
+            return self
+                .settings
+                .get_ref()
+                .get_bool("use-web-description")
+                .unwrap();
+        }
+        true
+    }
+
     /// Return whether to use data from webpage first.
     pub fn use_webpage(&self) -> bool {
         if self.opt.get_ref().use_webpage {

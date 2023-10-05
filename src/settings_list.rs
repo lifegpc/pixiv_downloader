@@ -65,6 +65,7 @@ pub fn get_settings_list() -> Vec<SettingDes> {
         #[cfg(feature = "server")]
         SettingDes::new("cors-allow-all", gettext("Whether to allow all domains to send CORS requests."), JsonValueType::Boolean, None).unwrap(),
         SettingDes::new("use-app-api", gettext("Whether to use Pixiv APP API first."), JsonValueType::Boolean, None).unwrap(),
+        SettingDes::new("use-web-description", gettext("Whether to use description from Web API when description from APP API is empty."), JsonValueType::Boolean, None).unwrap(),
     ]
 }
 

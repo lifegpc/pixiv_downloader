@@ -33,6 +33,10 @@ impl PixivAppIllust {
         self.data["caption"].as_str()
     }
 
+    pub fn caption_is_empty(&self) -> bool {
+        self.caption().unwrap_or("").is_empty()
+    }
+
     pub fn restrict(&self) -> Option<u64> {
         self.data["restrict"].as_u64()
     }

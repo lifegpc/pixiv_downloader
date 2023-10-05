@@ -124,6 +124,8 @@ pub struct CommandOpts {
     pub refresh_token: Option<String>,
     /// Whether to use Pixiv APP API first.
     pub use_app_api: Option<bool>,
+    /// Whether to use description from Web API when description from APP API is empty.
+    pub use_web_description: Option<bool>,
 }
 
 impl CommandOpts {
@@ -169,6 +171,7 @@ impl CommandOpts {
             fanbox_page_number: None,
             refresh_token: None,
             use_app_api: None,
+            use_web_description: None,
         }
     }
 
@@ -617,6 +620,22 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         HasArg::Maybe,
         getopts::Occur::Optional,
     );
+    opts.opt(
+        "",
+        "use-web-description",
+        format!(
+            "{} ({} {})",
+            gettext(
+                "Whether to use description from Web API when description from APP API is empty."
+            ),
+            gettext("Default:"),
+            "yes"
+        )
+        .as_str(),
+        "yes/no",
+        HasArg::Maybe,
+        getopts::Occur::Optional,
+    );
     let result = match opts.parse(&argv[1..]) {
         Ok(m) => m,
         Err(err) => {
@@ -986,6 +1005,19 @@ pub fn parse_cmd() -> Option<CommandOpts> {
                 "{} {}",
                 gettext("Failed to parse <opt>:")
                     .replace("<opt>", "use-app-api")
+                    .as_str(),
+                e
+            );
+            return None;
+        }
+    }
+    match parse_optional_opt(&result, "use-web-description", true, parse_bool) {
+        Ok(b) => re.as_mut().unwrap().use_web_description = b,
+        Err(e) => {
+            println!(
+                "{} {}",
+                gettext("Failed to parse <opt>:")
+                    .replace("<opt>", "use-web-description")
                     .as_str(),
                 e
             );
