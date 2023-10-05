@@ -74,6 +74,18 @@ impl OptHelper {
         self._cors_entries.get_ref().clone()
     }
 
+    #[cfg(feature = "server")]
+    pub fn cors_allow_all(&self) -> bool {
+        if self.settings.get_ref().have_bool("cors-allow-all") {
+            return self
+                .settings
+                .get_ref()
+                .get_bool("cors-allow-all")
+                .unwrap_or(false);
+        }
+        false
+    }
+
     #[cfg(feature = "db")]
     /// Return the config of the database
     pub fn db(&self) -> PixivDownloaderDbConfig {

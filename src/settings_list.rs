@@ -62,6 +62,8 @@ pub fn get_settings_list() -> Vec<SettingDes> {
         #[cfg(feature = "ugoira")]
         SettingDes::new("ugoira-max-fps", gettext("The max fps when converting ugoira(GIF) to video."), JsonValueType::Number, Some(check_ugoira_max_fps)).unwrap(),
         SettingDes::new("fanbox-page-number", gettext("Use page number for pictures' file name in fanbox."), JsonValueType::Boolean, None).unwrap(),
+        #[cfg(feature = "server")]
+        SettingDes::new("cors-allow-all", gettext("Whether to allow all domains to send CORS requests."), JsonValueType::Boolean, None).unwrap(),
     ]
 }
 

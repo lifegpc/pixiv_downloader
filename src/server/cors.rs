@@ -417,7 +417,7 @@ impl Default for CorsContext {
     fn default() -> Self {
         let helper = get_helper();
         Self {
-            allow_all: false,
+            allow_all: helper.cors_allow_all(),
             entries: helper.cors_entries(),
             hosts: Vec::new(),
         }
