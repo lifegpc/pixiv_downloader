@@ -11,10 +11,11 @@ use futures_util::lock::Mutex;
 use hyper::{http::response::Builder, Body, Request, Response};
 use json::JsonValue;
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
 pub struct ServerContext {
     pub cors: CorsContext,
-    pub db: Box<dyn PixivDownloaderDb + Send + Sync>,
+    pub db: Arc<Box<dyn PixivDownloaderDb + Send + Sync>>,
     pub rsa_key: Mutex<Option<RSAKey>>,
 }
 
@@ -23,7 +24,7 @@ impl ServerContext {
         Self {
             cors: CorsContext::default(),
             db: match open_and_init_database(get_helper().db()).await {
-                Ok(db) => db,
+                Ok(db) => Arc::new(db),
                 Err(e) => panic!("{} {}", gettext("Failed to open database:"), e),
             },
             rsa_key: Mutex::new(None),

@@ -906,7 +906,7 @@ msgid "Failed to flush file:"
 msgstr ""
 
 #: src/settings_list.rs:24
-msgid "Pixiv's refresh tokens. Used to login."
+msgid "Pixiv's refresh token. Used to login."
 msgstr ""
 
 #: src/settings_list.rs:30

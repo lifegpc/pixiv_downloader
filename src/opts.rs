@@ -120,6 +120,10 @@ pub struct CommandOpts {
     #[cfg(feature = "ugoira")]
     pub ugoira_max_fps: Option<f32>,
     pub fanbox_page_number: Option<bool>,
+    /// Pixiv's refresh token. Used to login.
+    pub refresh_token: Option<String>,
+    /// Whether to use Pixiv APP API first.
+    pub use_app_api: Option<bool>,
 }
 
 impl CommandOpts {
@@ -163,6 +167,8 @@ impl CommandOpts {
             #[cfg(feature = "ugoira")]
             ugoira_max_fps: None,
             fanbox_page_number: None,
+            refresh_token: None,
+            use_app_api: None,
         }
     }
 
@@ -591,6 +597,26 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         HasArg::Maybe,
         getopts::Occur::Optional,
     );
+    opts.optopt(
+        "",
+        "refresh-token",
+        gettext("Pixiv's refresh token. Used to login."),
+        "TOKEN",
+    );
+    opts.opt(
+        "",
+        "use-app-api",
+        format!(
+            "{} ({} {})",
+            gettext("Whether to use Pixiv APP API first."),
+            gettext("Default:"),
+            "yes"
+        )
+        .as_str(),
+        "yes/no",
+        HasArg::Maybe,
+        getopts::Occur::Optional,
+    );
     let result = match opts.parse(&argv[1..]) {
         Ok(m) => m,
         Err(err) => {
@@ -946,6 +972,20 @@ pub fn parse_cmd() -> Option<CommandOpts> {
                 "{} {}",
                 gettext("Failed to parse <opt>:")
                     .replace("<opt>", "fanbox-page-number")
+                    .as_str(),
+                e
+            );
+            return None;
+        }
+    }
+    re.as_mut().unwrap().refresh_token = result.opt_str("refresh-token");
+    match parse_optional_opt(&result, "use-app-api", true, parse_bool) {
+        Ok(b) => re.as_mut().unwrap().use_app_api = b,
+        Err(e) => {
+            println!(
+                "{} {}",
+                gettext("Failed to parse <opt>:")
+                    .replace("<opt>", "use-app-api")
                     .as_str(),
                 e
             );

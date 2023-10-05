@@ -294,6 +294,16 @@ impl OptHelper {
         65536
     }
 
+    pub fn refresh_token(&self) -> Option<String> {
+        if self.opt.get_ref().refresh_token.is_some() {
+            self.opt.get_ref().refresh_token.clone()
+        } else if self.settings.get_ref().have_str("refresh-token") {
+            self.settings.get_ref().get_str("refresh-token")
+        } else {
+            None
+        }
+    }
+
     pub fn update(&self, opt: CommandOpts, settings: SettingStore) {
         if settings.have("author-name-filters") {
             self._author_name_filters.replace_with2(
@@ -321,6 +331,17 @@ impl OptHelper {
         }
         self.opt.replace_with2(opt);
         self.settings.replace_with2(settings);
+    }
+
+    /// Whether to use Pixiv APP API first.
+    pub fn use_app_api(&self) -> bool {
+        if self.opt.get_ref().use_app_api.is_some() {
+            return self.opt.get_ref().use_app_api.unwrap();
+        }
+        if self.settings.get_ref().have("use-app-api") {
+            return self.settings.get_ref().get_bool("use-app-api").unwrap();
+        }
+        false
     }
 
     pub fn overwrite(&self) -> Option<bool> {

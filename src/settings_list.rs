@@ -23,7 +23,7 @@ use std::str::FromStr;
 
 pub fn get_settings_list() -> Vec<SettingDes> {
     vec![
-        SettingDes::new("refresh_tokens", gettext("Pixiv's refresh tokens. Used to login."), JsonValueType::Str, None).unwrap(),
+        SettingDes::new("refresh-token", gettext("Pixiv's refresh token. Used to login."), JsonValueType::Str, None).unwrap(),
         SettingDes::new("cookies", gettext("The location of cookies file. Used for web API."), JsonValueType::Str, None).unwrap(),
         SettingDes::new("language", gettext("The language of translated tags."), JsonValueType::Str, None).unwrap(),
         SettingDes::new("retry", gettext("Max retry count if request failed."), JsonValueType::Number, Some(check_i64)).unwrap(),
@@ -64,6 +64,7 @@ pub fn get_settings_list() -> Vec<SettingDes> {
         SettingDes::new("fanbox-page-number", gettext("Use page number for pictures' file name in fanbox."), JsonValueType::Boolean, None).unwrap(),
         #[cfg(feature = "server")]
         SettingDes::new("cors-allow-all", gettext("Whether to allow all domains to send CORS requests."), JsonValueType::Boolean, None).unwrap(),
+        SettingDes::new("use-app-api", gettext("Whether to use Pixiv APP API first."), JsonValueType::Boolean, None).unwrap(),
     ]
 }
 

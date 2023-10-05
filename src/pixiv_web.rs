@@ -18,6 +18,7 @@ pub struct PixivWebClient {
     data: RwLock<Option<JsonValue>>,
     /// Get basic params
     params: RwLock<Option<JsonValue>>,
+    login_checked: AtomicBool,
 }
 
 impl PixivWebClient {
@@ -27,6 +28,7 @@ impl PixivWebClient {
             inited: AtomicBool::new(false),
             data: RwLock::new(None),
             params: RwLock::new(None),
+            login_checked: AtomicBool::new(false),
         }
     }
 
@@ -71,6 +73,7 @@ impl PixivWebClient {
 
     pub async fn check_login(&self) -> bool {
         self.auto_init();
+        self.login_checked.qstore(true);
         let r = self
             .client
             .get_with_param("https://www.pixiv.net/", self.get_params(), None)
@@ -295,5 +298,9 @@ impl PixivWebClient {
             return true;
         }
         false
+    }
+
+    pub fn is_login_checked(&self) -> bool {
+        self.login_checked.qload()
     }
 }

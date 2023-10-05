@@ -915,8 +915,8 @@ msgid "Failed to flush file:"
 msgstr "无法刷新文件缓冲区："
 
 #: src/settings_list.rs:24
-msgid "Pixiv's refresh tokens. Used to login."
-msgstr "Pixiv 的 refresh tokens。用于登录。"
+msgid "Pixiv's refresh token. Used to login."
+msgstr "Pixiv 的 refresh token。用于登录。"
 
 #: src/settings_list.rs:30
 msgid "Remove the part which after these parttens."

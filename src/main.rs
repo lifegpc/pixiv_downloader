@@ -38,6 +38,7 @@ mod opt;
 mod opthelper;
 mod opts;
 mod parser;
+mod pixiv_app;
 mod pixiv_link;
 mod pixiv_web;
 mod push;

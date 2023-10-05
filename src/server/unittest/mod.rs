@@ -28,15 +28,17 @@ impl UnitTestContext {
         Self {
             ctx: Arc::new(ServerContext {
                 cors: CorsContext::new(true, vec![], vec![]),
-                db: open_and_init_database(
-                    PixivDownloaderDbConfig::new(&json::object! {
-                        "type": "sqlite",
-                        "path": "test/server.db",
-                    })
+                db: Arc::new(
+                    open_and_init_database(
+                        PixivDownloaderDbConfig::new(&json::object! {
+                            "type": "sqlite",
+                            "path": "test/server.db",
+                        })
+                        .unwrap(),
+                    )
+                    .await
                     .unwrap(),
-                )
-                .await
-                .unwrap(),
+                ),
                 rsa_key: Mutex::new(None),
             }),
             routes: ServerRoutes::new(),

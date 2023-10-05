@@ -8,6 +8,8 @@ use crate::data::fanbox::FanboxData;
 use crate::data::json::JSONDataFile;
 #[cfg(feature = "ugoira")]
 use crate::data::video::get_video_metadata;
+#[cfg(feature = "db")]
+use crate::db::open_and_init_database;
 use crate::downloader::Downloader;
 use crate::downloader::DownloaderHelper;
 use crate::downloader::DownloaderResult;
@@ -23,6 +25,7 @@ use crate::fanbox::post::FanboxPost;
 use crate::fanbox_api::FanboxClient;
 use crate::gettext;
 use crate::opthelper::get_helper;
+use crate::pixiv_app::PixivAppClient;
 use crate::pixiv_link::FanboxPostID;
 use crate::pixiv_link::PixivID;
 use crate::pixiv_web::PixivWebClient;
@@ -34,6 +37,7 @@ use crate::utils::get_file_name_from_url;
 use crate::Main;
 use indicatif::MultiProgress;
 use json::JsonValue;
+use proc_macros::print_error;
 use reqwest::IntoUrl;
 use std::fs::{create_dir_all, File};
 use std::io::Write;
@@ -45,25 +49,23 @@ impl Main {
     pub async fn download(&mut self) -> i32 {
         let pw = Arc::new(PixivWebClient::new());
         let fc = Arc::new(FanboxClient::new());
+        #[cfg(feature = "db")]
+        let db = Arc::new(print_error!(
+            gettext("Failed to open database:"),
+            open_and_init_database(get_helper().db()).await,
+            0
+        ));
+        #[cfg(not(feature = "db"))]
+        let ac = Arc::new(PixivAppClient::new());
+        #[cfg(feature = "db")]
+        let ac = PixivAppClient::with_db(Some(db));
         let tasks = TaskManager::new_post();
         let download_multiple_posts = get_helper().download_multiple_posts();
         for id in self.cmd.as_ref().unwrap().ids.iter() {
             match id {
                 PixivID::Artwork(id) => {
-                    if !pw.is_inited() {
-                        if !pw.init() {
-                            println!("{}", gettext("Failed to initialize pixiv web api client."));
-                            return 1;
-                        }
-                        if !pw.check_login().await {
-                            return 1;
-                        }
-                        if !pw.logined() {
-                            println!("{}", gettext("Warning: Web api client not logged in, some future may not work."));
-                        }
-                    }
                     tasks
-                        .add_task(download_artwork(Arc::clone(&pw), id.clone()))
+                        .add_task(download_artwork(ac.clone(), Arc::clone(&pw), id.clone()))
                         .await;
                     if !download_multiple_posts {
                         tasks.join().await;
@@ -249,9 +251,52 @@ pub async fn download_artwork_link<L: IntoUrl + Clone>(
 }
 
 pub async fn download_artwork(
+    ac: PixivAppClient,
     pw: Arc<PixivWebClient>,
     id: u64,
 ) -> Result<(), PixivDownloaderError> {
+    let helper = get_helper();
+    let app_ok = helper.refresh_token().is_some();
+    if app_ok && helper.use_app_api() {
+        if let Err(e) = download_artwork_app(ac, pw.clone(), id).await {
+            println!("{}{}", gettext("Warning: Failed to download artwork with app api, trying to download with web api: "), e);
+            download_artwork_web(pw.clone(), id).await?;
+        }
+    } else if app_ok {
+        if let Err(_) = download_artwork_web(pw.clone(), id).await {
+            download_artwork_app(ac, pw.clone(), id).await?;
+        }
+    } else {
+        download_artwork_web(pw, id).await?;
+    }
+    Ok(())
+}
+
+pub async fn download_artwork_app(
+    ac: PixivAppClient,
+    pw: Arc<PixivWebClient>,
+    id: u64,
+) -> Result<(), PixivDownloaderError> {
+    let data = ac.get_illust_details(id).await?;
+    Ok(())
+}
+
+pub async fn download_artwork_web(
+    pw: Arc<PixivWebClient>,
+    id: u64,
+) -> Result<(), PixivDownloaderError> {
+    if !pw.is_login_checked() {
+        if !pw.check_login().await {
+            println!("{}", gettext("Failed to check login status."));
+        } else {
+            if !pw.logined() {
+                println!(
+                    "{}",
+                    gettext("Warning: Web api client not logged in, some future may not work.")
+                );
+            }
+        }
+    }
     let mut re = None;
     let pages;
     let mut ajax_ver = true;

@@ -31,6 +31,7 @@ int-enum = "0.5"
 itertools = "0.10"
 json = "0.12"
 lazy_static = "1.4"
+md5 = "0.7"
 modular-bitfield = "0.11"
 multipart = { features = ["server"], git = 'https://github.com/lifegpc/multipart', optional = true, default-features = false }
 openssl = { version = "0.10", optional = true }

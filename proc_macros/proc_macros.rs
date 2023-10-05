@@ -944,3 +944,44 @@ pub fn http_error(item: TokenStream) -> TokenStream {
     );
     stream.into()
 }
+
+struct PrintError {
+    pub msg: Expr,
+    pub expr: Expr,
+    pub re: Option<Expr>,
+}
+
+impl Parse for PrintError {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let msg = input.parse()?;
+        input.parse::<token::Comma>()?;
+        let expr = input.parse()?;
+        let mut re = None;
+        match input.parse::<token::Comma>() {
+            Ok(_) => {
+                re.replace(input.parse()?);
+            }
+            Err(_) => {}
+        }
+        Ok(Self { msg, expr, re })
+    }
+}
+
+#[proc_macro]
+pub fn print_error(item: TokenStream) -> TokenStream {
+    let PrintError { msg, expr, re } = parse_macro_input!(item as PrintError);
+    let re = match re {
+        Some(re) => quote!(#re),
+        None => quote!(None),
+    };
+    let stream = quote!(
+        match (#expr) {
+            Ok(re) => re,
+            Err(e) => {
+                println!("{}{}", #msg, e);
+                return #re;
+            }
+        }
+    );
+    stream.into()
+}

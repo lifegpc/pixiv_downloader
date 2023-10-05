@@ -63,7 +63,6 @@ pub trait SetLen {
     fn set_len(&mut self, size: u64) -> Result<(), DownloaderError>;
 }
 
-#[derive(Debug)]
 /// A file downloader
 pub struct DownloaderInternal<
     T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + SetLen,

@@ -1,5 +1,6 @@
 use crate::cookies::Cookie;
 use crate::cookies::ManagedCookieJar;
+use crate::error::PixivDownloaderError;
 use crate::ext::atomic::AtomicQuick;
 use crate::ext::json::ToJson;
 use crate::ext::rw_lock::GetRwLock;
@@ -7,7 +8,8 @@ use crate::gettext;
 use crate::list::NonTailList;
 use crate::opthelper::get_helper;
 use json::JsonValue;
-use reqwest::{Client, ClientBuilder, IntoUrl, RequestBuilder, Response};
+use proc_macros::print_error;
+use reqwest::{Client, ClientBuilder, IntoUrl, Request, Response};
 use std::collections::HashMap;
 use std::default::Default;
 use std::sync::atomic::AtomicBool;
@@ -72,7 +74,19 @@ pub fn gen_cookie_header<U: IntoUrl>(c: &WebClient, url: U) -> String {
     s
 }
 
-#[derive(Debug)]
+pub trait ReqMiddleware {
+    fn handle(&self, r: Request, c: Client) -> Result<Request, PixivDownloaderError>;
+}
+
+impl<T> ReqMiddleware for Arc<T>
+where
+    T: ReqMiddleware,
+{
+    fn handle(&self, r: Request, c: Client) -> Result<Request, PixivDownloaderError> {
+        self.as_ref().handle(r, c)
+    }
+}
+
 /// A Web Client
 pub struct WebClient {
     /// Basic Web Client
@@ -87,6 +101,8 @@ pub struct WebClient {
     retry: Arc<AtomicI64>,
     /// Retry interval
     retry_interval: RwLock<Option<NonTailList<Duration>>>,
+    /// Request middlewares
+    req_middlewares: RwLock<Vec<Box<dyn ReqMiddleware + Send + Sync>>>,
 }
 
 impl WebClient {
@@ -101,7 +117,20 @@ impl WebClient {
             verbose: Arc::new(AtomicBool::new(false)),
             retry: Arc::new(AtomicI64::new(3)),
             retry_interval: RwLock::new(None),
+            req_middlewares: RwLock::new(Vec::new()),
         }
+    }
+
+    fn handle_req_middlewares(&self, r: Request) -> Result<Request, PixivDownloaderError> {
+        let mut r = r;
+        for i in self.req_middlewares.get_ref().iter() {
+            r = i.handle(r, self.client.clone())?;
+        }
+        Ok(r)
+    }
+
+    pub fn add_req_middleware(&self, m: Box<dyn ReqMiddleware + Send + Sync>) {
+        self.req_middlewares.get_mut().push(m);
     }
 
     pub fn get_cookies_as_mut<'a>(&'a self) -> RwLockWriteGuard<'a, ManagedCookieJar> {
@@ -321,16 +350,11 @@ impl WebClient {
 
     /// Send GET requests without retry
     pub async fn _aget2<U: IntoUrl, H: ToHeaders>(&self, url: U, headers: H) -> Option<Response> {
-        let r = self._aget(url, headers);
-        let r = r.send().await;
-        match r {
-            Ok(_) => {}
-            Err(e) => {
-                println!("{} {}", gettext("Error when request:"), e);
-                return None;
-            }
-        }
-        let r = r.unwrap();
+        let r = print_error!(
+            gettext("Failed to generate request:"),
+            self._aget(url, headers)
+        );
+        let r = print_error!(gettext("Error when request:"), self.client.execute(r).await);
         self.handle_set_cookie(&r);
         if self.get_verbose() {
             println!("{}", r.status());
@@ -339,7 +363,11 @@ impl WebClient {
     }
 
     /// Generate a requests
-    pub fn _aget<U: IntoUrl, H: ToHeaders>(&self, url: U, headers: H) -> RequestBuilder {
+    pub fn _aget<U: IntoUrl, H: ToHeaders>(
+        &self,
+        url: U,
+        headers: H,
+    ) -> Result<Request, PixivDownloaderError> {
         let s = url.as_str();
         if self.get_verbose() {
             println!("GET {}", s);
@@ -359,7 +387,7 @@ impl WebClient {
         if c.len() > 0 {
             r = r.header("Cookie", c.as_str());
         }
-        r
+        self.handle_req_middlewares(r.build()?)
     }
 
     pub async fn post<U: IntoUrl + Clone, H: ToHeaders + Clone>(
@@ -407,16 +435,11 @@ impl WebClient {
         headers: H,
         form: Option<HashMap<String, String>>,
     ) -> Option<Response> {
-        let r = self._apost(url, headers, form);
-        let r = r.send().await;
-        match r {
-            Ok(_) => {}
-            Err(e) => {
-                println!("{} {}", gettext("Error when request:"), e);
-                return None;
-            }
-        }
-        let r = r.unwrap();
+        let r = print_error!(
+            gettext("Failed to generate request:"),
+            self._apost(url, headers, form)
+        );
+        let r = print_error!(gettext("Error when request:"), self.client.execute(r).await);
         self.handle_set_cookie(&r);
         if self.get_verbose() {
             println!("{}", r.status());
@@ -430,7 +453,7 @@ impl WebClient {
         url: U,
         headers: H,
         form: Option<HashMap<String, String>>,
-    ) -> RequestBuilder {
+    ) -> Result<Request, PixivDownloaderError> {
         let s = url.as_str();
         if self.get_verbose() {
             println!("POST {}", s);
@@ -456,7 +479,7 @@ impl WebClient {
             }
             None => {}
         }
-        r
+        self.handle_req_middlewares(r.build()?)
     }
 }
 
