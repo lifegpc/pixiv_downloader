@@ -5,6 +5,7 @@ use crate::ext::atomic::AtomicQuick;
 use crate::ext::replace::ReplaceWith2;
 use crate::ext::rw_lock::GetRwLock;
 use crate::opthelper::OptHelper;
+use crate::pixivapp::error::handle_error;
 use crate::webclient::{ReqMiddleware, WebClient};
 use crate::{get_helper, gettext};
 use chrono::{DateTime, Local, SecondsFormat, Utc};
@@ -69,6 +70,7 @@ pub struct PixivAppClientInternal {
 }
 
 impl PixivAppClientInternal {
+    #[cfg(not(feature = "db"))]
     pub fn new() -> Self {
         Self {
             client: WebClient::default(),
@@ -247,8 +249,7 @@ impl PixivAppClientInternal {
             )
             .await
             .ok_or(gettext("Failed to get illust details."))?;
-        let status = re.status();
-        let obj = json::parse(&re.text().await?)?;
+        let obj = handle_error(re).await?;
         if get_helper().verbose() {
             println!("{}{}", gettext("Illust details:"), obj.pretty(2).as_str());
         }
@@ -264,6 +265,7 @@ pub struct PixivAppClient {
 }
 
 impl PixivAppClient {
+    #[cfg(not(feature = "db"))]
     pub fn new() -> Self {
         let r = Self {
             internal: Arc::new(PixivAppClientInternal::new()),

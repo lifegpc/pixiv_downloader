@@ -41,6 +41,7 @@ mod parser;
 mod pixiv_app;
 mod pixiv_link;
 mod pixiv_web;
+mod pixivapp;
 mod push;
 mod retry_interval;
 #[cfg(feature = "server")]

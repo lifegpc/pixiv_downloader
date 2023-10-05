@@ -28,6 +28,7 @@ pub enum PixivDownloaderError {
     OpenSSLError(openssl::error::ErrorStack),
     ParseIntError(std::num::ParseIntError),
     ReqwestError(reqwest::Error),
+    PixivAppError(crate::pixivapp::error::PixivAppError),
 }
 
 impl std::error::Error for PixivDownloaderError {}
@@ -41,6 +42,15 @@ impl From<&str> for PixivDownloaderError {
 impl From<http::header::InvalidHeaderValue> for PixivDownloaderError {
     fn from(v: http::header::InvalidHeaderValue) -> Self {
         Self::HTTP(http::Error::from(v))
+    }
+}
+
+impl PixivDownloaderError {
+    pub fn is_not_found(&self) -> bool {
+        match self {
+            Self::PixivAppError(e) => e.is_not_found(),
+            _ => false,
+        }
     }
 }
 

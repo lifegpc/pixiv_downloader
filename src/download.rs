@@ -259,6 +259,9 @@ pub async fn download_artwork(
     let app_ok = helper.refresh_token().is_some();
     if app_ok && helper.use_app_api() {
         if let Err(e) = download_artwork_app(ac, pw.clone(), id).await {
+            if e.is_not_found() {
+                return Err(e);
+            }
             println!("{}{}", gettext("Warning: Failed to download artwork with app api, trying to download with web api: "), e);
             download_artwork_web(pw.clone(), id).await?;
         }
