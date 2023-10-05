@@ -36,7 +36,7 @@ impl ResponseFor<Body, Pin<Box<HttpBodyType>>> for ProxyPixivContext {
         );
         let url = http_error!(params.get("url").ok_or("Url is required."));
         let uri = http_error!(Uri::try_from(url));
-        let host = uri.host().ok_or("Host is needed.")?;
+        let host = http_error!(uri.host().ok_or("Host is needed."));
         if !host.ends_with(".pximg.net") {
             http_error!(403, Err("Host is not allowed."));
         }
