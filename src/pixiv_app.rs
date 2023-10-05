@@ -6,6 +6,7 @@ use crate::ext::replace::ReplaceWith2;
 use crate::ext::rw_lock::GetRwLock;
 use crate::opthelper::OptHelper;
 use crate::pixivapp::error::handle_error;
+use crate::pixivapp::illust::PixivAppIllust;
 use crate::webclient::{ReqMiddleware, WebClient};
 use crate::{get_helper, gettext};
 use chrono::{DateTime, Local, SecondsFormat, Utc};
@@ -285,6 +286,14 @@ impl PixivAppClient {
             .client
             .add_req_middleware(Box::new(PixivAppMiddleware::new(r.internal.clone())));
         r
+    }
+
+    pub async fn get_illust_details(
+        &self,
+        id: u64,
+    ) -> Result<PixivAppIllust, PixivDownloaderError> {
+        let obj = self.internal.get_illust_details(id).await?;
+        Ok(PixivAppIllust::new(obj["illust"].clone()))
     }
 }
 

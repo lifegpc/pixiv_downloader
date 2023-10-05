@@ -5,6 +5,7 @@ use crate::opt::author_name_filter::AuthorFiler;
 use crate::opthelper::get_helper;
 use crate::pixiv_link::PixivID;
 use crate::pixiv_link::ToPixivID;
+use crate::pixivapp::illust::PixivAppIllust;
 use int_enum::IntEnum;
 use json::JsonValue;
 use xml::unescape;
@@ -54,6 +55,27 @@ impl PixivData {
             tags: None,
             ai_type: None,
         })
+    }
+
+    /// Read data from [PixivAppIllust].
+    pub fn from_app_illust(&mut self, illust: &PixivAppIllust) {
+        self.title = illust.title().map(|s| s.to_owned());
+        self.author = illust.user_name().map(|s| s.to_owned());
+        self.description = illust.caption().map(|s| s.to_owned());
+        let mut tags = Vec::new();
+        for i in illust.tags() {
+            if let Some(name) = i.name() {
+                tags.push((name.to_owned(), i.translated_name().map(|s| s.to_owned())));
+            }
+        }
+        self.tags.replace(tags);
+        self.ai_type = match illust.illust_ai_type() {
+            Some(t) => match PixivAiType::from_int(t as u8) {
+                Ok(t) => Some(t),
+                Err(_) => None,
+            },
+            None => None,
+        };
     }
 
     /// Read data from JSON object.

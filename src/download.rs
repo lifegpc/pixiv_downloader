@@ -275,12 +275,237 @@ pub async fn download_artwork(
     Ok(())
 }
 
+pub async fn download_artwork_ugoira(
+    pw: Arc<PixivWebClient>,
+    id: u64,
+    base: Arc<PathBuf>,
+    datas: Arc<PixivData>,
+) -> Result<(), PixivDownloaderError> {
+    let helper = get_helper();
+    let ugoira_data = pw
+        .get_ugoira(id)
+        .await
+        .try_err(gettext("Failed to get ugoira's data."))?;
+    let src = (&ugoira_data["originalSrc"])
+        .as_str()
+        .try_err(gettext("Can not find source link for ugoira."))?;
+    let dh = DownloaderHelper::builder(src)?
+        .headers(json::object! { "referer": "https://www.pixiv.net/" })
+        .build();
+    let tasks = TaskManager::default();
+    tasks
+        .add_task(download_file(
+            dh,
+            if helper.enable_multi_progress_bar() {
+                Some(get_progress_bar())
+            } else {
+                None
+            },
+            Arc::clone(&base),
+        ))
+        .await;
+    tasks.join().await;
+    let mut tasks = tasks.take_finished_tasks();
+    let task = tasks.get_mut(0).try_err(gettext("No finished task."))?;
+    task.await??;
+    #[cfg(feature = "ugoira")]
+    {
+        let file_name = get_file_name_from_url(src).try_err(format!(
+            "{} {}",
+            gettext("Failed to get file name from url:"),
+            src
+        ))?;
+        let file_name = base.join(file_name);
+        let metadata = match get_video_metadata(Arc::clone(&datas).as_ref()) {
+            Ok(m) => m,
+            Err(e) => {
+                println!(
+                    "{} {}",
+                    gettext("Warning: Failed to generate video's metadata:"),
+                    e
+                );
+                AVDict::new()
+            }
+        };
+        let mut options = AVDict::new();
+        if helper.force_yuv420p() {
+            options.set("force_yuv420p", "1", None)?;
+        }
+        let profile = helper.x264_profile();
+        if !profile.is_auto() {
+            options.set("profile", profile.as_str(), None)?;
+        }
+        match helper.x264_crf() {
+            Some(crf) => {
+                options.set("crf", format!("{}", crf), None)?;
+            }
+            None => {}
+        }
+        let frames = UgoiraFrames::from_json(&ugoira_data["frames"])?;
+        let output_file_name = base.join(format!("{}.mp4", id));
+        convert_ugoira_to_mp4(
+            &file_name,
+            &output_file_name,
+            &frames,
+            helper.ugoira_max_fps(),
+            &options,
+            &metadata,
+        )?;
+        println!(
+            "{}",
+            gettext("Converted <src> -> <dest>")
+                .replace("<src>", file_name.to_str().unwrap_or("(null)"))
+                .replace("<dest>", output_file_name.to_str().unwrap_or("(null)"))
+                .as_str()
+        );
+    }
+    return Ok(());
+}
+
 pub async fn download_artwork_app(
     ac: PixivAppClient,
     pw: Arc<PixivWebClient>,
     id: u64,
 ) -> Result<(), PixivDownloaderError> {
     let data = ac.get_illust_details(id).await?;
+    let helper = get_helper();
+    if helper.verbose() {
+        println!("{:#?}", data);
+    }
+    match crate::pixivapp::check::CheckUnknown::check_unknown(&data) {
+        Ok(_) => {}
+        Err(e) => {
+            println!(
+                "{} {}",
+                gettext("Warning: Post info contains unknown data:"),
+                e
+            );
+        }
+    }
+    let base = Arc::new(PathBuf::from(helper.download_base()));
+    let json_file = base.join(format!("{}.json", id));
+    let mut datas = PixivData::new(id).unwrap();
+    datas.from_app_illust(&data);
+    let datas = Arc::new(datas);
+    let json_data = JSONDataFile::from(Arc::clone(&datas));
+    if !json_data.save(&json_file) {
+        return Err(PixivDownloaderError::from(gettext(
+            "Failed to save metadata to JSON file.",
+        )));
+    }
+    let illust_type = data.typ();
+    match illust_type {
+        Some(illust_type) => match illust_type {
+            "ugoira" => {
+                return download_artwork_ugoira(pw, id, base, datas).await;
+            }
+            _ => {}
+        },
+        None => {
+            println!("{}", gettext("Warning: Failed to get illust's type."));
+        }
+    }
+    let page_count = data
+        .page_count()
+        .ok_or(gettext("Failed to get page count."))?;
+    if page_count > 1 && helper.download_multiple_files() {
+        let mut np = 0u16;
+        let tasks = TaskManager::default();
+        let mut re: Result<(), PixivDownloaderError> = Ok(());
+        for page in data.meta_pages() {
+            let url = match page.original() {
+                Some(url) => url.to_owned(),
+                None => {
+                    concat_pixiv_downloader_error!(
+                        re,
+                        Err::<(), &str>(gettext("Failed to get original picture's link."))
+                    );
+                    continue;
+                }
+            };
+            tasks
+                .add_task(download_artwork_link(
+                    url,
+                    np,
+                    if helper.enable_multi_progress_bar() {
+                        Some(get_progress_bar())
+                    } else {
+                        None
+                    },
+                    Arc::clone(&datas),
+                    Arc::clone(&base),
+                ))
+                .await;
+            np += 1;
+        }
+        tasks.join().await;
+        let tasks = tasks.take_finished_tasks();
+        for task in tasks {
+            let r = task.await;
+            let r = match r {
+                Ok(r) => r,
+                Err(e) => Err(PixivDownloaderError::from(e)),
+            };
+            concat_pixiv_downloader_error!(re, r);
+        }
+        return re;
+    } else if page_count > 1 {
+        let mut np = 0u16;
+        let tasks = TaskManager::default();
+        for page in data.meta_pages() {
+            let link = page
+                .original()
+                .ok_or(gettext("Failed to get original picture's link."))?;
+            tasks
+                .add_task(download_artwork_link(
+                    link.to_owned(),
+                    np,
+                    if helper.enable_multi_progress_bar() {
+                        Some(get_progress_bar())
+                    } else {
+                        None
+                    },
+                    Arc::clone(&datas),
+                    Arc::clone(&base),
+                ))
+                .await;
+            tasks.join().await;
+            np += 1;
+        }
+        let mut re = Ok(());
+        let tasks = tasks.take_finished_tasks();
+        for task in tasks {
+            let r = task.await;
+            let r = match r {
+                Ok(r) => r,
+                Err(e) => Err(PixivDownloaderError::from(e)),
+            };
+            concat_pixiv_downloader_error!(re, r);
+        }
+        return re;
+    } else {
+        let link = data
+            .original_image_url()
+            .ok_or(gettext("Failed to get original picture's link."))?;
+        let tasks = TaskManager::default();
+        tasks
+            .add_task(download_artwork_link(
+                link.to_owned(),
+                0,
+                if helper.enable_multi_progress_bar() {
+                    Some(get_progress_bar())
+                } else {
+                    None
+                },
+                Arc::clone(&datas),
+                Arc::clone(&base),
+            ))
+            .await;
+        tasks.join().await;
+        let mut tasks = tasks.take_finished_tasks();
+        let task = tasks.get_mut(0).try_err(gettext("No tasks finished."))?;
+        task.await??;
+    }
     Ok(())
 }
 
@@ -355,84 +580,7 @@ pub async fn download_artwork_web(
             0 => {} // Normal illust
             1 => {} // Manga illust
             2 => {
-                let ugoira_data = pw
-                    .get_ugoira(id)
-                    .await
-                    .try_err(gettext("Failed to get ugoira's data."))?;
-                let src = (&ugoira_data["originalSrc"])
-                    .as_str()
-                    .try_err(gettext("Can not find source link for ugoira."))?;
-                let dh = DownloaderHelper::builder(src)?
-                    .headers(json::object! { "referer": "https://www.pixiv.net/" })
-                    .build();
-                let tasks = TaskManager::default();
-                tasks
-                    .add_task(download_file(
-                        dh,
-                        if helper.enable_multi_progress_bar() {
-                            Some(get_progress_bar())
-                        } else {
-                            None
-                        },
-                        Arc::clone(&base),
-                    ))
-                    .await;
-                tasks.join().await;
-                let mut tasks = tasks.take_finished_tasks();
-                let task = tasks.get_mut(0).try_err(gettext("No finished task."))?;
-                task.await??;
-                #[cfg(feature = "ugoira")]
-                {
-                    let file_name = get_file_name_from_url(src).try_err(format!(
-                        "{} {}",
-                        gettext("Failed to get file name from url:"),
-                        src
-                    ))?;
-                    let file_name = base.join(file_name);
-                    let metadata = match get_video_metadata(Arc::clone(&datas).as_ref()) {
-                        Ok(m) => m,
-                        Err(e) => {
-                            println!(
-                                "{} {}",
-                                gettext("Warning: Failed to generate video's metadata:"),
-                                e
-                            );
-                            AVDict::new()
-                        }
-                    };
-                    let mut options = AVDict::new();
-                    if helper.force_yuv420p() {
-                        options.set("force_yuv420p", "1", None)?;
-                    }
-                    let profile = helper.x264_profile();
-                    if !profile.is_auto() {
-                        options.set("profile", profile.as_str(), None)?;
-                    }
-                    match helper.x264_crf() {
-                        Some(crf) => {
-                            options.set("crf", format!("{}", crf), None)?;
-                        }
-                        None => {}
-                    }
-                    let frames = UgoiraFrames::from_json(&ugoira_data["frames"])?;
-                    let output_file_name = base.join(format!("{}.mp4", id));
-                    convert_ugoira_to_mp4(
-                        &file_name,
-                        &output_file_name,
-                        &frames,
-                        helper.ugoira_max_fps(),
-                        &options,
-                        &metadata,
-                    )?;
-                    println!(
-                        "{}",
-                        gettext("Converted <src> -> <dest>")
-                            .replace("<src>", file_name.to_str().unwrap_or("(null)"))
-                            .replace("<dest>", output_file_name.to_str().unwrap_or("(null)"))
-                            .as_str()
-                    );
-                }
-                return Ok(());
+                return download_artwork_ugoira(pw, id, base, datas).await;
             }
             _ => {
                 println!(
