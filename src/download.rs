@@ -56,7 +56,7 @@ impl Main {
             0
         ));
         #[cfg(not(feature = "db"))]
-        let ac = Arc::new(PixivAppClient::new());
+        let ac = PixivAppClient::new();
         #[cfg(feature = "db")]
         let ac = PixivAppClient::with_db(Some(db));
         let tasks = TaskManager::new_post();
