@@ -4,10 +4,14 @@ on:
   push:
     branches: [ "master" ]
     paths-ignore:
-      - '.github/workflows/CI.yaml'
+      - '.github/workflows/CI.yml'
       - '.github/workflows/github-pages.yaml'
       - 'doc/**'
       - README.md
+
+concurrency:
+  group: "docker"
+  cancel-in-progress: false
 
 jobs:
   deploy:

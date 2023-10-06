@@ -4,6 +4,7 @@ on:
   push:
     branches: [ master ]
     paths-ignore:
+      - '.github/workflows/docker.yml'
       - '.github/workflows/github-pages.yaml'
       - 'doc/**'
       - Dockerfile

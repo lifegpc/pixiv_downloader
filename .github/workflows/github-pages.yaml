@@ -9,6 +9,7 @@ on:
     branches: [ "master" ]
     paths-ignore:
       - '.github/workflows/CI.yml'
+      - '.github/workflows/docker.yml'
       - 'doc/**'
       - Dockerfile
       - docker-compose.yml

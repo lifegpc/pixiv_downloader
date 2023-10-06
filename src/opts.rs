@@ -16,6 +16,8 @@ use std::net::SocketAddr;
 use std::num::ParseFloatError;
 use std::num::ParseIntError;
 use std::num::TryFromIntError;
+#[cfg(feature = "docker")]
+use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Duration;
 
@@ -205,6 +207,13 @@ impl CommandOpts {
                 None
             }
         } else {
+            #[cfg(feature = "docker")]
+            {
+                let pb = PathBuf::from("/app/data/config.json");
+                if pb.exists() {
+                    return Some(String::from(pb.to_str().unwrap()));
+                }
+            }
             let mut pb = get_exe_path_else_current();
             pb = pb.join("pixiv_downloader.json");
             if pb.exists() {

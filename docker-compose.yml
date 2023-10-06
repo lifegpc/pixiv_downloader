@@ -1,0 +1,11 @@
+version: '3'
+
+services:
+  pixiv_downloader:
+    image: lifegpc/pixiv_downloader:master
+    volumes:
+      - ./downloads:/app/downloads
+      - ./data:/app/data
+      - ./tmp:/app/temp
+    ports:
+      - 8080:8080
