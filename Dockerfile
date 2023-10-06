@@ -40,7 +40,7 @@ RUN export PKG_CONFIG_PATH=/clib/lib/pkgconfig \
     && cd ~ && git clone --depth 1 'https://git.ffmpeg.org/ffmpeg.git' && cd ffmpeg \
     && ./configure --enable-shared --disable-static --enable-gpl --enable-version3 --enable-libx264 --prefix=/clib \
     && make -j$(grep -c ^processor /proc/cpuinfo) && make install \
-    && cd ~ && rm -rf ffmpeg || cat ffbuild/config.log && exit 1
+    && cd ~ && rm -rf ffmpeg
 WORKDIR /app
 COPY . /app
 RUN export PKG_CONFIG_PATH=/clib/lib/pkgconfig \
