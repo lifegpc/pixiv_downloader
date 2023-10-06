@@ -4,7 +4,14 @@ A pixiv downloader written in Rust.
 * Write exif metatata to picture.
 * Merge ugoira(GIF) pictures to video files.
 ### TODO
-See [issues](https://github.com/lifegpc/pixiv_downloader/issues) or [projects](https://github.com/lifegpc/pixiv_downloader/projects)
+See [issues](https://github.com/lifegpc/pixiv_downloader/issues) or [projects](https://github.com/lifegpc/pixiv_downloader/projects).
+## Setup
+### Docker
+```shell
+mkdir -p pixiv_downloader && cd pixiv_downloader
+curl -L https://github.com/lifegpc/pixiv_downloader/raw/master/docker-compose.yml -o docker-compose.yml
+docker-compose up -d
+```
 ## Rust features flags
 ### all
 Enable all unconflicted features, this will enable [`db_all`](#db_all), [`exif`](#exif) and [`ugoira`](#ugoira).
