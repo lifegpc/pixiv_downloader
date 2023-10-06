@@ -5,6 +5,12 @@ on:
     branches: [ master ]
   pull_request:
     branches: [ master ]
+  paths-ignore:
+    - '.github/workflows/github-pages.yaml'
+    - 'doc/**'
+    - Dockerfile
+    - docker-compose.yml
+    - README.md
 
 env:
   CARGO_TERM_COLOR: always

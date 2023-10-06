@@ -10,6 +10,12 @@ on:
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
+  paths-ignore:
+    - '.github/workflows/CI.yml'
+    - 'doc/**'
+    - Dockerfile
+    - docker-compose.yml
+    - README.md
 
 env:
   CARGO_TERM_COLOR: always
