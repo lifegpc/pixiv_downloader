@@ -8,9 +8,13 @@ pub struct PixivDownloaderSqliteConfig {
     pub path: String,
 }
 
+#[cfg(feature = "db_sqlite")]
 impl Default for PixivDownloaderSqliteConfig {
     fn default() -> Self {
         Self {
+            #[cfg(feature = "docker")]
+            path: "/app/data/data.db".to_string(),
+            #[cfg(not(feature = "docker"))]
             path: "pixiv_downloader.db".to_string(),
         }
     }

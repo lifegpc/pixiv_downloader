@@ -110,7 +110,10 @@ impl OptHelper {
             }
             None => {}
         }
-        String::from("./")
+        #[cfg(feature = "docker")]
+        return String::from("/app/downloads");
+        #[cfg(not(feature = "docker"))]
+        return String::from("./");
     }
 
     /// Whether to download multiple posts/artworks at the same time.
