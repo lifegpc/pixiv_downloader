@@ -19,6 +19,7 @@ use crate::server::cors::CorsEntry;
 use crate::settings::SettingStore;
 #[cfg(feature = "ugoira")]
 use crate::ugoira::X264Profile;
+use is_terminal::IsTerminal;
 #[cfg(feature = "server")]
 use std::net::IpAddr;
 #[cfg(feature = "server")]
@@ -462,7 +463,7 @@ impl OptHelper {
         if self._use_progress_bar.get_ref().is_some() {
             return self._use_progress_bar.get_ref().as_ref().unwrap().to_bool();
         }
-        atty::is(atty::Stream::Stdout)
+        std::io::stdout().is_terminal()
     }
 
     /// Return progress bar's template

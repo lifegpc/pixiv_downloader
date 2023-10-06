@@ -8,7 +8,6 @@ edition = "2021"
 [dependencies]
 anyhow = { version = "1.0", optional = true }
 async-trait = { version = "0.1", optional = true }
-atty = "0.2"
 base64 = { version = "0.21", optional = true }
 bytes = { version = "1.4", optional = true }
 c_fixed_string = { version = "0.2", optional = true }
@@ -28,6 +27,7 @@ http-content-range = "0.1"
 hyper = { version="0.14", features = ["server"], optional = true }
 indicatif = "0.17.3"
 int-enum = "0.5"
+is-terminal = "0.4"
 itertools = "0.10"
 json = "0.12"
 lazy_static = "1.4"
