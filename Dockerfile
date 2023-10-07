@@ -1,5 +1,5 @@
 FROM ubuntu:latest as builder
-RUN apt update && apt install -y \
+RUN apt-get update && apt-get install -y \
     gcc \
     'g++' \
     cmake \
@@ -17,7 +17,9 @@ RUN apt update && apt install -y \
     libssl-dev \
     ca-certificates \
     curl \
-    file
+    file \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 RUN curl https://sh.rustup.rs -sSf | \
     sh -s -- --default-toolchain nightly -y
 ENV PATH=/root/.cargo/bin:$PATH
@@ -53,11 +55,13 @@ FROM ubuntu:latest as prod
 
 WORKDIR /app
 
-RUN apt update && apt install -y \
+RUN apt-get update && apt-get install -y \
     zlib1g \
     libexpat1 \
     libssl3 \
-    ca-certificates
+    ca-certificates \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/target/release/pixiv_downloader /app/pixiv_downloader
 COPY --from=builder /clib/lib /app/lib

@@ -7,6 +7,7 @@ on:
       - '.github/workflows/CI.yml'
       - '.github/workflows/github-pages.yaml'
       - 'doc/**'
+      - docker-compose.yml
       - README.md
 
 concurrency:
