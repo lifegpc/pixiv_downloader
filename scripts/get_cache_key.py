@@ -19,6 +19,18 @@ def sha256(data) -> str:
     return s.hexdigest()
 
 
+def hashfile(fn):
+    if exists(fn):
+        s = _sha256()
+        with open(fn, 'rb') as f:
+            c = f.read(256)
+            while len(c) > 0:
+                s.update(c)
+                c = f.read(256)
+        return s.hexdigest()
+    return ''
+
+
 def hash_file(feature, prefix) -> str:
     if prefix is None:
         fns = [f"build_{feature}.sh"]
@@ -43,8 +55,9 @@ def hash_file(feature, prefix) -> str:
 
 try:
     p = ArgumentParser(description='Get the cache key which used in action/cache')
-    p.add_argument("features", help="The feature's name", action='append', nargs='+', choices=['all'] + ALL_FEATURES)
+    p.add_argument("features", help="The feature's name", action='append', nargs='*', choices=[[], 'all'] + ALL_FEATURES)
     p.add_argument('--prefix', help='The prefix of the cache key')
+    p.add_argument('--docker', help='Cache for docker image', action='store_true', default=False)
     args = p.parse_intermixed_args(sys.argv[1:])
     features: List[str] = args.features[0]
     if 'all' in features:
@@ -55,6 +68,10 @@ try:
         dt = strftime('%Y-%m', gmtime(now))
         h = hash_file(i, args.prefix)
         d += f"{i}={dt}:{h}\n"
+    if args.docker:
+        dt = strftime('%Y-%m', gmtime(now))
+        h = hashfile('Dockerfile')
+        d += f"docker={dt}:{h}\n"
     print(d)
     github_output = environ.get('GITHUB_OUTPUT', '')
     if github_output != '':
