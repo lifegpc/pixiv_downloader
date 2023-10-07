@@ -1,4 +1,4 @@
-FROM ubuntu:latest as builder
+FROM ubuntu:devel as builder
 RUN apt-get update && apt-get install -y \
     gcc \
     'g++' \
@@ -51,7 +51,7 @@ RUN export PKG_CONFIG_PATH=/clib/lib/pkgconfig \
     && export "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/clib/lib" \
     && cargo build --features all,docker --release
 
-FROM ubuntu:latest as prod
+FROM ubuntu:devel as prod
 
 WORKDIR /app
 
