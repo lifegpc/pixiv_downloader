@@ -37,6 +37,8 @@ jobs:
       uses: docker/metadata-action@v5
       with:
         images: lifegpc/pixiv_downloader
+    - name: Switch docker driver
+      run: docker buildx create --use
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
       with:
