@@ -10,6 +10,7 @@ use crate::opthelper::get_helper;
 use json::JsonValue;
 use proc_macros::print_error;
 use reqwest::{Client, ClientBuilder, IntoUrl, Request, Response};
+use serde::ser::Serialize;
 use std::collections::HashMap;
 use std::default::Default;
 use std::sync::atomic::AtomicBool;
@@ -390,11 +391,11 @@ impl WebClient {
         self.handle_req_middlewares(r.build()?)
     }
 
-    pub async fn post<U: IntoUrl + Clone, H: ToHeaders + Clone>(
+    pub async fn post<U: IntoUrl + Clone, H: ToHeaders + Clone, S: Serialize + Clone>(
         &self,
         url: U,
         headers: H,
-        form: Option<HashMap<String, String>>,
+        form: Option<S>,
     ) -> Option<Response> {
         let mut count = 0i64;
         let retry = self.get_retry();
@@ -429,11 +430,11 @@ impl WebClient {
         None
     }
 
-    pub async fn _apost2<U: IntoUrl, H: ToHeaders>(
+    pub async fn _apost2<U: IntoUrl, H: ToHeaders, S: Serialize>(
         &self,
         url: U,
         headers: H,
-        form: Option<HashMap<String, String>>,
+        form: Option<S>,
     ) -> Option<Response> {
         let r = print_error!(
             gettext("Failed to generate request:"),
@@ -448,11 +449,11 @@ impl WebClient {
     }
 
     /// Generate a POST request
-    pub fn _apost<U: IntoUrl, H: ToHeaders>(
+    pub fn _apost<U: IntoUrl, H: ToHeaders, S: Serialize>(
         &self,
         url: U,
         headers: H,
-        form: Option<HashMap<String, String>>,
+        form: Option<S>,
     ) -> Result<Request, PixivDownloaderError> {
         let s = url.as_str();
         if self.get_verbose() {

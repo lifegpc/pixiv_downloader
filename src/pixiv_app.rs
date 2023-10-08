@@ -256,6 +256,25 @@ impl PixivAppClientInternal {
         }
         Ok(obj)
     }
+
+    pub async fn add_illust_to_browsing_history(
+        &self,
+        ids: Vec<u64>,
+    ) -> Result<(), PixivDownloaderError> {
+        self.auto_handle().await?;
+        let params: Vec<_> = ids.iter().map(|id| ("illust_ids[]", id)).collect();
+        let re = self
+            .client
+            .post(
+                "https://app-api.pixiv.net/v2/user/browsing-history/illust/add",
+                None,
+                Some(params),
+            )
+            .await
+            .ok_or("Failed to add illust to browsing history.")?;
+        handle_error(re).await?;
+        Ok(())
+    }
 }
 
 #[derive(Clone)]

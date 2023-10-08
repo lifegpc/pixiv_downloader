@@ -1471,6 +1471,7 @@ dependencies = [
  "regex",
  "reqwest",
  "rusqlite",
+ "serde",
  "tokio",
  "url",
  "urlparse",

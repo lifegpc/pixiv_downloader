@@ -51,6 +51,18 @@ pub struct OptHelper {
 }
 
 impl OptHelper {
+    /// Whether to add artworks to pixiv's history. Only works for APP API.
+    pub fn add_history(&self) -> bool {
+        if self.opt.get_ref().add_history.is_some() {
+            return self.opt.get_ref().add_history.unwrap();
+        }
+        if self.settings.get_ref().have_bool("add-history") {
+            return self.settings.get_ref().get_bool("add-history").unwrap();
+        }
+        false
+    }
+
+    /// return author name filters
     pub fn author_name_filters<'a>(&'a self) -> Option<RwLockReadGuard<'a, Vec<AuthorNameFilter>>> {
         if self.settings.get_ref().have("author-name-filters") {
             return Some(self._author_name_filters.get_ref());

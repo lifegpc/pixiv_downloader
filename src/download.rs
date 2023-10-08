@@ -386,14 +386,25 @@ pub async fn download_artwork_app(
     let json_file = base.join(format!("{}.json", id));
     let mut datas = PixivData::new(id).unwrap();
     datas.from_app_illust(&data);
+    let mut web_used = false;
     if data.caption_is_empty() && helper.use_web_description() {
         if let Some(data) = pw.get_artwork_ajax(id).await {
+            web_used = true;
             if let Some(desc) = data["description"]
                 .as_str()
                 .or_else(|| data["illustComment"].as_str())
             {
                 datas.description = Some(desc.to_owned());
             }
+        }
+    }
+    if helper.add_history() && !web_used {
+        if let Err(e) = ac.add_illust_to_browsing_history(vec![id]).await {
+            println!(
+                "{} {}",
+                gettext("Warning: Failed to add artwork to history:"),
+                e
+            );
         }
     }
     let datas = Arc::new(datas);

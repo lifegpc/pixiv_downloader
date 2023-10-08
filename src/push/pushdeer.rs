@@ -38,10 +38,14 @@ impl PushdeerClient {
     /// push text message to server
     /// * `pushkey` - push key
     /// * `text` - text
-    pub async fn push_text_message(&self, pushkey: String, text: String) -> Result<(), String> {
-        let mut params: HashMap<String, String> = HashMap::new();
-        params.insert(String::from("pushkey"), pushkey);
-        params.insert(String::from("text"), text);
+    pub async fn push_text_message<P: AsRef<str> + ?Sized, T: AsRef<str> + ?Sized>(
+        &self,
+        pushkey: &P,
+        text: &T,
+    ) -> Result<(), String> {
+        let mut params = HashMap::new();
+        params.insert("pushkey", pushkey.as_ref());
+        params.insert("text", text.as_ref());
         let re = self
             .client
             .post(format!("{}/message/push", self.server), None, Some(params))
@@ -53,11 +57,15 @@ impl PushdeerClient {
     /// push image message to server
     /// * `pushkey` - push key
     /// * `image` - image URL
-    pub async fn push_image(&self, pushkey: String, image: String) -> Result<(), String> {
-        let mut params: HashMap<String, String> = HashMap::new();
-        params.insert(String::from("pushkey"), pushkey);
-        params.insert(String::from("text"), image);
-        params.insert(String::from("type"), String::from("image"));
+    pub async fn push_image<P: AsRef<str> + ?Sized, I: AsRef<str> + ?Sized>(
+        &self,
+        pushkey: &P,
+        image: &I,
+    ) -> Result<(), String> {
+        let mut params = HashMap::new();
+        params.insert("pushkey", pushkey.as_ref());
+        params.insert("text", image.as_ref());
+        params.insert("type", "image");
         let re = self
             .client
             .post(format!("{}/message/push", self.server), None, Some(params))
@@ -70,17 +78,21 @@ impl PushdeerClient {
     /// * `pushkey` - push key
     /// * `title` - title
     /// * `text` - markdown text
-    pub async fn push_markdown_message(
+    pub async fn push_markdown_message<
+        P: AsRef<str> + ?Sized,
+        T: AsRef<str> + ?Sized,
+        E: AsRef<str> + ?Sized,
+    >(
         &self,
-        pushkey: String,
-        title: String,
-        text: String,
+        pushkey: &P,
+        title: &T,
+        text: &E,
     ) -> Result<(), String> {
-        let mut params: HashMap<String, String> = HashMap::new();
-        params.insert(String::from("pushkey"), pushkey);
-        params.insert(String::from("text"), title);
-        params.insert(String::from("desp"), text);
-        params.insert(String::from("type"), String::from("markdown"));
+        let mut params = HashMap::new();
+        params.insert("pushkey", pushkey.as_ref());
+        params.insert("text", title.as_ref());
+        params.insert("desp", text.as_ref());
+        params.insert("type", "markdown");
         let re = self
             .client
             .post(format!("{}/message/push", self.server), None, Some(params))
@@ -92,22 +104,22 @@ impl PushdeerClient {
 
 pushdeer_api_quick_test!(
     test_push_text_message,
-    client.push_text_message(token, String::from("Test message")),
+    client.push_text_message(&token, "Test message"),
     "Failed to send text message:"
 );
 
 pushdeer_api_quick_test!(
     test_push_image,
-    client.push_image(token, String::from("https://pd.lifegpc.com/proxy/pixiv/112199539_p0.jpg?url=https%3A%2F%2Fi.pximg.net%2Fimg-original%2Fimg%2F2023%2F10%2F02%2F00%2F00%2F38%2F112199539_p0.jpg&sign=4f429e69218669e226e1171d2499f49ac7f41f56c3a8275619641c0a3327a394dae63dcd145367d66a3735279dc59b39219eb4d4c20bfe5afb7e801a2e7c2496")),
+    client.push_image(&token, "https://pd.lifegpc.com/proxy/pixiv/112199539_p0.jpg?url=https%3A%2F%2Fi.pximg.net%2Fimg-original%2Fimg%2F2023%2F10%2F02%2F00%2F00%2F38%2F112199539_p0.jpg&sign=4f429e69218669e226e1171d2499f49ac7f41f56c3a8275619641c0a3327a394dae63dcd145367d66a3735279dc59b39219eb4d4c20bfe5afb7e801a2e7c2496"),
     "Failed to send image message:"
 );
 
 pushdeer_api_quick_test!(
     test_push_markdown_message,
     client.push_markdown_message(
-        token,
-        String::from("Test title"),
-        String::from("# Test Header\n[link](https://github.com/lifegpc/pixiv_downloader)")
+        &token,
+        "Test title",
+        "# Test Header\n[link](https://github.com/lifegpc/pixiv_downloader)"
     ),
     "Failed to send markdown message:"
 );

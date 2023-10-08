@@ -128,6 +128,8 @@ pub struct CommandOpts {
     pub use_app_api: Option<bool>,
     /// Whether to use description from Web API when description from APP API is empty.
     pub use_web_description: Option<bool>,
+    /// Whether to add artworks to pixiv's history. Only works for APP API.
+    pub add_history: Option<bool>,
 }
 
 impl CommandOpts {
@@ -174,6 +176,7 @@ impl CommandOpts {
             refresh_token: None,
             use_app_api: None,
             use_web_description: None,
+            add_history: None,
         }
     }
 
@@ -645,6 +648,20 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         HasArg::Maybe,
         getopts::Occur::Optional,
     );
+    opts.opt(
+        "",
+        "add-history",
+        format!(
+            "{} ({} {})",
+            gettext("Whether to add artworks to pixiv's history. Only works for APP API."),
+            gettext("Default:"),
+            "yes"
+        )
+        .as_str(),
+        "yes/no",
+        HasArg::Maybe,
+        getopts::Occur::Optional,
+    );
     let result = match opts.parse(&argv[1..]) {
         Ok(m) => m,
         Err(err) => {
@@ -1027,6 +1044,19 @@ pub fn parse_cmd() -> Option<CommandOpts> {
                 "{} {}",
                 gettext("Failed to parse <opt>:")
                     .replace("<opt>", "use-web-description")
+                    .as_str(),
+                e
+            );
+            return None;
+        }
+    }
+    match parse_optional_opt(&result, "add-history", true, parse_bool) {
+        Ok(b) => re.as_mut().unwrap().add_history = b,
+        Err(e) => {
+            println!(
+                "{} {}",
+                gettext("Failed to parse <opt>:")
+                    .replace("<opt>", "add-history")
                     .as_str(),
                 e
             );
