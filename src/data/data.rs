@@ -60,7 +60,12 @@ impl PixivData {
     /// Read data from [PixivAppIllust].
     pub fn from_app_illust(&mut self, illust: &PixivAppIllust) {
         self.title = illust.title().map(|s| s.to_owned());
-        self.author = illust.user_name().map(|s| s.to_owned());
+        self.author = illust
+            .user_name()
+            .map(|s| match get_helper().author_name_filters() {
+                Some(l) => l.filter(s),
+                None => s.to_owned(),
+            });
         self.description = illust.caption().map(|s| s.to_owned());
         let mut tags = Vec::new();
         for i in illust.tags() {
