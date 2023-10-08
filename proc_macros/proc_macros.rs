@@ -985,3 +985,34 @@ pub fn print_error(item: TokenStream) -> TokenStream {
     );
     stream.into()
 }
+
+#[proc_macro]
+pub fn pushdeer_api_quick_test(item: TokenStream) -> TokenStream {
+    let FanboxApiQuickTest { name, expr, errmsg } = parse_macro_input!(item as FanboxApiQuickTest);
+    let stream = quote! {
+        #[proc_macros::async_timeout_test(120s)]
+        #[tokio::test(flavor = "multi_thread")]
+        async fn #name() {
+            match std::env::var("PUSHDEER_SERVER") {
+                Ok(server) => match std::env::var("PUSHDEER_TOKEN") {
+                    Ok(token) => {
+                        let client = PushdeerClient::new(server);
+                        match #expr.await {
+                            Ok(_) => {},
+                            Err(e) => {
+                                panic!("{}{}", #errmsg, e);
+                            }
+                        }
+                    }
+                    Err(_) => {
+                        println!("No pushdeer token specified, skip test.")
+                    }
+                },
+                Err(_) => {
+                    println!("No pushdeer server specified, skip test.")
+                }
+            }
+        }
+    };
+    stream.into()
+}

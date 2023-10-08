@@ -22,6 +22,13 @@ pub trait TryErr3<T> {
     fn try_err3<S: AsRef<str> + ?Sized>(self, code: i32, msg: &S) -> Result<T, JSONError>;
 }
 
+/// A quick way to add detailed message before error
+pub trait TryErr4<T> {
+    /// A quick way to add detailed message before error
+    /// * `message` - detailed message
+    fn try_err4<S: AsRef<str> + ?Sized>(self, message: &S) -> Result<T, String>;
+}
+
 impl<T: ToOwned + ToOwned<Owned = T>, E> TryErr2<T, E> for Option<T> {
     fn try_err2(&self, v: E) -> Result<T, E> {
         match self {
@@ -82,6 +89,18 @@ impl<T> TryErr3<T> for Option<T> {
         match self {
             Some(v) => Ok(v),
             None => Err(JSONError::from((code, msg.as_ref().to_string(), None))),
+        }
+    }
+}
+
+impl<T, E> TryErr4<T> for Result<T, E>
+where
+    E: std::fmt::Display,
+{
+    fn try_err4<S: AsRef<str> + ?Sized>(self, message: &S) -> Result<T, String> {
+        match self {
+            Ok(v) => Ok(v),
+            Err(e) => Err(format!("{} {}", message.as_ref(), e)),
         }
     }
 }
