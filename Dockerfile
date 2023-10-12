@@ -18,6 +18,8 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     curl \
     file \
+    gettext \
+    python3 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 RUN curl https://sh.rustup.rs -sSf | \
@@ -50,6 +52,7 @@ RUN export PKG_CONFIG_PATH=/clib/lib/pkgconfig \
     && export "LIBRARY_PATH=$LIBRARY_PATH:/clib/lib" \
     && export "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/clib/lib" \
     && cargo build --features all,docker --release
+RUN python3 scripts/gen_mo.py -o /app/i18n-output
 
 FROM ubuntu:devel as prod
 
@@ -65,6 +68,7 @@ RUN apt-get update && apt-get install -y \
 
 COPY --from=builder /app/target/release/pixiv_downloader /app/pixiv_downloader
 COPY --from=builder /clib/lib /app/lib
+COPY --from=builder /app/i18n-output /app
 ENV LD_LIBRARY_PATH=/app/lib
 
 RUN mkdir -p /app/data && mkdir -p /app/downloads && mkdir -p /app/temp
