@@ -1,7 +1,9 @@
 use crate::webclient::WebClient;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 /// Text type
 pub enum EveryPushTextType {
     Text,
@@ -42,6 +44,7 @@ impl EveryPushClient {
     /// * `push_token` - push token
     /// * `text` - text
     /// * `title` - title
+    /// * `topic_id` - topic id
     /// * `typ` - text type
     ///
     /// For more information, see [API document](https://github.com/PeanutMelonSeedBigAlmond/EveryPush.Server/blob/main/api.md#推送消息)
@@ -49,11 +52,13 @@ impl EveryPushClient {
         P: AsRef<str> + ?Sized,
         T: AsRef<str> + ?Sized,
         I: AsRef<str> + ?Sized,
+        O: AsRef<str> + ?Sized,
     >(
         &self,
         push_token: &P,
         text: &T,
         title: Option<&I>,
+        topic_id: Option<&O>,
         typ: Option<EveryPushTextType>,
     ) -> Result<(), String> {
         let mut params = HashMap::new();
@@ -61,6 +66,10 @@ impl EveryPushClient {
         params.insert("text", text.as_ref());
         match title {
             Some(t) => params.insert("title", t.as_ref()),
+            None => None,
+        };
+        match topic_id {
+            Some(t) => params.insert("topicId", t.as_ref()),
             None => None,
         };
         match &typ {
@@ -105,6 +114,7 @@ async fn test_every_push_push() {
                         &token,
                         "Push Test",
                         Some("Push"),
+                        Some("test"),
                         Some(EveryPushTextType::Text),
                     )
                     .await

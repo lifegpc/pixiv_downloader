@@ -53,7 +53,7 @@ impl<T: ToJson> ToJson for &T {
     }
 }
 
-impl<T: ToJson2> ToJson2 for &T {
+impl<T: ToJson2 + ?Sized> ToJson2 for &T {
     fn to_json2(&self) -> JsonValue {
         (*self).to_json2()
     }

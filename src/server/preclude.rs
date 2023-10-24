@@ -2,7 +2,7 @@ pub use super::body::hyper::HyperBody;
 pub use super::body::response::ResponseBody;
 pub use super::context::ServerContext;
 pub use super::params::RequestParams;
-pub use super::result::JSONResult;
+pub use super::result::{JSONResult, SerdeJSONResult};
 pub use super::route::ResponseForType;
 pub use super::traits::{GetRequestParams, MatchRoute, ResponseFor, ResponseJsonFor};
 pub use crate::error::PixivDownloaderError;

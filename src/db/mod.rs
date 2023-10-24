@@ -1,5 +1,7 @@
 pub mod config;
 pub mod pixiv_artworks;
+#[cfg(feature = "server")]
+pub mod push_task;
 #[cfg(feature = "db_sqlite")]
 pub mod sqlite;
 #[cfg(feature = "server")]
@@ -13,6 +15,8 @@ pub use config::PixivDownloaderDbConfig;
 #[cfg(feature = "db_sqlite")]
 pub use config::PixivDownloaderSqliteConfig;
 pub use pixiv_artworks::{PixivArtwork, PixivArtworkLock};
+#[cfg(feature = "server")]
+pub use push_task::{PushConfig, PushTask, PushTaskConfig};
 #[cfg(feature = "db_sqlite")]
 pub use sqlite::{PixivDownloaderSqlite, SqliteError};
 #[cfg(feature = "server")]
@@ -22,15 +26,15 @@ pub use traits::PixivDownloaderDb;
 pub use user::User;
 
 #[derive(Debug, derive_more::Display)]
-pub struct PixivDownloaderDbError {
-    e: anyhow::Error,
+pub enum PixivDownloaderDbError {
+    AnyHow(anyhow::Error),
+    #[cfg(feature = "db_sqlite")]
+    Sqlite(SqliteError),
 }
 
 impl PixivDownloaderDbError {
     pub fn msg<S: std::fmt::Display + std::fmt::Debug + Send + Sync + 'static>(msg: S) -> Self {
-        Self {
-            e: anyhow::Error::msg(msg),
-        }
+        Self::AnyHow(anyhow::Error::msg(msg))
     }
 }
 
@@ -39,7 +43,7 @@ where
     T: Into<anyhow::Error>,
 {
     fn from(e: T) -> Self {
-        Self { e: e.into() }
+        Self::AnyHow(e.into())
     }
 }
 
@@ -48,7 +52,31 @@ use crate::gettext;
 #[cfg(feature = "db_sqlite")]
 impl From<SqliteError> for PixivDownloaderDbError {
     fn from(e: SqliteError) -> Self {
-        PixivDownloaderDbError::msg(e)
+        PixivDownloaderDbError::Sqlite(e)
+    }
+}
+
+#[cfg(all(feature = "db_sqlite", feature = "server"))]
+pub trait Optional2Extension<T> {
+    fn optional2(self) -> Result<Option<T>, PixivDownloaderDbError>;
+}
+
+#[cfg(all(feature = "db_sqlite", feature = "server"))]
+impl<T> Optional2Extension<T> for Result<T, PixivDownloaderDbError> {
+    fn optional2(self) -> Result<Option<T>, PixivDownloaderDbError> {
+        match self {
+            Ok(v) => Ok(Some(v)),
+            Err(e) => match e {
+                PixivDownloaderDbError::Sqlite(e) => match e {
+                    SqliteError::DbError(e) => match e {
+                        rusqlite::Error::QueryReturnedNoRows => Ok(None),
+                        _ => Err(PixivDownloaderDbError::Sqlite(SqliteError::DbError(e))),
+                    },
+                    _ => Err(PixivDownloaderDbError::Sqlite(e)),
+                },
+                _ => Err(e),
+            },
+        }
     }
 }
 

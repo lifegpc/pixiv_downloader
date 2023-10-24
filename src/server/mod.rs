@@ -11,6 +11,8 @@ pub mod params;
 pub mod preclude;
 /// Routes about proxy
 pub mod proxy;
+/// Push tasks management
+pub mod push;
 /// Base result type for JSON response
 pub mod result;
 /// Routes

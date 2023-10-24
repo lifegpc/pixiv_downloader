@@ -1,7 +1,11 @@
+#[cfg(feature = "server")]
+use super::super::Optional2Extension;
 use super::super::{PixivArtwork, PixivArtworkLock};
 use super::super::{
     PixivDownloaderDb, PixivDownloaderDbConfig, PixivDownloaderDbError, PixivDownloaderSqliteConfig,
 };
+#[cfg(feature = "server")]
+use super::super::{PushConfig, PushTask, PushTaskConfig};
 #[cfg(feature = "server")]
 use super::super::{Token, User};
 use super::SqliteError;
@@ -51,6 +55,13 @@ id INT,
 file_id INT,
 page INT
 );";
+const PUSH_TASK_TABLE: &'static str = "CREATE TABLE push_task (
+id INTEGER PRIMARY KEY AUTOINCREMENT,
+config TEXT,
+push_configs TEXT,
+last_updated DATETIME,
+ttl INT
+);";
 const TAGS_TABLE: &'static str = "CREATE TABLE tags (
 id INTEGER PRIMARY KEY AUTOINCREMENT,
 name TEXT
@@ -82,7 +93,7 @@ v3 INT,
 v4 INT,
 PRIMARY KEY (id)
 );";
-const VERSION: [u8; 4] = [1, 0, 0, 6];
+const VERSION: [u8; 4] = [1, 0, 0, 7];
 
 pub struct PixivDownloaderSqlite {
     db: Mutex<Connection>,
@@ -114,6 +125,29 @@ impl PixivDownloaderSqlite {
             ),
         )?;
         Ok(())
+    }
+
+    #[cfg(feature = "server")]
+    fn _add_push_task(
+        ts: &Transaction,
+        config: &PushTaskConfig,
+        push_configs: &[PushConfig],
+        ttl: u64,
+    ) -> Result<u64, PixivDownloaderDbError> {
+        ts.execute(
+            "INSERT INTO push_task (config, push_configs, last_updated, ttl) VALUES (?, ?, ?, ?);",
+            (
+                serde_json::to_string(config)?,
+                serde_json::to_string(push_configs)?,
+                DateTime::UNIX_EPOCH,
+                ttl,
+            ),
+        )?;
+        Ok(ts.query_row(
+            "SELECT seq FROM sqlite_sequence WHERE name = 'push_task';",
+            [],
+            |row| Ok(row.get(0)?),
+        )?)
     }
 
     #[cfg(feature = "server")]
@@ -215,6 +249,9 @@ impl PixivDownloaderSqlite {
                 if db_version < [1, 0, 0, 6] {
                     tx.execute(CONFIG_TABLE, [])?;
                 }
+                if db_version < [1, 0, 0, 7] {
+                    tx.execute(PUSH_TASK_TABLE, [])?;
+                }
                 self._write_version(&tx)?;
                 tx.commit()?;
             }
@@ -246,6 +283,9 @@ impl PixivDownloaderSqlite {
         }
         if !tables.contains_key("pixiv_files") {
             t.execute(PIXIV_FILES_TABLE, [])?;
+        }
+        if !tables.contains_key("push_task") {
+            t.execute(PUSH_TASK_TABLE, [])?;
         }
         if !tables.contains_key("tags") {
             t.execute(TAGS_TABLE, [])?;
@@ -340,6 +380,29 @@ impl PixivDownloaderSqlite {
                 })
             })
             .optional()?)
+    }
+
+    #[cfg(feature = "server")]
+    async fn get_push_task(&self, id: u64) -> Result<Option<PushTask>, PixivDownloaderDbError> {
+        let con = self.db.lock().await;
+        con.query_row_and_then::<PushTask, PixivDownloaderDbError, _, _>(
+            "SELECT * FROM push_task WHERE id = ?;",
+            [id],
+            |row| {
+                let config: String = row.get(1)?;
+                let config: PushTaskConfig = serde_json::from_str(&config)?;
+                let push_configs: String = row.get(2)?;
+                let push_configs: Vec<PushConfig> = serde_json::from_str(&push_configs)?;
+                Ok(PushTask {
+                    id: row.get(0)?,
+                    config,
+                    push_configs,
+                    last_updated: row.get(3)?,
+                    ttl: row.get(4)?,
+                })
+            },
+        )
+        .optional2()
     }
 
     #[cfg(feature = "server")]
@@ -555,6 +618,56 @@ impl PixivDownloaderSqlite {
     }
 
     #[cfg(feature = "server")]
+    fn _update_push_task(
+        tx: &Transaction,
+        id: u64,
+        config: Option<&PushTaskConfig>,
+        push_configs: Option<&[PushConfig]>,
+        ttl: Option<u64>,
+    ) -> Result<(), PixivDownloaderDbError> {
+        match config {
+            Some(config) => {
+                let config = serde_json::to_string(config)?;
+                tx.execute(
+                    "UPDATE push_task SET config = ? WHERE id = ?;",
+                    (config, id),
+                )?;
+            }
+            None => {}
+        }
+        match push_configs {
+            Some(push_configs) => {
+                let push_configs = serde_json::to_string(push_configs)?;
+                tx.execute(
+                    "UPDATE push_task SET push_configs = ? WHERE id = ?;",
+                    (push_configs, id),
+                )?;
+            }
+            None => {}
+        }
+        match ttl {
+            Some(ttl) => {
+                tx.execute("UPDATE push_task SET ttl = ? WHERE id = ?;", (ttl, id))?;
+            }
+            None => {}
+        }
+        Ok(())
+    }
+
+    #[cfg(feature = "server")]
+    fn _update_push_task_last_updated(
+        tx: &Transaction,
+        id: u64,
+        last_updated: &DateTime<Utc>,
+    ) -> Result<(), PixivDownloaderDbError> {
+        tx.execute(
+            "UPDATE push_task SET last_updated = ? WHERE id = ?;",
+            (last_updated, id),
+        )?;
+        Ok(())
+    }
+
+    #[cfg(feature = "server")]
     async fn _update_user(
         &self,
         id: u64,
@@ -678,6 +791,23 @@ impl PixivDownloaderDb for PixivDownloaderSqlite {
     }
 
     #[cfg(feature = "server")]
+    async fn add_push_task(
+        &self,
+        config: &PushTaskConfig,
+        push_configs: &[PushConfig],
+        ttl: u64,
+    ) -> Result<PushTask, PixivDownloaderDbError> {
+        let task = {
+            let mut db = self.db.lock().await;
+            let tx = db.transaction()?;
+            let task = Self::_add_push_task(&tx, config, push_configs, ttl)?;
+            tx.commit()?;
+            task
+        };
+        Ok(self.get_push_task(task).await?.expect("Task not found:"))
+    }
+
+    #[cfg(feature = "server")]
     async fn add_root_user(
         &self,
         name: &str,
@@ -770,11 +900,42 @@ impl PixivDownloaderDb for PixivDownloaderSqlite {
         Ok(self.get_config(key).await?)
     }
 
+    async fn get_config_or_set_default(
+        &self,
+        key: &str,
+        default: fn() -> Result<String, PixivDownloaderDbError>,
+    ) -> Result<String, PixivDownloaderDbError> {
+        let mut db = self.db.lock().await;
+        let tx = db.transaction()?;
+        let value = tx
+            .query_row("SELECT value FROM config WHERE key = ?;", [key], |row| {
+                row.get(0)
+            })
+            .optional()?;
+        match value {
+            Some(v) => {
+                tx.commit()?;
+                Ok(v)
+            }
+            None => {
+                let v = default()?;
+                Self::_set_config(&tx, key, &v)?;
+                tx.commit()?;
+                Ok(v)
+            }
+        }
+    }
+
     async fn get_pixiv_artwork(
         &self,
         id: u64,
     ) -> Result<Option<PixivArtwork>, PixivDownloaderDbError> {
         Ok(self.get_pixiv_artwork(id).await?)
+    }
+
+    #[cfg(feature = "server")]
+    async fn get_push_task(&self, id: u64) -> Result<Option<PushTask>, PixivDownloaderDbError> {
+        Ok(self.get_push_task(id).await?)
     }
 
     #[cfg(feature = "server")]
@@ -849,6 +1010,38 @@ impl PixivDownloaderDb for PixivDownloaderSqlite {
         Ok(self
             ._set_user(id, name, username, password, is_admin)
             .await?)
+    }
+
+    #[cfg(feature = "server")]
+    async fn update_push_task(
+        &self,
+        id: u64,
+        config: Option<&PushTaskConfig>,
+        push_configs: Option<&[PushConfig]>,
+        ttl: Option<u64>,
+    ) -> Result<PushTask, PixivDownloaderDbError> {
+        {
+            let mut db = self.db.lock().await;
+            let tx = db.transaction()?;
+            Self::_update_push_task(&tx, id, config, push_configs, ttl)?;
+            tx.commit()?;
+        }
+        Ok(self.get_push_task(id).await?.expect("Task not found:"))
+    }
+
+    #[cfg(feature = "server")]
+    async fn update_push_task_last_updated(
+        &self,
+        id: u64,
+        last_updated: &DateTime<Utc>,
+    ) -> Result<(), PixivDownloaderDbError> {
+        {
+            let mut db = self.db.lock().await;
+            let mut tx = db.transaction()?;
+            Self::_update_push_task_last_updated(&mut tx, id, last_updated)?;
+            tx.commit()?;
+        }
+        Ok(())
     }
 
     #[cfg(feature = "server")]

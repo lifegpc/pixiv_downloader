@@ -1,7 +1,9 @@
 use super::auth::RSAKey;
+use super::body::hyper::HyperBody;
 use super::cors::CorsContext;
 use super::params::RequestParams;
-use super::result::JSONResult;
+use super::preclude::HttpBodyType;
+use super::result::{JSONResult, SerdeJSONResult, SerdeJSONResult2};
 use crate::db::{open_and_init_database, PixivDownloaderDb, Token, User};
 use crate::error::PixivDownloaderError;
 use crate::ext::json::ToJson2;
@@ -11,6 +13,7 @@ use futures_util::lock::Mutex;
 use hyper::{http::response::Builder, Body, Request, Response};
 use json::JsonValue;
 use std::collections::BTreeMap;
+use std::pin::Pin;
 use std::sync::Arc;
 
 pub struct ServerContext {
@@ -51,6 +54,33 @@ impl ServerContext {
             }
         };
         Ok(builder.body(re.to_json2())?)
+    }
+
+    pub fn response_serde_json_result(
+        &self,
+        builder: Builder,
+        re: SerdeJSONResult,
+    ) -> Result<Response<Pin<Box<HttpBodyType>>>, PixivDownloaderError> {
+        let builder = match &re {
+            Ok(_) => builder,
+            Err(err) => {
+                if err.code <= -400 && err.code >= -600 {
+                    builder.status((-err.code) as u16)
+                } else if err.code < 0 {
+                    builder.status(500)
+                } else if err.code > 0 {
+                    builder.status(400)
+                } else {
+                    builder
+                }
+            }
+        };
+        let s = SerdeJSONResult2::new(re);
+        Ok(
+            builder.body::<Pin<Box<HttpBodyType>>>(Box::pin(HyperBody::from(
+                serde_json::to_string(&s)?,
+            )))?,
+        )
     }
 
     pub async fn verify_token2(

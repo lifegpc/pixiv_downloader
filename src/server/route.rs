@@ -2,6 +2,7 @@ use super::auth::*;
 use super::context::ServerContext;
 use super::preclude::HttpBodyType;
 use super::proxy::*;
+use super::push::*;
 use super::traits::MatchRoute;
 use super::traits::ResponseFor;
 use super::version::VersionRoute;
@@ -26,6 +27,7 @@ impl ServerRoutes {
         routes.push(Box::new(AuthPubkeyRoute::new()));
         routes.push(Box::new(AuthTokenRoute::new()));
         routes.push(Box::new(ProxyPixivRoute::new()));
+        routes.push(Box::new(PushRoute::new()));
         Self { routes }
     }
 

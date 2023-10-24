@@ -2,6 +2,8 @@ use crate::ext::json::ToJson2;
 #[cfg(test)]
 use crate::ext::json::{FromJson, ToJson};
 use json::JsonValue;
+use serde::ser::SerializeMap;
+use serde::Serialize;
 
 #[derive(Clone, Debug)]
 /// Error information of a request
@@ -85,6 +87,7 @@ impl From<(i32, String, String)> for JSONError {
 }
 
 pub type JSONResult = Result<JsonValue, JSONError>;
+pub type SerdeJSONResult = Result<serde_json::Value, JSONError>;
 
 impl ToJson2 for JSONResult {
     fn to_json2(&self) -> JsonValue {
@@ -100,6 +103,38 @@ impl ToJson2 for JSONResult {
                 "msg": e.msg.as_str(),
                 "debug_msg": e.debug_msg.clone().unwrap_or(JsonValue::Null),
             },
+        }
+    }
+}
+
+pub struct SerdeJSONResult2 {
+    r: SerdeJSONResult,
+}
+
+impl SerdeJSONResult2 {
+    pub fn new(r: SerdeJSONResult) -> Self {
+        Self { r }
+    }
+}
+
+impl Serialize for SerdeJSONResult2 {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        match &self.r {
+            Ok(v) => {
+                let mut s = serializer.serialize_map(Some(3))?;
+                s.serialize_entry("ok", &true)?;
+                s.serialize_entry("code", &0)?;
+                s.serialize_entry("result", v)?;
+                s.end()
+            }
+            Err(e) => {
+                let mut s = serializer.serialize_map(Some(4))?;
+                s.serialize_entry("ok", &false)?;
+                s.serialize_entry("code", &e.code)?;
+                s.serialize_entry("msg", &e.msg)?;
+                s.serialize_entry::<_, Option<String>>("debug_msg", &None)?;
+                s.end()
+            }
         }
     }
 }

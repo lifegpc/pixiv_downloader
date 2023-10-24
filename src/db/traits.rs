@@ -2,6 +2,8 @@ use super::PixivDownloaderDbConfig;
 use super::PixivDownloaderDbError;
 use super::{PixivArtwork, PixivArtworkLock};
 #[cfg(feature = "server")]
+use super::{PushConfig, PushTask, PushTaskConfig};
+#[cfg(feature = "server")]
 use super::{Token, User};
 use chrono::{DateTime, Utc};
 use flagset::FlagSet;
@@ -35,6 +37,17 @@ pub trait PixivDownloaderDb {
         is_nsfw: bool,
         lock: &FlagSet<PixivArtworkLock>,
     ) -> Result<PixivArtwork, PixivDownloaderDbError>;
+    #[cfg(feature = "server")]
+    /// Add a push task
+    /// * `config` - The task's config
+    /// * `push_configs` - The task's push configurations
+    /// * `ttl` - The task's update interval
+    async fn add_push_task(
+        &self,
+        config: &PushTaskConfig,
+        push_configs: &[PushConfig],
+        ttl: u64,
+    ) -> Result<PushTask, PixivDownloaderDbError>;
     #[cfg(feature = "server")]
     /// Add root user to database.
     /// * `name` - User name
@@ -98,6 +111,14 @@ pub trait PixivDownloaderDb {
     /// Get a config from database
     /// * `key` - The config key
     async fn get_config(&self, key: &str) -> Result<Option<String>, PixivDownloaderDbError>;
+    /// Get a config from database or set a default value to database and return
+    /// * `key` - The config key
+    /// * `default` - The function to return default value
+    async fn get_config_or_set_default(
+        &self,
+        key: &str,
+        default: fn() -> Result<String, PixivDownloaderDbError>,
+    ) -> Result<String, PixivDownloaderDbError>;
     /// Get an artwork from database
     /// * `id` - The artwork ID
     async fn get_pixiv_artwork(
@@ -107,18 +128,20 @@ pub trait PixivDownloaderDb {
     #[cfg(feature = "server")]
     /// Get proxy pixiv secrets
     async fn get_proxy_pixiv_secrets(&self) -> Result<String, PixivDownloaderDbError> {
-        let key = "proxy_pixiv_secrets";
-        match self.get_config(key).await? {
-            Some(v) => Ok(v),
-            None => {
-                let mut buf = [0; 32];
-                openssl::rand::rand_bytes(&mut buf)?;
-                let v = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &buf);
-                self.set_config(key, &v).await?;
-                Ok(v)
-            }
-        }
+        self.get_config_or_set_default("proxy_pixiv_secrets", || {
+            let mut buf = [0; 32];
+            openssl::rand::rand_bytes(&mut buf)?;
+            Ok(base64::Engine::encode(
+                &base64::engine::general_purpose::STANDARD,
+                &buf,
+            ))
+        })
+        .await
     }
+    #[cfg(feature = "server")]
+    /// Get a push task by ID
+    /// * `id` - The task's ID
+    async fn get_push_task(&self, id: u64) -> Result<Option<PushTask>, PixivDownloaderDbError>;
     #[cfg(feature = "server")]
     /// Get token by ID
     /// * `id` - The token ID
@@ -180,6 +203,28 @@ pub trait PixivDownloaderDb {
         password: &[u8],
         is_admin: bool,
     ) -> Result<User, PixivDownloaderDbError>;
+    #[cfg(feature = "server")]
+    /// Update a push task
+    /// * `id`: The task's ID
+    /// * `config`: The task's config
+    /// * `push_configs`: The task's push configurations
+    /// * `ttl`: The task's update interval
+    async fn update_push_task(
+        &self,
+        id: u64,
+        config: Option<&PushTaskConfig>,
+        push_configs: Option<&[PushConfig]>,
+        ttl: Option<u64>,
+    ) -> Result<PushTask, PixivDownloaderDbError>;
+    #[cfg(feature = "server")]
+    /// Update a push task's last updated time
+    /// * `id`: The task's ID
+    /// * `last_updated`: The task's last updated time
+    async fn update_push_task_last_updated(
+        &self,
+        id: u64,
+        last_updated: &DateTime<Utc>,
+    ) -> Result<(), PixivDownloaderDbError>;
     #[cfg(feature = "server")]
     /// Update a user's information
     /// * `id`: The user's ID
