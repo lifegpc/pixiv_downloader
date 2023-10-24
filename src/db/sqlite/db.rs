@@ -383,9 +383,9 @@ impl PixivDownloaderSqlite {
     }
 
     #[cfg(feature = "server")]
-    async fn get_push_task(&self, id: u64) -> Result<Option<PushTask>, PixivDownloaderDbError> {
+    async fn get_push_task(&self, id: u64) -> Result<Option<PushTask>, SqliteError> {
         let con = self.db.lock().await;
-        con.query_row_and_then::<PushTask, PixivDownloaderDbError, _, _>(
+        con.query_row_and_then::<PushTask, SqliteError, _, _>(
             "SELECT * FROM push_task WHERE id = ?;",
             [id],
             |row| {

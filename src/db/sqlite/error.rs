@@ -3,4 +3,5 @@ pub enum SqliteError {
     DbError(rusqlite::Error),
     DatabaseVersionTooNew,
     UserNameAlreadyExists,
+    SerdeError(serde_json::Error),
 }

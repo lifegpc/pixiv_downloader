@@ -105,7 +105,8 @@ impl PushContext {
                         .db
                         .get_push_task(id)
                         .await
-                        .try_err3(500, "Failed to get push task:")?;
+                        .try_err3(500, "Failed to get push task:")?
+                        .try_err3(404, "Push task not found.")?;
                     Ok(serde_json::to_value(re).try_err3(500, "Failed to serialize result:")?)
                 }
             },

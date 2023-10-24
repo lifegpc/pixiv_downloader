@@ -57,12 +57,12 @@ impl From<SqliteError> for PixivDownloaderDbError {
 }
 
 #[cfg(all(feature = "db_sqlite", feature = "server"))]
-pub trait Optional2Extension<T> {
-    fn optional2(self) -> Result<Option<T>, PixivDownloaderDbError>;
+pub trait Optional2Extension<T, E> {
+    fn optional2(self) -> Result<Option<T>, E>;
 }
 
 #[cfg(all(feature = "db_sqlite", feature = "server"))]
-impl<T> Optional2Extension<T> for Result<T, PixivDownloaderDbError> {
+impl<T> Optional2Extension<T, PixivDownloaderDbError> for Result<T, PixivDownloaderDbError> {
     fn optional2(self) -> Result<Option<T>, PixivDownloaderDbError> {
         match self {
             Ok(v) => Ok(Some(v)),
@@ -73,6 +73,22 @@ impl<T> Optional2Extension<T> for Result<T, PixivDownloaderDbError> {
                         _ => Err(PixivDownloaderDbError::Sqlite(SqliteError::DbError(e))),
                     },
                     _ => Err(PixivDownloaderDbError::Sqlite(e)),
+                },
+                _ => Err(e),
+            },
+        }
+    }
+}
+
+#[cfg(all(feature = "db_sqlite", feature = "server"))]
+impl<T> Optional2Extension<T, SqliteError> for Result<T, SqliteError> {
+    fn optional2(self) -> Result<Option<T>, SqliteError> {
+        match self {
+            Ok(v) => Ok(Some(v)),
+            Err(e) => match e {
+                SqliteError::DbError(e) => match e {
+                    rusqlite::Error::QueryReturnedNoRows => Ok(None),
+                    _ => Err(SqliteError::DbError(e)),
                 },
                 _ => Err(e),
             },
