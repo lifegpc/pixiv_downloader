@@ -1,10 +1,11 @@
 use super::super::super::preclude::*;
 use crate::db::push_task::{AuthorLocation, EveryPushConfig, PushConfig};
 use crate::error::PixivDownloaderError;
-use crate::get_helper;
 use crate::opt::author_name_filter::AuthorFiler;
+use crate::parser::description::DescriptionParser;
 use crate::pixivapp::illust::PixivAppIllust;
 use crate::push::every_push::{EveryPushClient, EveryPushTextType};
+use crate::{get_helper, gettext};
 use json::JsonValue;
 
 struct RunContext<'a> {
@@ -25,6 +26,25 @@ impl<'a> RunContext<'a> {
         }
         match self.data {
             Some(d) => d["illustTitle"].as_str(),
+            None => None,
+        }
+    }
+
+    pub fn id(&self) -> Option<u64> {
+        match self.illust {
+            Some(i) => match i.id() {
+                Some(i) => return Some(i),
+                None => {}
+            },
+            None => {}
+        }
+        match self.data {
+            Some(d) => d["illustId"]
+                .as_u64()
+                .or_else(|| match d["illustId"].as_str() {
+                    Some(s) => s.parse().ok(),
+                    None => None,
+                }),
             None => None,
         }
     }
@@ -54,6 +74,23 @@ impl<'a> RunContext<'a> {
                 }
                 Some(a.to_owned())
             }
+            None => None,
+        }
+    }
+
+    pub fn user_id(&self) -> Option<u64> {
+        match self.illust {
+            Some(i) => match i.user_id() {
+                Some(u) => return Some(u),
+                None => {}
+            },
+            None => {}
+        }
+        match self.data {
+            Some(d) => d["userId"].as_u64().or_else(|| match d["userId"].as_str() {
+                Some(s) => s.parse().ok(),
+                None => None,
+            }),
             None => None,
         }
     }
@@ -104,11 +141,137 @@ impl<'a> RunContext<'a> {
         }
     }
 
+    pub fn add_author<S: AsRef<str> + ?Sized>(&self, text: &mut String, author: &S) {
+        text.push_str(gettext("by "));
+        let author = author.as_ref();
+        if let Some(uid) = self.user_id() {
+            text.push_str(&format!(
+                "[{}](https://www.pixiv.net/users/{})",
+                author, uid
+            ));
+        } else {
+            text.push_str(author);
+        }
+        text.push_str("  \n");
+    }
+
+    pub fn desc(&self) -> Option<&str> {
+        match self.illust {
+            Some(i) => {
+                if !i.caption_is_empty() {
+                    return i.caption();
+                }
+            }
+            None => {}
+        }
+        match self.data {
+            Some(d) => d["description"]
+                .as_str()
+                .or_else(|| d["illustComment"].as_str()),
+            None => None,
+        }
+    }
+
     pub async fn send_every_push(&self, cfg: &EveryPushConfig) -> Result<(), PixivDownloaderError> {
         let client = EveryPushClient::new(&cfg.push_server);
         match cfg.typ {
-            EveryPushTextType::Text => {}
-            EveryPushTextType::Markdown => {}
+            EveryPushTextType::Text => {
+                let mut title = self.title().map(|s| s.to_owned());
+                let author = self.author();
+                if cfg.author_locations.contains(&AuthorLocation::Title) {
+                    if let Some(t) = &title {
+                        if let Some(a) = &author {
+                            title = Some(format!("{} - {}", t, a));
+                        }
+                    }
+                }
+                let mut text = String::new();
+                if cfg.author_locations.contains(&AuthorLocation::Top) {
+                    if let Some(a) = &author {
+                        text.push_str(gettext("by "));
+                        text.push_str(a);
+                        text.push_str("\n");
+                    }
+                }
+                if cfg.add_link {
+                    if let Some(id) = self.id() {
+                        text.push_str(&format!("https://www.pixiv.net/artworks/{}\n", id));
+                    }
+                }
+                if let Some(desc) = self.desc() {
+                    let mut p = DescriptionParser::new(false);
+                    p.parse(desc)?;
+                    text.push_str(&p.data);
+                    text.push_str("\n");
+                }
+                if cfg.author_locations.contains(&AuthorLocation::Bottom) {
+                    if let Some(a) = &author {
+                        text.push_str(gettext("by "));
+                        text.push_str(a);
+                        text.push_str("\n");
+                    }
+                }
+                client
+                    .push_message(
+                        &cfg.push_token,
+                        &text,
+                        title.as_ref(),
+                        cfg.topic_id.as_ref(),
+                        Some(EveryPushTextType::Text),
+                    )
+                    .await?;
+            }
+            EveryPushTextType::Markdown => {
+                let mut title = self.title().map(|s| s.to_owned());
+                let author = self.author();
+                if cfg.author_locations.contains(&AuthorLocation::Title) {
+                    if let Some(t) = &title {
+                        if let Some(a) = &author {
+                            title = Some(format!("{} - {}", t, a));
+                        }
+                    }
+                }
+                let mut text = String::new();
+                let len = self.len().unwrap_or(1);
+                for i in 0..len {
+                    if let Some(url) = self.get_image_url(i).await? {
+                        text.push_str(&format!("![​]({})", url));
+                    }
+                }
+                if cfg.author_locations.contains(&AuthorLocation::Top) {
+                    if let Some(a) = &author {
+                        self.add_author(&mut text, a);
+                    }
+                }
+                if cfg.add_link {
+                    if let Some(id) = self.id() {
+                        let link = format!("https://www.pixiv.net/artworks/{}", id);
+                        text.push_str(&format!("[{}]({})  \n", link, link));
+                    }
+                }
+                if let Some(desc) = self.desc() {
+                    let mut p = DescriptionParser::new(true);
+                    p.parse(desc)?;
+                    text.push_str(&p.data);
+                    if !p.data.ends_with("\n\n") {
+                        text.push_str("\n\n");
+                    }
+                }
+                if cfg.author_locations.contains(&AuthorLocation::Bottom) {
+                    if let Some(a) = &author {
+                        self.add_author(&mut text, a);
+                    }
+                }
+                client
+                    .push_message(
+                        &cfg.push_token,
+                        &text,
+                        title.as_ref(),
+                        cfg.topic_id.as_ref(),
+                        Some(EveryPushTextType::Markdown),
+                    )
+                    .await?;
+            }
             EveryPushTextType::Image => {
                 let mut title = self.title().map(|s| s.to_owned());
                 if cfg.author_locations.contains(&AuthorLocation::Title) {

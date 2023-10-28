@@ -76,6 +76,9 @@ pub struct EveryPushConfig {
     #[serde(default = "default_true")]
     /// Whether to filter author name
     pub filter_author: bool,
+    #[serde(default = "default_true")]
+    /// Whether to add artwork link
+    pub add_link: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
