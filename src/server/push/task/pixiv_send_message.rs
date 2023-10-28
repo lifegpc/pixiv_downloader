@@ -65,6 +65,45 @@ impl<'a> RunContext<'a> {
         }
     }
 
+    pub fn len(&self) -> Option<u64> {
+        match self.illust {
+            Some(i) => return i.page_count(),
+            None => {}
+        }
+        match self.data {
+            Some(d) => d["pageCount"].as_u64(),
+            None => None,
+        }
+    }
+
+    pub fn _get_image_url(&self, index: u64) -> Option<String> {
+        let len = self.len().unwrap_or(1);
+        if index >= len {
+            return None;
+        }
+        if len == 1 {
+            match self.illust {
+                Some(i) => return i.original_image_url().map(|s| s.to_owned()),
+                None => {}
+            }
+        }
+        match self.illust {
+            Some(i) => match i.meta_pages().get(index as usize) {
+                Some(p) => return p.original().map(|s| s.to_owned()),
+                None => {}
+            },
+            None => {}
+        }
+        None
+    }
+
+    pub async fn get_image_url(&self, index: u64) -> Result<Option<String>, PixivDownloaderError> {
+        match self._get_image_url(index) {
+            Some(u) => Ok(Some(self.ctx.generate_pixiv_proxy_url(u).await?)),
+            None => Ok(None),
+        }
+    }
+
     pub async fn send_every_push(&self, cfg: &EveryPushConfig) -> Result<(), PixivDownloaderError> {
         let client = EveryPushClient::new(&cfg.push_server);
         match cfg.typ {
@@ -79,17 +118,7 @@ impl<'a> RunContext<'a> {
                         }
                     }
                 }
-                let url = match self.illust {
-                    Some(i) => i.original_image_url().map(|s| s.to_owned()).or_else(|| {
-                        match i.meta_pages().get(0) {
-                            Some(p) => p.original().map(|s| s.to_owned()),
-                            None => None,
-                        }
-                    }),
-                    None => None,
-                };
-                let url = url.ok_or("image url not found.")?;
-                let url = self.ctx.generate_pixiv_proxy_url(url).await?;
+                let url = self.get_image_url(0).await?.ok_or("image url not found.")?;
                 client
                     .push_message(
                         &cfg.push_token,
