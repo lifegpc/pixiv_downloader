@@ -9,10 +9,13 @@ use crate::error::PixivDownloaderError;
 use crate::ext::json::ToJson2;
 use crate::get_helper;
 use crate::gettext;
+use crate::pixiv_app::PixivAppClient;
+use crate::pixiv_web::PixivWebClient;
 use futures_util::lock::Mutex;
 use hyper::{http::response::Builder, Body, Request, Response};
 use json::JsonValue;
-use std::collections::BTreeMap;
+use reqwest::IntoUrl;
+use std::collections::{BTreeMap, HashMap};
 use std::pin::Pin;
 use std::sync::Arc;
 
@@ -20,6 +23,8 @@ pub struct ServerContext {
     pub cors: CorsContext,
     pub db: Arc<Box<dyn PixivDownloaderDb + Send + Sync>>,
     pub rsa_key: Mutex<Option<RSAKey>>,
+    pub _pixiv_app_client: Mutex<Option<PixivAppClient>>,
+    pub _pixiv_web_client: Mutex<Option<Arc<PixivWebClient>>>,
 }
 
 impl ServerContext {
@@ -31,7 +36,51 @@ impl ServerContext {
                 Err(e) => panic!("{} {}", gettext("Failed to open database:"), e),
             },
             rsa_key: Mutex::new(None),
+            _pixiv_app_client: Mutex::new(None),
+            _pixiv_web_client: Mutex::new(None),
         }
+    }
+
+    pub async fn generate_pixiv_proxy_url<U: IntoUrl>(
+        &self,
+        u: U,
+    ) -> Result<String, PixivDownloaderError> {
+        let u = u.into_url()?;
+        let host = u.host_str().ok_or("Host not found.")?;
+        if !host.ends_with(".pximg.net") {
+            return Err("Host not match.".into());
+        }
+        let helper = get_helper();
+        let base = helper
+            .server_base()
+            .unwrap_or(format!("http://{}", helper.server()));
+        let mut map = HashMap::new();
+        map.insert("url", u.as_str());
+        let secret = self.db.get_proxy_pixiv_secrets().await?;
+        let mut sha512 = openssl::sha::Sha512::new();
+        sha512.update(secret.as_bytes());
+        sha512.update("url".as_bytes());
+        sha512.update(u.as_str().as_bytes());
+        let sign = hex::encode(sha512.finish());
+        map.insert("sign", &sign);
+        let url = format!("{}/proxy/pixiv?{}", base, serde_urlencoded::to_string(map)?);
+        Ok(url)
+    }
+
+    pub async fn pixiv_app_client(&self) -> PixivAppClient {
+        let mut pixiv_app_client = self._pixiv_app_client.lock().await;
+        if pixiv_app_client.is_none() {
+            pixiv_app_client.replace(PixivAppClient::with_db(Some(self.db.clone())));
+        }
+        pixiv_app_client.as_ref().unwrap().clone()
+    }
+
+    pub async fn pixiv_web_client(&self) -> Arc<PixivWebClient> {
+        let mut pixiv_web_client = self._pixiv_web_client.lock().await;
+        if pixiv_web_client.is_none() {
+            pixiv_web_client.replace(Arc::new(PixivWebClient::new()));
+        }
+        pixiv_web_client.as_ref().unwrap().clone()
     }
 
     pub fn response_json_result(

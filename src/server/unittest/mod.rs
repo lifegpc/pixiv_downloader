@@ -40,6 +40,8 @@ impl UnitTestContext {
                     .unwrap(),
                 ),
                 rsa_key: Mutex::new(None),
+                _pixiv_app_client: Mutex::new(None),
+                _pixiv_web_client: Mutex::new(None),
             }),
             routes: ServerRoutes::new(),
         }

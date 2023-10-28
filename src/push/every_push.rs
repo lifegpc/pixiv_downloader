@@ -33,10 +33,10 @@ pub struct EveryPushClient {
 }
 
 impl EveryPushClient {
-    pub fn new(server: String) -> Self {
+    pub fn new<S: AsRef<str> + ?Sized>(server: &S) -> Self {
         Self {
             client: WebClient::default(),
-            server,
+            server: server.as_ref().to_owned(),
         }
     }
 
@@ -108,7 +108,7 @@ async fn test_every_push_push() {
     match std::env::var("EVERY_PUSH_SERVER") {
         Ok(server) => match std::env::var("EVERY_PUSH_TOKEN") {
             Ok(token) => {
-                let client = EveryPushClient::new(server);
+                let client = EveryPushClient::new(&server);
                 match client
                     .push_message(
                         &token,

@@ -573,6 +573,12 @@ impl OptHelper {
         }
         false
     }
+
+    #[cfg(feature = "server")]
+    /// The server's host name. Used in some proxy.
+    pub fn server_base(&self) -> Option<String> {
+        self.settings.get_ref().get_str("server-base")
+    }
 }
 
 impl Default for OptHelper {

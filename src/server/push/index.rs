@@ -1,5 +1,6 @@
 use super::super::preclude::*;
-use crate::db::{PushConfig, PushTaskConfig};
+use super::task::{run_push_task, TestSendMode};
+use crate::db::{PushConfig, PushTask, PushTaskConfig};
 use crate::ext::try_err::TryErr3;
 
 /// Push task manage action
@@ -10,6 +11,8 @@ pub enum PushAction {
     Change,
     /// Get a exist push task
     Get,
+    /// Test a push task
+    Test,
 }
 
 pub struct PushContext {
@@ -109,6 +112,26 @@ impl PushContext {
                         .try_err3(404, "Push task not found.")?;
                     Ok(serde_json::to_value(re).try_err3(500, "Failed to serialize result:")?)
                 }
+                PushAction::Test => {
+                    let config = params.get("config").ok_or((400, "Missing config."))?;
+                    let config: PushTaskConfig =
+                        serde_json::from_str(config).try_err3(400, "Failed to parse config:")?;
+                    let push_configs = params
+                        .get("push_configs")
+                        .ok_or((400, "Missing push_configs."))?;
+                    let push_configs: Vec<PushConfig> = serde_json::from_str(push_configs)
+                        .try_err3(400, "Failed to parse push_configs:")?;
+                    let task = PushTask::new(config, push_configs);
+                    let test_send_mode = params
+                        .get("test_send_mode")
+                        .ok_or((400, "Missing test_send_mode."))?;
+                    let test_send_mode: TestSendMode = serde_json::from_str(test_send_mode)
+                        .try_err3(400, "Failed to parse test_send_mode:")?;
+                    run_push_task(self.ctx.clone(), &task, Some(&test_send_mode))
+                        .await
+                        .try_err3(1, "Failed to test push task:")?;
+                    Ok(serde_json::to_value(true).try_err3(500, "Failed to serialize result:")?)
+                }
             },
             None => {
                 panic!("PushContext::handle: action is None")
@@ -163,7 +186,7 @@ pub struct PushRoute {
 impl PushRoute {
     pub fn new() -> Self {
         Self {
-            regex: Regex::new(r"^(/+api)?/+push(/+(add|change|get))?$").unwrap(),
+            regex: Regex::new(r"^(/+api)?/+push(/+(add|change|get|test))?$").unwrap(),
         }
     }
 }
@@ -194,6 +217,7 @@ impl MatchRoute<Body, Pin<Box<HttpBodyType>>> for PushRoute {
                             "add" => Some(PushAction::Add),
                             "change" => Some(PushAction::Change),
                             "get" => Some(PushAction::Get),
+                            "test" => Some(PushAction::Test),
                             _ => None,
                         }
                     }

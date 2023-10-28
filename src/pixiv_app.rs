@@ -7,16 +7,36 @@ use crate::ext::rw_lock::GetRwLock;
 use crate::opthelper::OptHelper;
 use crate::pixivapp::error::handle_error;
 use crate::pixivapp::illust::PixivAppIllust;
+use crate::pixivapp::illusts::PixivAppIllusts;
 use crate::webclient::{ReqMiddleware, WebClient};
 use crate::{get_helper, gettext};
 use chrono::{DateTime, Local, SecondsFormat, Utc};
 use json::JsonValue;
-use reqwest::{Client, Request, RequestBuilder};
+use reqwest::{Client, IntoUrl, Request, RequestBuilder};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::sync::RwLock;
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum PixivRestrictType {
+    Public,
+    Private,
+    All,
+}
+
+impl ToString for PixivRestrictType {
+    fn to_string(&self) -> String {
+        match self {
+            PixivRestrictType::Public => String::from("public"),
+            PixivRestrictType::Private => String::from("private"),
+            PixivRestrictType::All => String::from("all"),
+        }
+    }
+}
 
 pub struct PixivAppMiddleware {
     internal: Arc<PixivAppClientInternal>,
@@ -239,6 +259,31 @@ impl PixivAppClientInternal {
         Ok(())
     }
 
+    pub async fn get_follow(
+        &self,
+        restrict: &PixivRestrictType,
+    ) -> Result<JsonValue, PixivDownloaderError> {
+        self.auto_handle().await?;
+        let re = self
+            .client
+            .get_with_param(
+                "https://app-api.pixiv.net/v2/illust/follow",
+                json::object! {"restrict": restrict.to_string()},
+                None,
+            )
+            .await
+            .ok_or(gettext("Failed to get follow."))?;
+        let obj = handle_error(re).await?;
+        if get_helper().verbose() {
+            println!(
+                "{}{}",
+                gettext("Follower's new illusts: "),
+                obj.pretty(2).as_str()
+            );
+        }
+        Ok(obj)
+    }
+
     pub async fn get_illust_details(&self, id: u64) -> Result<JsonValue, PixivDownloaderError> {
         self.auto_handle().await?;
         let re = self
@@ -274,6 +319,24 @@ impl PixivAppClientInternal {
             .ok_or("Failed to add illust to browsing history.")?;
         handle_error(re).await?;
         Ok(())
+    }
+
+    pub async fn get_url<U: IntoUrl + Clone, E, I: std::fmt::Display + ?Sized>(
+        &self,
+        url: U,
+        err: E,
+        info: &I,
+    ) -> Result<JsonValue, PixivDownloaderError>
+    where
+        PixivDownloaderError: From<E>,
+    {
+        self.auto_handle().await?;
+        let re = self.client.get(url, None).await.ok_or(err)?;
+        let obj = handle_error(re).await?;
+        if get_helper().verbose() {
+            println!("{}{}", info, obj.pretty(2).as_str());
+        }
+        Ok(obj)
     }
 }
 
@@ -313,6 +376,14 @@ impl PixivAppClient {
     ) -> Result<PixivAppIllust, PixivDownloaderError> {
         let obj = self.internal.get_illust_details(id).await?;
         Ok(PixivAppIllust::new(obj["illust"].clone()))
+    }
+
+    pub async fn get_follow(
+        &self,
+        restrict: &PixivRestrictType,
+    ) -> Result<PixivAppIllusts, PixivDownloaderError> {
+        let obj = self.internal.get_follow(restrict).await?;
+        PixivAppIllusts::new(self.internal.clone(), obj)
     }
 }
 

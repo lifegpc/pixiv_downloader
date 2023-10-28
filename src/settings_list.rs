@@ -67,6 +67,8 @@ pub fn get_settings_list() -> Vec<SettingDes> {
         SettingDes::new("use-app-api", gettext("Whether to use Pixiv APP API first."), JsonValueType::Boolean, None).unwrap(),
         SettingDes::new("use-web-description", gettext("Whether to use description from Web API when description from APP API is empty."), JsonValueType::Boolean, None).unwrap(),
         SettingDes::new("add-history", gettext("Whether to add artworks to pixiv's history. Only works for APP API."), JsonValueType::Boolean, None).unwrap(),
+        #[cfg(feature = "server")]
+        SettingDes::new("server-base", gettext("The server's host name. Used in some proxy."), JsonValueType::Str, None).unwrap(),
     ]
 }
 
