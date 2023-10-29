@@ -2,7 +2,7 @@ use super::fanbox::FanboxData;
 use crate::data::data::PixivData;
 use crate::ext::json::{ToJson, ToJson2};
 use crate::gettext;
-use crate::parser::description::parse_description;
+use crate::parser::description::{convert_description_to_md, parse_description};
 use crate::pixiv_link::PixivID;
 use crate::pixiv_link::ToPixivID;
 use int_enum::IntEnum;
@@ -94,10 +94,15 @@ impl From<&PixivData> for JSONDataFile {
             f.add("author", p.author.as_ref().unwrap());
         }
         if p.description.is_some() {
-            f.add("description", p.description.as_ref().unwrap());
-            let pd = parse_description(p.description.as_ref().unwrap());
+            let desc = p.description.as_ref().unwrap();
+            f.add("description", desc);
+            let pd = parse_description(desc);
             if pd.is_some() {
                 f.add("parsed_description", pd.unwrap());
+            }
+            let md = convert_description_to_md(desc);
+            if md.is_ok() {
+                f.add("markdown_description", md.unwrap());
             }
         }
         match p.tags.as_ref() {
