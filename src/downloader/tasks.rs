@@ -181,7 +181,7 @@ pub async fn create_download_tasks_multi_first<
                     }
                 }
                 Err(e) => {
-                    println!("{}", e)
+                    log::error!("{}", e)
                 }
             }
             if d.enabled_progress_bar() {
@@ -199,7 +199,7 @@ pub async fn create_download_tasks_multi_first<
     match d.pd.initialize_part_datas() {
         Ok(_) => {}
         Err(e) => {
-            println!("{}", e);
+            log::error!("{}", e);
         }
     }
     if d.enabled_progress_bar() {
@@ -436,7 +436,7 @@ pub async fn check_tasks<
                         }
                     }
                     Err(e) => {
-                        println!("{}", e);
+                        log::error!("{}", e);
                         if !d.is_multi_threads() {
                             match d.get_retry_duration() {
                                 Some(d) => dur = Some(d),
@@ -506,7 +506,7 @@ pub async fn check_tasks<
                             }
                         }
                         Err(e) => {
-                            println!("{}", e);
+                            log::error!("{}", e);
                         }
                     }
                 }

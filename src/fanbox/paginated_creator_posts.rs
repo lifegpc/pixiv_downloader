@@ -64,7 +64,7 @@ impl PaginatedCreatorPosts {
                 Some(d) => match FanboxItemList::new(&d["body"], Arc::clone(&self.client)) {
                     Ok(d) => Some(d),
                     Err(e) => {
-                        println!("{} {}", gettext("Failed to parse posts's data:"), e);
+                        log::error!("{} {}", gettext("Failed to parse posts's data:"), e);
                         None
                     }
                 },

@@ -224,7 +224,7 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + SetLen> Dow
     pub fn enable_multiple_download(&self) {
         self.multi.qstore(true);
         if !self.is_multi_threads() {
-            println!(
+            log::warn!(
                 "{}",
                 gettext("Warning: This file will still use single thread mode to download.")
             );
@@ -232,7 +232,7 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + SetLen> Dow
             match self.pd.enable_multi() {
                 Ok(_) => {}
                 Err(e) => {
-                    println!("{}", e);
+                    log::error!("{}", e);
                 }
             }
         }
@@ -265,7 +265,7 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + SetLen> Dow
         match self.pd.disable_multi() {
             Ok(_) => {}
             Err(e) => {
-                println!("{}", e);
+                log::error!("{}", e);
             }
         };
     }
@@ -608,7 +608,7 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + SetLen + 's
             {
                 Ok(_) => {}
                 Err(e) => {
-                    println!("{}", e);
+                    log::error!("{}", e);
                 }
             }
         }

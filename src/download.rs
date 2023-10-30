@@ -75,14 +75,14 @@ impl Main {
                     if !fc.is_inited() {
                         let helper = get_helper();
                         if !fc.init(helper.cookies()) {
-                            println!("{}", gettext("Failed to initialize fanbox api client."));
+                            log::error!("{}", gettext("Failed to initialize fanbox api client."));
                             return 1;
                         }
                         if !fc.check_login().await {
                             return 1;
                         }
                         if !fc.logined() {
-                            println!("{}", gettext("Warning: Fanbox client is not logged in."));
+                            log::warn!("{}", gettext("Warning: Fanbox client is not logged in."));
                         }
                     }
                     tasks
@@ -96,14 +96,14 @@ impl Main {
                     if !fc.is_inited() {
                         let helper = get_helper();
                         if !fc.init(helper.cookies()) {
-                            println!("{}", gettext("Failed to initialize fanbox api client."));
+                            log::error!("{}", gettext("Failed to initialize fanbox api client."));
                             return 1;
                         }
                         if !fc.check_login().await {
                             return 1;
                         }
                         if !fc.logined() {
-                            println!("{}", gettext("Warning: Fanbox client is not logged in."));
+                            log::warn!("{}", gettext("Warning: Fanbox client is not logged in."));
                         }
                     }
                     tasks
@@ -131,7 +131,7 @@ impl Main {
             match result {
                 Ok(_) => {}
                 Err(e) => {
-                    println!("{} {}", gettext("Failed to download post:"), e);
+                    log::error!("{} {}", gettext("Failed to download post:"), e);
                     re = 1;
                 }
             }
@@ -174,7 +174,7 @@ impl Main {
             match result {
                 Ok(_) => {}
                 Err(e) => {
-                    println!("{} {}", gettext("Failed to download url:"), e);
+                    log::error!("{} {}", gettext("Failed to download url:"), e);
                     re = 1;
                 }
             }
@@ -218,7 +218,7 @@ pub async fn download_artwork_link<L: IntoUrl + Clone>(
                 #[cfg(feature = "exif")]
                 {
                     if add_exifdata_to_image(&file_name, &datas, np).is_err() {
-                        println!(
+                        log::warn!(
                             "{} {}",
                             gettext("Failed to add exif data to image:"),
                             file_name.to_str().unwrap_or("(null)")
@@ -237,7 +237,7 @@ pub async fn download_artwork_link<L: IntoUrl + Clone>(
             {
                 if helper.update_exif() && file_name.exists() {
                     if add_exifdata_to_image(&file_name, &datas, np).is_err() {
-                        println!(
+                        log::warn!(
                             "{} {}",
                             gettext("Failed to add exif data to image:"),
                             file_name.to_str().unwrap_or("(null)")
@@ -262,7 +262,7 @@ pub async fn download_artwork(
             if e.is_not_found() {
                 return Err(e);
             }
-            println!("{}{}", gettext("Warning: Failed to download artwork with app api, trying to download with web api: "), e);
+            log::warn!("{}{}", gettext("Warning: Failed to download artwork with app api, trying to download with web api: "), e);
             download_artwork_web(pw.clone(), id).await?;
         }
     } else if app_ok {
@@ -319,7 +319,7 @@ pub async fn download_artwork_ugoira(
         let metadata = match get_video_metadata(Arc::clone(&datas).as_ref()) {
             Ok(m) => m,
             Err(e) => {
-                println!(
+                log::warn!(
                     "{} {}",
                     gettext("Warning: Failed to generate video's metadata:"),
                     e
@@ -351,7 +351,7 @@ pub async fn download_artwork_ugoira(
             &options,
             &metadata,
         )?;
-        println!(
+        log::info!(
             "{}",
             gettext("Converted <src> -> <dest>")
                 .replace("<src>", file_name.to_str().unwrap_or("(null)"))
@@ -398,7 +398,7 @@ pub async fn download_artwork_app(
     }
     if helper.add_history() && !web_used {
         if let Err(e) = ac.add_illust_to_browsing_history(vec![id]).await {
-            println!(
+            log::warn!(
                 "{} {}",
                 gettext("Warning: Failed to add artwork to history:"),
                 e
@@ -421,7 +421,7 @@ pub async fn download_artwork_app(
             _ => {}
         },
         None => {
-            println!("{}", gettext("Warning: Failed to get illust's type."));
+            log::warn!("{}", gettext("Warning: Failed to get illust's type."));
         }
     }
     let page_count = data
@@ -534,10 +534,10 @@ pub async fn download_artwork_web(
 ) -> Result<(), PixivDownloaderError> {
     if !pw.is_login_checked() {
         if !pw.check_login().await {
-            println!("{}", gettext("Failed to check login status."));
+            log::error!("{}", gettext("Failed to check login status."));
         } else {
             if !pw.logined() {
-                println!(
+                log::warn!(
                     "{}",
                     gettext("Warning: Web api client not logged in, some future may not work.")
                 );
@@ -602,7 +602,7 @@ pub async fn download_artwork_web(
                 return download_artwork_ugoira(pw, id, base, datas).await;
             }
             _ => {
-                println!(
+                log::warn!(
                     "{} {}",
                     gettext("Warning: Unknown illust type:"),
                     illust_type
@@ -610,7 +610,7 @@ pub async fn download_artwork_web(
             }
         }
     } else {
-        println!("{}", gettext("Warning: Failed to get illust's type."));
+        log::warn!("{}", gettext("Warning: Failed to get illust's type."));
     }
     if pages_data.is_some() && helper.download_multiple_files() {
         let mut np = 0u16;
@@ -791,7 +791,7 @@ pub async fn download_fanbox_image(
                 #[cfg(feature = "exif")]
                 {
                     if add_exifdata_to_image(&file_name, &datas, np).is_err() {
-                        println!(
+                        log::warn!(
                             "{} {}",
                             gettext("Failed to add exif data to image:"),
                             file_name.to_str().unwrap_or("(null)")
@@ -810,7 +810,7 @@ pub async fn download_fanbox_image(
             {
                 if helper.update_exif() && file_name.exists() {
                     if add_exifdata_to_image(&file_name, &datas, np).is_err() {
-                        println!(
+                        log::warn!(
                             "{} {}",
                             gettext("Failed to add exif data to image:"),
                             file_name.to_str().unwrap_or("(null)")
@@ -1129,7 +1129,7 @@ pub async fn download_fanbox_creator_info(
     match data.check_unknown() {
         Ok(_) => {}
         Err(e) => {
-            println!(
+            log::warn!(
                 "{} {}",
                 gettext("Warning: Creator's info contains unknown data:"),
                 e

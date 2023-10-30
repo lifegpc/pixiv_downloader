@@ -177,12 +177,12 @@ impl WebClient {
                             self.get_cookies_as_mut().jar.get_mut().add(c);
                         }
                         None => {
-                            println!("{}", gettext("Failed to parse Set-Cookie header."));
+                            log::warn!("{}", gettext("Failed to parse Set-Cookie header."));
                         }
                     }
                 }
                 Err(e) => {
-                    println!("{} {}", gettext("Failed to convert to string:"), e);
+                    log::warn!("{} {}", gettext("Failed to convert to string:"), e);
                 }
             }
         }
@@ -237,7 +237,7 @@ impl WebClient {
     ) -> Option<Response> {
         let u = url.into_url();
         if u.is_err() {
-            println!("{} \"{}\"", gettext("Can not parse URL:"), u.unwrap_err());
+            log::error!("{} \"{}\"", gettext("Can not parse URL:"), u.unwrap_err());
             return None;
         }
         let mut u = u.unwrap();
@@ -247,7 +247,7 @@ impl WebClient {
         }
         let obj = obj.unwrap();
         if !obj.is_object() && !obj.is_array() {
-            println!(
+            log::error!(
                 "{} \"{}\"",
                 gettext("Parameters should be object or array:"),
                 obj
@@ -269,11 +269,11 @@ impl WebClient {
             } else {
                 for v in obj.members() {
                     if !v.is_object() {
-                        println!("{} \"{}\"", gettext("Parameters should be array:"), v);
+                        log::error!("{} \"{}\"", gettext("Parameters should be array:"), v);
                         return None;
                     }
                     if v.len() < 2 {
-                        println!("{} \"{}\"", gettext("Parameters need at least a value:"), v);
+                        log::error!("{} \"{}\"", gettext("Parameters need at least a value:"), v);
                         return None;
                     }
                     let okey = &v[0];
@@ -318,7 +318,7 @@ impl WebClient {
                 let t =
                     self.get_retry_interval().as_ref().unwrap()[(count - 1).try_into().unwrap()];
                 if !t.is_zero() {
-                    println!(
+                    log::info!(
                         "{}",
                         gettext("Retry after <num> seconds.")
                             .replace("<num>", format!("{}", t.as_secs_f64()).as_str())
@@ -327,7 +327,7 @@ impl WebClient {
                     tokio::time::sleep(t).await;
                 }
             }
-            println!(
+            log::info!(
                 "{}",
                 gettext("Retry <count> times now.")
                     .replace("<count>", format!("{}", count).as_str())
@@ -395,7 +395,7 @@ impl WebClient {
                 let t =
                     self.get_retry_interval().as_ref().unwrap()[(count - 1).try_into().unwrap()];
                 if !t.is_zero() {
-                    println!(
+                    log::info!(
                         "{}",
                         gettext("Retry after <num> seconds.")
                             .replace("<num>", format!("{}", t.as_secs_f64()).as_str())
@@ -404,7 +404,7 @@ impl WebClient {
                     tokio::time::sleep(t).await;
                 }
             }
-            println!(
+            log::info!(
                 "{}",
                 gettext("Retry <count> times now.")
                     .replace("<count>", format!("{}", count).as_str())

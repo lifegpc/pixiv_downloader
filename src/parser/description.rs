@@ -213,7 +213,6 @@ impl DescriptionParser {
             self.iter(node)
         }
         if self.nodes.len() != 0 {
-            println!();
             return Err(format!(
                 "{} {:?}",
                 gettext("There are some nodes still in stack:"),
@@ -230,7 +229,7 @@ pub fn parse_description<S: AsRef<str> + ?Sized>(desc: &S) -> Option<String> {
     match p.parse(desc) {
         Ok(_) => Some(p.data),
         Err(e) => {
-            println!("{}", e);
+            log::error!("{}", e);
             None
         }
     }

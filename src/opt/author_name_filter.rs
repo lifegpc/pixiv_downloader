@@ -136,7 +136,7 @@ impl TryFrom<&JsonValue> for AuthorNameFilter {
 pub fn check_author_name_filters(v: &JsonValue) -> bool {
     let r = AuthorNameFilter::from_json(v);
     if r.is_err() {
-        println!(
+        log::error!(
             "{} {}",
             gettext("Failed parse author name filters:"),
             r.as_ref().unwrap_err()

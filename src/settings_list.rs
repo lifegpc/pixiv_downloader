@@ -82,7 +82,7 @@ fn check_cors_entries(obj: &JsonValue) -> bool {
     match parse_cors_entries(obj) {
         Ok(_) => true,
         Err(e) => {
-            println!("{}", e);
+            log::error!("{}", e);
             false
         }
     }

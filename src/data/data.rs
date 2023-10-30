@@ -128,7 +128,7 @@ impl PixivData {
                         self.description = Some(s);
                     }
                     Err(s) => {
-                        println!("{} {}", gettext("Failed to unescape string:"), s.as_str());
+                        log::warn!("{} {}", gettext("Failed to unescape string:"), s.as_str());
                     }
                 }
             }

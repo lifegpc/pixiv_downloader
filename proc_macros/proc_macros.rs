@@ -978,7 +978,7 @@ pub fn print_error(item: TokenStream) -> TokenStream {
         match (#expr) {
             Ok(re) => re,
             Err(e) => {
-                println!("{}{}", #msg, e);
+                log::error!("{}{}", #msg, e);
                 return #re;
             }
         }

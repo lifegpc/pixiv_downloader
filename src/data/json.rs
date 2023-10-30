@@ -45,7 +45,7 @@ impl JSONDataFile {
         if p.exists() {
             let r = remove_file(p);
             if r.is_err() {
-                println!("{} {}", gettext("Failed to remove file:"), r.unwrap_err());
+                log::error!("{} {}", gettext("Failed to remove file:"), r.unwrap_err());
                 return false;
             }
         }
@@ -56,13 +56,13 @@ impl JSONDataFile {
         let value = value.unwrap();
         let f = File::create(p);
         if f.is_err() {
-            println!("{} {}", gettext("Failed to create file:"), f.unwrap_err());
+            log::error!("{} {}", gettext("Failed to create file:"), f.unwrap_err());
             return false;
         }
         let mut f = f.unwrap();
         let r = f.write(value.pretty(2).as_bytes());
         if r.is_err() {
-            println!("{} {}", gettext("Failed to write file:"), r.unwrap_err());
+            log::error!("{} {}", gettext("Failed to write file:"), r.unwrap_err());
             return false;
         }
         true

@@ -69,7 +69,7 @@ macro_rules! concat_pixiv_downloader_error {
             Err(e) => match $exp2 {
                 Ok(_) => Err(e),
                 Err(e2) => {
-                    println!("{}", e);
+                    log::error!("{}", e);
                     Err(PixivDownloaderError::from(e2))
                 }
             },
@@ -88,7 +88,7 @@ macro_rules! concat_error {
             Err(e) => match $exp2 {
                 Ok(_) => Err(e),
                 Err(e2) => {
-                    println!("{}", e);
+                    log::error!("{}", e);
                     Err(<$typ>::from(e2))
                 }
             },

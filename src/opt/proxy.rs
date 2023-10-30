@@ -201,7 +201,7 @@ pub fn check_proxy(v: &JsonValue) -> bool {
     match ProxyChain::try_from(v) {
         Ok(_) => true,
         Err(e) => {
-            println!("{}", e);
+            log::error!("{}", e);
             false
         }
     }

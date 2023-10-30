@@ -185,7 +185,7 @@ impl SettingDesStore {
             }
             s += t.as_str();
         }
-        println!("{}", s);
+        log::error!("{}", s);
     }
 }
 
@@ -265,7 +265,7 @@ impl SettingJar {
             match v.insert(val.name().as_str(), val.value()) {
                 Ok(_) => {}
                 Err(_) => {
-                    println!("{}", gettext("Can not insert setting to JSON object."));
+                    log::error!("{}", gettext("Can not insert setting to JSON object."));
                     return None;
                 }
             }
@@ -340,7 +340,7 @@ impl SettingStore {
         }
         let re = File::open(path);
         if re.is_err() {
-            println!("{}", re.unwrap_err());
+            log::error!("{}", re.unwrap_err());
             return false;
         }
         let mut f = re.unwrap();
@@ -350,14 +350,14 @@ impl SettingStore {
             Ok(le) => {
                 if le == 0 {
                     if !fix_invalid {
-                        println!("{}", gettext("Settings file is empty."));
+                        log::error!("{}", gettext("Settings file is empty."));
                         return false;
                     }
                     return true;
                 }
             }
             Err(_) => {
-                println!("{}", gettext("Can not read from settings file."));
+                log::error!("{}", gettext("Can not read from settings file."));
                 return false;
             }
         }
@@ -366,7 +366,7 @@ impl SettingStore {
             Ok(_) => {}
             Err(_) => {
                 if !fix_invalid {
-                    println!("{}", gettext("Can not parse settings file."));
+                    log::error!("{}", gettext("Can not parse settings file."));
                     return false;
                 }
                 return true;
@@ -375,7 +375,7 @@ impl SettingStore {
         let obj = re.unwrap();
         if !obj.is_object() {
             if !fix_invalid {
-                println!("{}", gettext("Unknown settings file."));
+                log::error!("{}", gettext("Unknown settings file."));
                 return false;
             }
             return true;
@@ -387,7 +387,7 @@ impl SettingStore {
                     if !re {
                         if !fix_invalid {
                             let s = gettext("\"<key>\" is invalid, you can use \"pixiv_downloader config fix\" to remove all invalid value.").replace("<key>", key);
-                            println!("{}", s.as_str());
+                            log::error!("{}", s.as_str());
                             return false;
                         }
                     } else {
@@ -405,7 +405,7 @@ impl SettingStore {
     pub fn save(&self, file_name: &str) -> bool {
         let obj = self.data.to_json();
         if obj.is_none() {
-            println!("{}", gettext("Can not convert settings to JSON object."));
+            log::error!("{}", gettext("Can not convert settings to JSON object."));
             return false;
         }
         let obj = obj.unwrap();
@@ -415,25 +415,25 @@ impl SettingStore {
             match remove_file(path) {
                 Ok(_) => {}
                 Err(e) => {
-                    println!("{} {}", gettext("Failed to remove file:"), e);
+                    log::error!("{} {}", gettext("Failed to remove file:"), e);
                     return false;
                 }
             }
         }
         let r = File::create(path);
         if r.is_err() {
-            println!("{} {}", gettext("Failed to create file:"), r.unwrap_err());
+            log::error!("{} {}", gettext("Failed to create file:"), r.unwrap_err());
             return false;
         }
         let mut f = r.unwrap();
         let r = f.write(s.as_bytes());
         if r.is_err() {
-            println!("{} {}", gettext("Failed to write file:"), r.unwrap_err());
+            log::error!("{} {}", gettext("Failed to write file:"), r.unwrap_err());
             return false;
         }
         let r = f.flush();
         if r.is_err() {
-            println!("{} {}", gettext("Failed to flush file:"), r.unwrap_err());
+            log::error!("{} {}", gettext("Failed to flush file:"), r.unwrap_err());
             return false;
         }
         true

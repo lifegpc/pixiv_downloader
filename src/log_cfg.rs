@@ -29,5 +29,5 @@ pub fn init_with_level(level: LevelFilter) {
 }
 
 pub fn init_default() {
-    init_with_level(LevelFilter::Warn);
+    init_with_level(LevelFilter::Info);
 }

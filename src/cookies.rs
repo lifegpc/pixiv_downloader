@@ -76,7 +76,7 @@ impl Cookie {
         let mut expired: i64 = 0;
         let u = url.into_url();
         if u.is_err() {
-            println!(
+            log::warn!(
                 "{} {}",
                 gettext("Warning: Failed to parse URL:"),
                 u.unwrap_err()
@@ -91,7 +91,7 @@ impl Cookie {
         let t = String::from(m);
         let l2: Vec<&str> = t.split("=").collect();
         if l2.len() < 2 {
-            println!(
+            log::warn!(
                 "{} {}",
                 gettext("Warning: Failed to parse cookie's key and value:"),
                 m
@@ -110,7 +110,7 @@ impl Cookie {
             let k = ll[0].to_lowercase();
             if k == "expires" {
                 if ll.len() < 2 {
-                    println!("{}", gettext("Warning: Expires need a date."));
+                    log::warn!("{}", gettext("Warning: Expires need a date."));
                     return None;
                 }
                 let mut re = dateparser::parse(ll[1]);
@@ -118,7 +118,7 @@ impl Cookie {
                     let s = ll[1].replace("-", " ");
                     re = dateparser::parse(s.as_str());
                     if re.is_err() {
-                        println!(
+                        log::warn!(
                             "{} {}",
                             gettext("Failed to parse UTC string:"),
                             re.unwrap_err()
@@ -130,12 +130,12 @@ impl Cookie {
                 expired = r.timestamp();
             } else if k == "max-age" {
                 if ll.len() < 2 {
-                    println!("{}", gettext("Warning: Max-Age need a duration."));
+                    log::warn!("{}", gettext("Warning: Max-Age need a duration."));
                     return None;
                 }
                 let re = ll[1].parse::<i64>();
                 if re.is_err() {
-                    println!(
+                    log::warn!(
                         "{} {}",
                         gettext("Failed to parse Max-Age:"),
                         re.unwrap_err()
@@ -145,18 +145,18 @@ impl Cookie {
                 expired = re.unwrap() + Utc::now().timestamp();
             } else if k == "domain" {
                 if ll.len() < 2 {
-                    println!("{}", gettext("Warning: Domain need a domain."));
+                    log::warn!("{}", gettext("Warning: Domain need a domain."));
                     return None;
                 }
                 domain = Some(String::from(ll[1]));
             } else if k == "path" {
                 if ll.len() < 2 {
-                    println!("{}", gettext("Warning: Path need a path."));
+                    log::warn!("{}", gettext("Warning: Path need a path."));
                     return None;
                 }
                 let p = ll[1].to_string();
                 if !p.starts_with("/") {
-                    println!(
+                    log::warn!(
                         "{} {}",
                         gettext("Warning: path is not starts with \"/\":"),
                         p.as_str()
@@ -171,7 +171,7 @@ impl Cookie {
             }
         }
         if domain.is_none() {
-            println!("{}", gettext("Warning: Failed to get domain."));
+            log::warn!("{}", gettext("Warning: Failed to get domain."));
             return None;
         }
         let domain = domain.unwrap();
@@ -221,7 +221,7 @@ impl Cookie {
     pub fn matched<U: IntoUrl>(&self, url: U) -> bool {
         let u = url.into_url();
         if u.is_err() {
-            println!(
+            log::warn!(
                 "{} {}",
                 gettext("Warning: Failed to parse URL:"),
                 u.unwrap_err()
@@ -367,12 +367,12 @@ impl CookieJar {
         self.cookies.clear();
         let p = file_name.as_ref();
         if !p.exists() {
-            println!("{} {}", gettext("Can not find file:"), p.display());
+            log::error!("{} {}", gettext("Can not find file:"), p.display());
             return false;
         }
         let re = File::open(p);
         if re.is_err() {
-            println!("{} {}", gettext("Can not open file:"), p.display());
+            log::error!("{} {}", gettext("Can not open file:"), p.display());
             return false;
         }
         let f = re.unwrap();
@@ -386,7 +386,7 @@ impl CookieJar {
             }
             let mut s = l.split('\t');
             if s.clone().count() < 7 {
-                println!("{} {}", gettext("Invalid cookie:"), l);
+                log::error!("{} {}", gettext("Invalid cookie:"), l);
                 return false;
             }
             let domain = s.next().unwrap();
@@ -398,7 +398,7 @@ impl CookieJar {
             let value = s.next().unwrap();
             let tmp = expired.trim().parse::<i64>();
             if tmp.is_err() {
-                println!("{} {}", gettext("Can not parse expired time:"), expired);
+                log::error!("{} {}", gettext("Can not parse expired time:"), expired);
                 return false;
             }
             let tmp = tmp.unwrap();
@@ -423,20 +423,20 @@ impl CookieJar {
         if p.exists() {
             let re = remove_file(p);
             if re.is_err() {
-                println!("{} {}", gettext("Failed to remove file:"), re.unwrap_err());
+                log::error!("{} {}", gettext("Failed to remove file:"), re.unwrap_err());
                 return false;
             }
         }
         let re = File::create(p);
         if re.is_err() {
-            println!("{} {}", gettext("Failed to create file:"), re.unwrap_err());
+            log::error!("{} {}", gettext("Failed to create file:"), re.unwrap_err());
             return false;
         }
         let mut f = re.unwrap();
         for c in self.cookies.iter() {
             let r = write!(f, "{}", c.to_netscape_str().as_str());
             if r.is_err() {
-                println!("{} {}", gettext("Failed to write file:"), r.unwrap_err());
+                log::error!("{} {}", gettext("Failed to write file:"), r.unwrap_err());
                 return false;
             }
         }
@@ -517,7 +517,7 @@ impl CookieJarManager {
                 *count -= 1;
                 if *count == 0 {
                     if !jar.get_mut().save(&path) {
-                        println!(
+                        log::warn!(
                             "{} {}",
                             gettext("Warning: Failed to save cookies file:"),
                             path.display()

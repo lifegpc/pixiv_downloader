@@ -53,7 +53,7 @@ impl MetaDataParser {
                     }
                     let r = json::parse(c.as_ref().unwrap());
                     if r.is_err() {
-                        println!("{} {}", gettext("Failed to parse JSON:"), r.unwrap_err());
+                        log::error!("{} {}", gettext("Failed to parse JSON:"), r.unwrap_err());
                         return false;
                     }
                     self.value = Some(r.unwrap());
@@ -75,14 +75,14 @@ impl MetaDataParser {
     pub fn parse(&mut self, context: &str) -> bool {
         let r = Dom::parse(context);
         if r.is_err() {
-            println!("{} {}", gettext("Failed to parse HTML:"), r.unwrap_err());
+            log::error!("{} {}", gettext("Failed to parse HTML:"), r.unwrap_err());
             return false;
         }
         let dom = r.unwrap();
         if dom.errors.len() > 0 {
-            println!("{}", gettext("Some errors occured during parsing:"));
+            log::error!("{}", gettext("Some errors occured during parsing:"));
             for i in dom.errors.iter() {
-                println!("{}", i);
+                log::error!("{}", i);
             }
         }
         for n in dom.children.iter() {

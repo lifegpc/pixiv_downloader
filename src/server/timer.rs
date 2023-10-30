@@ -16,7 +16,7 @@ pub async fn start_timer(ctx: Arc<ServerContext>) {
         for task in tasks.take_finished_tasks() {
             let re = task.await;
             if let Ok(Err(e)) = re {
-                println!("Timer task error: {}", e);
+                log::error!("Timer task error: {}", e);
             }
         }
     }

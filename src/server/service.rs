@@ -34,13 +34,13 @@ impl Service<Request<Body>> for PixivDownloaderSvc {
     }
 
     fn call(&mut self, req: Request<Body>) -> Self::Future {
-        println!("{} {}", req.method(), req.uri());
+        log::info!(target: "server", "{} {}", req.method(), req.uri());
         match self.routes.match_route(&req, &self.context) {
             Some(route) => Box::pin(async move {
                 match route.response(req).await {
                     Ok(data) => Ok(data),
                     Err(e) => {
-                        println!("{}", e);
+                        log::error!(target: "server", "{}", e);
                         Ok(Response::builder()
                             .status(500)
                             .body::<Pin<Box<HttpBodyType>>>(Box::pin(HyperBody::from(

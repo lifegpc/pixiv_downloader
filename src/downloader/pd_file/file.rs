@@ -494,7 +494,7 @@ impl PdFile {
         match self.remove_pd_file() {
             Ok(_) => {}
             Err(e) => {
-                println!("{} {}", gettext("Failed to remove file: "), e);
+                log::error!("{} {}", gettext("Failed to remove file: "), e);
             }
         }
     }
@@ -692,7 +692,7 @@ impl Drop for PdFile {
             match self.write() {
                 Ok(_) => {}
                 Err(e) => {
-                    println!("{}", e);
+                    log::error!("{}", e);
                     self.force_close();
                     self.remove_pd_file_with_err_msg();
                 }

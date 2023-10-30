@@ -92,7 +92,7 @@ impl Main {
             }
             ConfigCommand::Help => {
                 let s = self.settings.as_ref().unwrap();
-                println!("{}", gettext("All available settings:"));
+                log::error!("{}", gettext("All available settings:"));
                 s.basic.print_help();
                 0
             }
@@ -145,7 +145,7 @@ impl Main {
                 let addr = get_helper().server();
                 match server::service::start_server(&addr).await {
                     Ok(server) => {
-                        println!("Listening on http://{}", addr);
+                        log::info!("Listening on http://{}", addr);
                         match server.await {
                             Ok(_) => {}
                             Err(e) => {
