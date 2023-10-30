@@ -203,7 +203,7 @@ impl CommandOpts {
             if check_file_exists(&self._config.as_ref().unwrap()) {
                 self._config.clone()
             } else {
-                println!(
+                log::error!(
                     "{}",
                     gettext("Warning: The specified config file not found.")
                 );
@@ -257,7 +257,7 @@ pub fn print_usage(prog: &str, opts: &Options) {
         )
         .as_str();
     }
-    println!("{}", opts.usage(brief.as_str()));
+    log::error!("{}", opts.usage(brief.as_str()));
 }
 
 /// Error when parsing size
@@ -665,7 +665,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
     let result = match opts.parse(&argv[1..]) {
         Ok(m) => m,
         Err(err) => {
-            println!("{}", err.to_string());
+            log::error!("{}", err.to_string());
             return None;
         }
     };
@@ -675,7 +675,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
     }
     let mut re = CommandOpts::new_with_command(&result.free[0]);
     if re.is_none() {
-        println!("{}", gettext("Unknown command."));
+        log::error!("{}", gettext("Unknown command."));
         print_usage(&argv[0], &opts);
         return None;
     }
@@ -685,13 +685,13 @@ pub fn parse_cmd() -> Option<CommandOpts> {
             for url in result.free.iter().skip(1) {
                 let id = PixivID::parse(url);
                 if id.is_none() {
-                    println!("{} {}", gettext("Failed to parse ID:"), url);
+                    log::error!("{} {}", gettext("Failed to parse ID:"), url);
                     return None;
                 }
                 ids.push(id.unwrap());
             }
             if ids.is_empty() {
-                println!("{}", gettext("No URL or ID specified."));
+                log::error!("{}", gettext("No URL or ID specified."));
                 print_usage(&argv[0], &opts);
                 return None;
             }
@@ -699,7 +699,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         }
         Command::Config => {
             if result.free.len() < 2 {
-                println!("{}", gettext("No detailed command specified."));
+                log::error!("{}", gettext("No detailed command specified."));
                 print_usage(&argv[0], &opts);
                 return None;
             }
@@ -712,7 +712,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
                 None
             };
             if re.as_ref().unwrap().config_cmd.is_none() {
-                println!("{}", gettext("Unknown config subcommand."));
+                log::error!("{}", gettext("Unknown config subcommand."));
                 print_usage(&argv[0], &opts);
                 return None;
             }
@@ -724,7 +724,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
                 match SocketAddr::from_str(address) {
                     Ok(address) => re.as_mut().unwrap().server = Some(address),
                     Err(e) => {
-                        println!("{} {}", gettext("Failed to parse address:"), e);
+                        log::error!("{} {}", gettext("Failed to parse address:"), e);
                         return None;
                     }
                 }
@@ -736,7 +736,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
                 urls.push(url.to_owned());
             }
             if urls.is_empty() {
-                println!("{}", gettext("No URL specified."));
+                log::error!("{}", gettext("No URL specified."));
                 print_usage(&argv[0], &opts);
                 return None;
             }
@@ -775,7 +775,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
             re.as_mut().unwrap().retry = r;
         }
         Err(e) => {
-            println!("{} {}", gettext("Failed to parse retry count:"), e);
+            log::error!("{} {}", gettext("Failed to parse retry count:"), e);
             return None;
         }
     }
@@ -783,7 +783,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         let s = result.opt_str("retry-interval").unwrap();
         let r = parse_retry_interval_from_str(s.as_str());
         if r.is_err() {
-            println!(
+            log::error!(
                 "{} {}",
                 gettext("Failed to parse retry interval:"),
                 r.unwrap_err()
@@ -801,7 +801,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         let s = result.opt_str("use-progress-bar").unwrap();
         let r = UseOrNot::from_str(s.as_str());
         if r.is_err() {
-            println!(
+            log::error!(
                 "{} {}",
                 gettext("Failed to parse <opt>:")
                     .replace("<opt>", "use-progress-bar")
@@ -815,7 +815,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
     match parse_optional_opt(&result, "download-multiple-files", true, parse_bool) {
         Ok(b) => re.as_mut().unwrap().download_multiple_files = b,
         Err(e) => {
-            println!(
+            log::error!(
                 "{} {}",
                 gettext("Failed to parse <opt>:")
                     .replace("<opt>", "download-multiple-files")
@@ -830,7 +830,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
             re.as_mut().unwrap().download_retry = r;
         }
         Err(e) => {
-            println!("{} {}", gettext("Failed to parse retry count:"), e);
+            log::error!("{} {}", gettext("Failed to parse retry count:"), e);
             return None;
         }
     }
@@ -838,7 +838,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         let s = result.opt_str("download-retry-interval").unwrap();
         let r = parse_retry_interval_from_str(s.as_str());
         if r.is_err() {
-            println!(
+            log::error!(
                 "{} {}",
                 gettext("Failed to parse retry interval:"),
                 r.unwrap_err()
@@ -852,14 +852,14 @@ pub fn parse_cmd() -> Option<CommandOpts> {
             re.as_mut().unwrap().download_part_retry = r;
         }
         Err(e) => {
-            println!("{} {}", gettext("Failed to parse retry count:"), e);
+            log::error!("{} {}", gettext("Failed to parse retry count:"), e);
             return None;
         }
     }
     match parse_optional_opt(&result, "multiple-threads-download", true, parse_bool) {
         Ok(b) => re.as_mut().unwrap().multiple_threads_download = b,
         Err(e) => {
-            println!(
+            log::error!(
                 "{} {}",
                 gettext("Failed to parse <opt>:")
                     .replace("<opt>", "multiple-threads-download")
@@ -874,7 +874,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
             re.as_mut().unwrap().max_threads = r;
         }
         Err(e) => {
-            println!("{} {}", gettext("Failed to parse max threads:"), e);
+            log::error!("{} {}", gettext("Failed to parse max threads:"), e);
             return None;
         }
     }
@@ -883,14 +883,14 @@ pub fn parse_cmd() -> Option<CommandOpts> {
             re.as_mut().unwrap().part_size = r;
         }
         Err(e) => {
-            println!("{} {}", gettext("Failed to parse part size:"), e);
+            log::error!("{} {}", gettext("Failed to parse part size:"), e);
             return None;
         }
     }
     match parse_optional_opt(&result, "max-download-tasks", 5, parse_nonempty_usize) {
         Ok(r) => re.as_mut().unwrap().max_download_tasks = r,
         Err(e) => {
-            println!(
+            log::error!(
                 "{} {}",
                 gettext("Failed to parse <opt>:").replace("<opt>", "max-download-tasks"),
                 e
@@ -901,7 +901,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
     match parse_optional_opt(&result, "download-multiple-posts", true, parse_bool) {
         Ok(b) => re.as_mut().unwrap().download_multiple_posts = b,
         Err(e) => {
-            println!(
+            log::error!(
                 "{} {}",
                 gettext("Failed to parse <opt>:")
                     .replace("<opt>", "download-multiple-posts")
@@ -914,7 +914,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
     match parse_optional_opt(&result, "max-download-post-tasks", 3, parse_nonempty_usize) {
         Ok(r) => re.as_mut().unwrap().max_download_post_tasks = r,
         Err(e) => {
-            println!(
+            log::error!(
                 "{} {}",
                 gettext("Failed to parse <opt>:")
                     .replace("<opt>", "max-download-post-tasks")
@@ -928,7 +928,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
     match parse_optional_opt(&result, "force-yuv420p", true, parse_bool) {
         Ok(b) => re.as_mut().unwrap().force_yuv420p = b,
         Err(e) => {
-            println!(
+            log::error!(
                 "{} {}",
                 gettext("Failed to parse <opt>:")
                     .replace("<opt>", "force-yuv420p")
@@ -947,7 +947,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
     ) {
         Ok(r) => re.as_mut().unwrap().x264_profile = r,
         Err(e) => {
-            println!(
+            log::error!(
                 "{} {}",
                 gettext("Failed to parse <opt>:")
                     .replace("<opt>", "x264-profile")
@@ -964,7 +964,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         Ok(r) => match r {
             Some(crf) => {
                 if crf < -1f32 {
-                    println!("{}", gettext("x264-crf can not less than -1."));
+                    log::error!("{}", gettext("x264-crf can not less than -1."));
                     return None;
                 } else {
                     re.as_mut().unwrap().x264_crf.replace(crf);
@@ -973,7 +973,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
             None => {}
         },
         Err(e) => {
-            println!(
+            log::error!(
                 "{} {}",
                 ("Failed to parse <opt>:")
                     .replace("<opt>", "x264-crf")
@@ -988,7 +988,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         Ok(r) => match r {
             Some(crf) => {
                 if crf <= 0f32 || crf > 1000f32 {
-                    println!(
+                    log::error!(
                         "{}",
                         gettext("ugoira-max-fps can not less than 0 or greater than 1000.")
                     );
@@ -1000,7 +1000,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
             None => {}
         },
         Err(e) => {
-            println!(
+            log::error!(
                 "{} {}",
                 ("Failed to parse <opt>:")
                     .replace("<opt>", "ugoira-max-fps")
@@ -1013,7 +1013,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
     match parse_optional_opt(&result, "fanbox-page-number", true, parse_bool) {
         Ok(b) => re.as_mut().unwrap().fanbox_page_number = b,
         Err(e) => {
-            println!(
+            log::error!(
                 "{} {}",
                 gettext("Failed to parse <opt>:")
                     .replace("<opt>", "fanbox-page-number")
@@ -1027,7 +1027,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
     match parse_optional_opt(&result, "use-app-api", true, parse_bool) {
         Ok(b) => re.as_mut().unwrap().use_app_api = b,
         Err(e) => {
-            println!(
+            log::error!(
                 "{} {}",
                 gettext("Failed to parse <opt>:")
                     .replace("<opt>", "use-app-api")
@@ -1040,7 +1040,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
     match parse_optional_opt(&result, "use-web-description", true, parse_bool) {
         Ok(b) => re.as_mut().unwrap().use_web_description = b,
         Err(e) => {
-            println!(
+            log::error!(
                 "{} {}",
                 gettext("Failed to parse <opt>:")
                     .replace("<opt>", "use-web-description")
@@ -1053,7 +1053,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
     match parse_optional_opt(&result, "add-history", true, parse_bool) {
         Ok(b) => re.as_mut().unwrap().add_history = b,
         Err(e) => {
-            println!(
+            log::error!(
                 "{} {}",
                 gettext("Failed to parse <opt>:")
                     .replace("<opt>", "add-history")

@@ -4,7 +4,6 @@ use crate::error::PixivDownloaderError;
 use crate::ext::atomic::AtomicQuick;
 use crate::ext::replace::ReplaceWith2;
 use crate::ext::rw_lock::GetRwLock;
-use crate::opthelper::OptHelper;
 use crate::pixivapp::error::handle_error;
 use crate::pixivapp::illust::PixivAppIllust;
 use crate::pixivapp::illusts::PixivAppIllusts;
@@ -40,15 +39,11 @@ impl ToString for PixivRestrictType {
 
 pub struct PixivAppMiddleware {
     internal: Arc<PixivAppClientInternal>,
-    helper: Arc<OptHelper>,
 }
 
 impl PixivAppMiddleware {
     pub fn new(internal: Arc<PixivAppClientInternal>) -> Self {
-        Self {
-            internal,
-            helper: get_helper(),
-        }
+        Self { internal }
     }
 }
 
@@ -62,10 +57,8 @@ impl ReqMiddleware for PixivAppMiddleware {
                 now, "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c"
             ))
         );
-        if self.helper.verbose() {
-            println!("X-Client-Hash: {}", hash);
-            println!("X-Client-Time: {}", now);
-        }
+        log::debug!(target: "pixiv_app", "X-Client-Hash: {}", hash);
+        log::debug!(target: "pixiv_app", "X-Client-Time: {}", now);
         let is_app_api = r.url().host_str().unwrap_or("") == "app-api.pixiv.net";
         let mut r = RequestBuilder::from_parts(c, r)
             .header("X-Client-Hash", hash)
@@ -274,13 +267,11 @@ impl PixivAppClientInternal {
             .await
             .ok_or(gettext("Failed to get follow."))?;
         let obj = handle_error(re).await?;
-        if get_helper().verbose() {
-            println!(
-                "{}{}",
-                gettext("Follower's new illusts: "),
-                obj.pretty(2).as_str()
-            );
-        }
+        log::debug!(
+            "{}{}",
+            gettext("Follower's new illusts: "),
+            obj.pretty(2).as_str()
+        );
         Ok(obj)
     }
 
@@ -296,9 +287,7 @@ impl PixivAppClientInternal {
             .await
             .ok_or(gettext("Failed to get illust details."))?;
         let obj = handle_error(re).await?;
-        if get_helper().verbose() {
-            println!("{}{}", gettext("Illust details:"), obj.pretty(2).as_str());
-        }
+        log::debug!("{}{}", gettext("Illust details:"), obj.pretty(2).as_str());
         Ok(obj)
     }
 
@@ -333,9 +322,7 @@ impl PixivAppClientInternal {
         self.auto_handle().await?;
         let re = self.client.get(url, None).await.ok_or(err)?;
         let obj = handle_error(re).await?;
-        if get_helper().verbose() {
-            println!("{}{}", info, obj.pretty(2).as_str());
-        }
+        log::debug!("{}{}", info, obj.pretty(2).as_str());
         Ok(obj)
     }
 }

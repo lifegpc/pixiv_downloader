@@ -13,7 +13,6 @@ use reqwest::{Client, ClientBuilder, IntoUrl, Request, Response};
 use serde::ser::Serialize;
 use std::collections::HashMap;
 use std::default::Default;
-use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicI64;
 use std::sync::Arc;
 use std::sync::RwLock;
@@ -96,8 +95,6 @@ pub struct WebClient {
     headers: RwLock<HashMap<String, String>>,
     /// Cookies
     cookies: RwLock<ManagedCookieJar>,
-    /// Verbose logging
-    verbose: Arc<AtomicBool>,
     /// Retry times, 0 means disable, < 0 means always retry
     retry: Arc<AtomicI64>,
     /// Retry interval
@@ -115,7 +112,6 @@ impl WebClient {
             client,
             headers: RwLock::new(HashMap::new()),
             cookies: RwLock::new(ManagedCookieJar::new()),
-            verbose: Arc::new(AtomicBool::new(false)),
             retry: Arc::new(AtomicI64::new(3)),
             retry_interval: RwLock::new(None),
             req_middlewares: RwLock::new(Vec::new()),
@@ -163,10 +159,6 @@ impl WebClient {
 
     pub fn get_retry_interval<'a>(&'a self) -> RwLockReadGuard<'a, Option<NonTailList<Duration>>> {
         self.retry_interval.get_ref()
-    }
-
-    pub fn get_verbose(&self) -> bool {
-        self.verbose.qload()
     }
 
     /// Used to handle Set-Cookie header in an [Response]
@@ -224,10 +216,6 @@ impl WebClient {
     /// Set retry times, 0 means disable
     pub fn set_retry(&self, retry: i64) {
         self.retry.qstore(retry)
-    }
-
-    pub fn set_verbose(&self, verbose: bool) {
-        self.verbose.qstore(verbose)
     }
 
     /// Send GET requests with parameters
@@ -357,9 +345,7 @@ impl WebClient {
         );
         let r = print_error!(gettext("Error when request:"), self.client.execute(r).await);
         self.handle_set_cookie(&r);
-        if self.get_verbose() {
-            println!("{}", r.status());
-        }
+        log::debug!(target: "webclient", "{}", r.status());
         Some(r)
     }
 
@@ -370,9 +356,7 @@ impl WebClient {
         headers: H,
     ) -> Result<Request, PixivDownloaderError> {
         let s = url.as_str();
-        if self.get_verbose() {
-            println!("GET {}", s);
-        }
+        log::debug!(target: "webclient", "GET {}", s);
         let mut r = self.client.get(s);
         for (k, v) in self.get_headers().iter() {
             r = r.header(k, v);
@@ -442,9 +426,7 @@ impl WebClient {
         );
         let r = print_error!(gettext("Error when request:"), self.client.execute(r).await);
         self.handle_set_cookie(&r);
-        if self.get_verbose() {
-            println!("{}", r.status());
-        }
+        log::debug!(target: "webclient","{}", r.status());
         Some(r)
     }
 
@@ -456,9 +438,7 @@ impl WebClient {
         form: Option<S>,
     ) -> Result<Request, PixivDownloaderError> {
         let s = url.as_str();
-        if self.get_verbose() {
-            println!("POST {}", s);
-        }
+        log::debug!(target: "webclient", "POST {}", s);
         let mut r = self.client.post(s);
         for (k, v) in self.get_headers().iter() {
             r = r.header(k, v);
@@ -494,7 +474,6 @@ impl Default for WebClient {
         }
         let c = c.build().unwrap();
         let c = Self::new(c);
-        c.set_verbose(opt.verbose());
         match opt.retry() {
             Some(retry) => c.set_retry(retry),
             None => {}

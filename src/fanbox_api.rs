@@ -34,24 +34,22 @@ macro_rules! handle_data {
             Some(r) => {
                 let status = r.status();
                 if status.as_u16() >= 400 {
-                    println!("{} {}", $err, status);
+                    log::error!(target: "fanbox_api", "{} {}", $err, status);
                     return None;
                 }
                 match r.text_with_charset("UTF-8").await {
                     Ok(data) => match json::parse(data.as_str()) {
                         Ok(obj) => {
-                            if get_helper().verbose() {
-                                println!("{}\n{}", $info, obj.pretty(2),);
-                            }
+                            log::debug!(target: "fanbox_api", "{}\n{}", $info, obj.pretty(2),);
                             Some(obj)
                         }
                         Err(e) => {
-                            println!("{} {}", $err, e);
+                            log::error!(target: "fanbox_api", "{} {}", $err, e);
                             None
                         }
                     },
                     Err(e) => {
-                        println!("{} {}", $err, e);
+                        log::error!(target: "fanbox_api", "{} {}", $err, e);
                         None
                     }
                 }
@@ -117,28 +115,27 @@ impl FanboxClientInternal {
                 let status = r.status();
                 let code = status.as_u16();
                 if code >= 400 {
-                    println!("{} {}", gettext("Failed to get fanbox main page:"), status);
+                    log::error!(target: "fanbox_api", "{} {}", gettext("Failed to get fanbox main page:"), status);
                     return false;
                 }
                 match r.text_with_charset("UTF-8").await {
                     Ok(data) => {
                         let mut parser = MetaDataParser::new("metadata");
                         if !parser.parse(data.as_str()) {
-                            println!("{}", gettext("Failed to parse fanbox main page."));
+                            log::error!(target: "fanbox_api", "{}", gettext("Failed to parse fanbox main page."));
                             return false;
                         }
-                        if get_helper().verbose() {
-                            println!(
-                                "{}\n{}",
-                                gettext("Fanbox main page's data:"),
-                                parser.value.as_ref().unwrap().pretty(2).as_str()
-                            );
-                        }
+                        log::debug!(
+                            target: "fanbox_api",
+                            "{}\n{}",
+                            gettext("Fanbox main page's data:"),
+                            parser.value.as_ref().unwrap().pretty(2).as_str()
+                        );
                         self.data.replace_with2(parser.value);
                         true
                     }
                     Err(e) => {
-                        println!("{} {}", gettext("Failed to get fanbox main page:"), e);
+                        log::error!(target: "fanbox_api", "{} {}", gettext("Failed to get fanbox main page:"), e);
                         false
                     }
                 }
@@ -325,7 +322,7 @@ impl FanboxClient {
             Some(s) => match FanboxItemList::new(&s["body"], Arc::clone(&self.client)) {
                 Ok(item) => Some(item),
                 Err(e) => {
-                    println!("{}", e);
+                    log::error!(target: "fanbox_api", "{}", e);
                     None
                 }
             },
@@ -340,7 +337,7 @@ impl FanboxClient {
             Some(s) => match FanboxPlanList::new(&s["body"]) {
                 Ok(item) => Some(item),
                 Err(e) => {
-                    println!("{}", e);
+                    log::error!(target: "fanbox_api", "{}", e);
                     None
                 }
             },
@@ -356,7 +353,7 @@ impl FanboxClient {
             Some(s) => match FanboxItemList::new(&s["body"], Arc::clone(&self.client)) {
                 Ok(item) => Some(item),
                 Err(e) => {
-                    println!("{}", e);
+                    log::error!(target: "fanbox_api", "{}", e);
                     None
                 }
             },
@@ -375,7 +372,7 @@ impl FanboxClient {
             Some(s) => match PaginatedCreatorPosts::new(&s, Arc::clone(&self.client)) {
                 Ok(re) => Some(re),
                 Err(e) => {
-                    println!("{}", e);
+                    log::error!(target: "fanbox_api", "{}", e);
                     None
                 }
             },

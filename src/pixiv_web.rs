@@ -85,12 +85,13 @@ impl PixivWebClient {
         let status = r.status();
         let code = status.as_u16();
         if code >= 400 {
-            println!("{} {}", gettext("Failed to get main page:"), status);
+            log::error!(target: "pixiv_web","{} {}", gettext("Failed to get main page:"), status);
             return false;
         }
         let data = r.text_with_charset("UTF-8").await;
         if data.is_err() {
-            println!(
+            log::error!(
+                target: "pixiv_web",
                 "{} {}",
                 gettext("Failed to get main page:"),
                 data.unwrap_err()
@@ -100,16 +101,15 @@ impl PixivWebClient {
         let data = data.unwrap();
         let mut p = MetaDataParser::default();
         if !p.parse(data.as_str()) {
-            println!("{}", gettext("Failed to parse main page."));
+            log::error!(target: "pixiv_web","{}", gettext("Failed to parse main page."));
             return false;
         }
-        if get_helper().verbose() {
-            println!(
-                "{}\n{}",
-                gettext("Main page's data:"),
-                p.value.as_ref().unwrap().pretty(2).as_str()
-            );
-        }
+        log::debug!(
+            target: "pixiv_web",
+            "{}\n{}",
+            gettext("Main page's data:"),
+            p.value.as_ref().unwrap().pretty(2).as_str()
+        );
         self.data.get_mut().replace(p.value.unwrap());
         true
     }
@@ -121,18 +121,18 @@ impl PixivWebClient {
         let data = r.text_with_charset("UTF-8").await;
         if data.is_err() {
             if is_status_err {
-                println!("HTTP ERROR {}", status);
+                log::error!(target: "pixiv_web", "HTTP ERROR {}", status);
             }
-            println!("{} {}", gettext("Network error:"), data.unwrap_err());
+            log::error!(target: "pixiv_web","{} {}", gettext("Network error:"), data.unwrap_err());
             return None;
         }
         let data = data.unwrap();
         let re = json::parse(data.as_str());
         if re.is_err() {
             if is_status_err {
-                println!("HTTP ERROR {}", status);
+                log::error!(target: "pixiv_web","HTTP ERROR {}", status);
             } else {
-                println!("{} {}", gettext("Failed to parse JSON:"), re.unwrap_err());
+                log::error!(target: "pixiv_web","{} {}", gettext("Failed to parse JSON:"), re.unwrap_err());
             }
             return None;
         }
@@ -140,19 +140,19 @@ impl PixivWebClient {
         let error = (&value["error"]).as_bool();
         if error.is_none() {
             if is_status_err {
-                println!("HTTP ERROR {}", status);
+                log::error!(target: "pixiv_web","HTTP ERROR {}", status);
             }
-            println!("{}", gettext("Failed to detect error."));
+            log::error!(target: "pixiv_web","{}", gettext("Failed to detect error."));
             return None;
         }
         let error = error.unwrap();
         if error {
             let message = (&value["message"]).as_str();
             if is_status_err {
-                println!("HTTP ERROR {}", status);
+                log::error!(target: "pixiv_web","HTTP ERROR {}", status);
             }
             if message.is_some() {
-                println!("{}", message.unwrap());
+                log::error!(target: "pixiv_web","{}", message.unwrap());
             }
             return None;
         }
@@ -178,8 +178,9 @@ impl PixivWebClient {
         }
         let r = r.unwrap();
         let v = self.deal_json(r).await;
-        if get_helper().verbose() && v.is_some() {
-            println!(
+        if v.is_some() {
+            log::debug!(
+                target: "pixiv_web",
                 "{} {}",
                 gettext("Artwork's data:"),
                 v.as_ref().unwrap().pretty(2)
@@ -205,12 +206,13 @@ impl PixivWebClient {
         let status = r.status();
         let code = status.as_u16();
         if code >= 400 {
-            println!("{} {}", gettext("Failed to get artwork page:"), status);
+            log::error!(target: "pixiv_web","{} {}", gettext("Failed to get artwork page:"), status);
             return None;
         }
         let data = r.text_with_charset("UTF-8").await;
         if data.is_err() {
-            println!(
+            log::error!(
+                target: "pixiv_web",
                 "{} {}",
                 gettext("Failed to get artwork page:"),
                 data.unwrap_err()
@@ -220,16 +222,15 @@ impl PixivWebClient {
         let data = data.unwrap();
         let mut p = MetaDataParser::new("preload-data");
         if !p.parse(data.as_str()) {
-            println!("{}", gettext("Failed to parse artwork page."));
+            log::error!(target: "pixiv_web","{}", gettext("Failed to parse artwork page."));
             return None;
         }
-        if get_helper().verbose() {
-            println!(
-                "{} {}",
-                gettext("Artwork's data:"),
-                p.value.as_ref().unwrap().pretty(2)
-            );
-        }
+        log::debug!(
+            target: "pixiv_web",
+            "{} {}",
+            gettext("Artwork's data:"),
+            p.value.as_ref().unwrap().pretty(2)
+        );
         Some(p.value.unwrap())
     }
 
@@ -248,8 +249,9 @@ impl PixivWebClient {
         }
         let r = r.unwrap();
         let v = self.deal_json(r).await;
-        if get_helper().verbose() && v.is_some() {
-            println!(
+        if v.is_some() {
+            log::debug!(
+                target: "pixiv_web",
                 "{} {}",
                 gettext("Artwork's page data:"),
                 v.as_ref().unwrap().pretty(2)
@@ -277,8 +279,9 @@ impl PixivWebClient {
         }
         let r = r.unwrap();
         let v = self.deal_json(r).await;
-        if get_helper().verbose() && v.is_some() {
-            println!(
+        if v.is_some() {
+            log::debug!(
+                target: "pixiv_web",
                 "{} {}",
                 gettext("Ugoira's data:"),
                 v.as_ref().unwrap().pretty(2)

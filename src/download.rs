@@ -369,13 +369,11 @@ pub async fn download_artwork_app(
 ) -> Result<(), PixivDownloaderError> {
     let data = ac.get_illust_details(id).await?;
     let helper = get_helper();
-    if helper.verbose() {
-        println!("{:#?}", data);
-    }
+    log::debug!("{:#?}", data);
     match crate::pixivapp::check::CheckUnknown::check_unknown(&data) {
         Ok(_) => {}
         Err(e) => {
-            println!(
+            log::warn!(
                 "{} {}",
                 gettext("Warning: Post info contains unknown data:"),
                 e
@@ -834,13 +832,11 @@ pub async fn download_fanbox_post(
         .await
         .try_err(gettext("Failed to get post info."))?;
     let helper = get_helper();
-    if helper.verbose() {
-        println!("{:#?}", post);
-    }
+    log::debug!("{:#?}", post);
     match post.check_unknown() {
         Ok(_) => {}
         Err(e) => {
-            println!(
+            log::warn!(
                 "{} {}",
                 gettext("Warning: Post info contains unknown data:"),
                 e
@@ -851,7 +847,7 @@ pub async fn download_fanbox_post(
         .is_restricted()
         .try_err(gettext("Failed to check the post is restricted or not."))?
     {
-        println!("{}", gettext("Warning: This article is restricted."));
+        log::warn!("{}", gettext("Warning: This article is restricted."));
         // #TODO allow to continue
         return Ok(());
     }
@@ -1129,9 +1125,7 @@ pub async fn download_fanbox_creator_info(
     };
     let data = Arc::new(data);
     let helper = get_helper();
-    if helper.verbose() {
-        println!("{:#?}", data);
-    }
+    log::debug!("{:#?}", data);
     match data.check_unknown() {
         Ok(_) => {}
         Err(e) => {

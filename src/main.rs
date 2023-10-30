@@ -34,6 +34,7 @@ mod fanbox;
 mod fanbox_api;
 mod i18n;
 mod list;
+mod log_cfg;
 mod opt;
 mod opthelper;
 mod opts;
@@ -78,7 +79,7 @@ impl Main {
                     if s.save(conf.as_ref().unwrap()) {
                         0
                     } else {
-                        println!(
+                        log::error!(
                             "{} {}",
                             gettext("Failed to save config file:"),
                             conf.as_ref().unwrap()
@@ -106,6 +107,7 @@ impl Main {
     }
 
     pub async fn run(&mut self) -> i32 {
+        log_cfg::init_default();
         self.cmd = opts::parse_cmd();
         if self.cmd.is_none() {
             return 1;
@@ -123,13 +125,14 @@ impl Main {
                 };
                 let r = self.settings.as_mut().unwrap().read(&conf, fix_invalid);
                 if !r {
-                    println!("{} {}", gettext("Can not read config file:"), conf.as_str());
+                    log::error!("{} {}", gettext("Can not read config file:"), conf.as_str());
                     return 1;
                 }
             }
             None => {}
         }
         get_helper().update(cmd.clone(), self.settings.as_ref().unwrap().clone());
+        get_helper().init_log();
         match cmd.cmd {
             Command::Config => {
                 self.deal_config_cmd();
@@ -146,12 +149,12 @@ impl Main {
                         match server.await {
                             Ok(_) => {}
                             Err(e) => {
-                                println!("{}", e);
+                                log::error!("{}", e);
                             }
                         }
                     }
                     Err(e) => {
-                        println!("{} {}", gettext("Failed to start the server:"), e);
+                        log::error!("{} {}", gettext("Failed to start the server:"), e);
                         return 1;
                     }
                 }

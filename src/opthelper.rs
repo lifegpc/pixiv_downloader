@@ -369,8 +369,10 @@ impl OptHelper {
         self._proxy_chain.get_ref().deref().clone()
     }
 
-    pub fn verbose(&self) -> bool {
-        self.opt.get_ref().verbose
+    pub fn init_log(&self) {
+        if self.opt.get_ref().verbose {
+            crate::log_cfg::init_with_level(log::LevelFilter::Debug);
+        }
     }
 
     /// Return retry count
@@ -585,7 +587,7 @@ impl Default for OptHelper {
     fn default() -> Self {
         let mut l = NonTailList::default();
         l += Duration::new(3, 0);
-        Self {
+        let s = Self {
             opt: RwLock::new(CommandOpts::default()),
             settings: RwLock::new(SettingStore::default()),
             default_retry_interval: l,
@@ -594,7 +596,9 @@ impl Default for OptHelper {
             _proxy_chain: RwLock::new(ProxyChain::default()),
             #[cfg(feature = "server")]
             _cors_entries: RwLock::new(Vec::new()),
-        }
+        };
+        s.init_log();
+        s
     }
 }
 
