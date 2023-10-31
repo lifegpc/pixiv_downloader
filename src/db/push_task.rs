@@ -79,6 +79,18 @@ pub struct EveryPushConfig {
     #[serde(default = "default_true")]
     /// Whether to add artwork link
     pub add_link: bool,
+    #[serde(default = "default_true")]
+    /// Whether to add image link to image
+    pub add_link_to_image: bool,
+    #[serde(default = "default_true")]
+    /// Whether to add tags
+    pub add_tags: bool,
+    #[serde(default = "default_true")]
+    /// Whether to add AI tag
+    pub add_ai_tag: bool,
+    #[serde(default = "default_true")]
+    /// Whether to add translated tag
+    pub add_translated_tag: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

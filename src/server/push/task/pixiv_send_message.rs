@@ -172,6 +172,20 @@ impl<'a> RunContext<'a> {
         }
     }
 
+    pub fn is_ai(&self) -> bool {
+        match self.illust {
+            Some(i) => {
+                if let Some(id) = i.illust_ai_type() {
+                    if id == 2 {
+                        return true;
+                    }
+                }
+            }
+            None => {}
+        }
+        false
+    }
+
     pub async fn send_every_push(&self, cfg: &EveryPushConfig) -> Result<(), PixivDownloaderError> {
         let client = EveryPushClient::new(&cfg.push_server);
         match cfg.typ {
@@ -235,7 +249,13 @@ impl<'a> RunContext<'a> {
                 let len = self.len().unwrap_or(1);
                 for i in 0..len {
                     if let Some(url) = self.get_image_url(i).await? {
+                        if cfg.add_link_to_image {
+                            text.push_str("[");
+                        }
                         text.push_str(&format!("![​]({})", url));
+                        if cfg.add_link_to_image {
+                            text.push_str(&format!("]({})", url));
+                        }
                     }
                 }
                 if cfg.author_locations.contains(&AuthorLocation::Top) {
@@ -252,10 +272,39 @@ impl<'a> RunContext<'a> {
                 if let Some(desc) = self.desc() {
                     let mut p = DescriptionParser::new(true);
                     p.parse(desc)?;
+                    while !text.ends_with("\n\n") {
+                        text.push_str("\n");
+                    }
                     text.push_str(&p.data);
                     if !p.data.ends_with("\n\n") {
                         text.push_str("\n\n");
                     }
+                }
+                if cfg.add_tags {
+                    if cfg.add_ai_tag && self.is_ai() {
+                        text.push_str("#");
+                        text.push_str(gettext("AI generated"));
+                        text.push_str(" ");
+                    }
+                    if let Some(i) = self.illust {
+                        for tag in i.tags() {
+                            if let Some(name) = tag.name() {
+                                text.push_str(&format!(
+                                    "[#{}](https://www.pixiv.net/tags/{}) ",
+                                    name, name
+                                ));
+                                if cfg.add_translated_tag {
+                                    if let Some(t) = tag.translated_name() {
+                                        text.push_str(&format!(
+                                            "[#{}](https://www.pixiv.net/tags/{}) ",
+                                            t, name
+                                        ));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    text.push_str(" \n");
                 }
                 if cfg.author_locations.contains(&AuthorLocation::Bottom) {
                     if let Some(a) = &author {
