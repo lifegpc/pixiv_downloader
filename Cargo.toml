@@ -21,7 +21,7 @@ futures-util = "0.3"
 getopts = "0.2"
 gettext = "0.4"
 hex = { version = "0.4", optional = true }
-html_parser = "0.6.3"
+html5ever = "*"
 http = "0.2"
 http-content-range = "0.1"
 hyper = { version="0.14", features = ["server"], optional = true }
@@ -33,6 +33,7 @@ json = "0.12"
 lazy_static = "1.4"
 log = "*"
 log4rs = "1"
+markup5ever_rcdom = "0.2"
 md5 = "0.7"
 modular-bitfield = "0.11"
 multipart = { features = ["server"], git = 'https://github.com/lifegpc/multipart', optional = true, default-features = false }

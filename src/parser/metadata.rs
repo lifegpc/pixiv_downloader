@@ -1,7 +1,8 @@
 use crate::gettext;
-use html_parser::Dom;
-use html_parser::Node;
+use html5ever::tendril::TendrilSink;
+use html5ever::{parse_document, ParseOpts};
 use json::JsonValue;
+use markup5ever_rcdom::{Node, NodeData, RcDom};
 use std::default::Default;
 
 pub struct MetaDataParser {
@@ -20,38 +21,34 @@ impl MetaDataParser {
     }
 
     fn iter(&mut self, node: &Node) -> bool {
-        match node {
-            Node::Element(e) => {
-                if e.name == "meta" {
-                    let name = e.attributes.get("name");
+        match &node.data {
+            NodeData::Element { name, attrs, .. } => {
+                if name.local.as_ref() == "meta" {
+                    let attrs = attrs.borrow();
+                    let name = attrs.iter().find(|a| a.name.local.as_ref() == "name");
                     if name.is_none() {
                         return false;
                     }
                     let name = name.unwrap();
-                    if name.is_none() {
+                    if name.value.as_ref() != self.key.as_str() {
                         return false;
                     }
-                    if name.as_ref().unwrap() != self.key.as_str() {
+                    let id = attrs.iter().find(|a| a.name.local.as_ref() == "id");
+                    if id.is_none() {
                         return false;
                     }
-                    if e.id.is_none() {
-                        return false;
-                    }
+                    let id = id.unwrap();
                     let mkey = format!("meta-{}", self.key.as_str());
-                    if e.id.as_ref().unwrap() != mkey.as_str()
-                        && e.id.as_ref().unwrap() != self.key.as_str()
-                    {
+                    let id = id.value.as_ref();
+                    if id != mkey.as_str() && id != self.key.as_str() {
                         return false;
                     }
-                    let c = e.attributes.get("content");
+                    let c = attrs.iter().find(|a| a.name.local.as_ref() == "content");
                     if c.is_none() {
                         return false;
                     }
                     let c = c.unwrap();
-                    if c.is_none() {
-                        return false;
-                    }
-                    let r = json::parse(c.as_ref().unwrap());
+                    let r = json::parse(c.value.as_ref());
                     if r.is_err() {
                         log::error!("{} {}", gettext("Failed to parse JSON:"), r.unwrap_err());
                         return false;
@@ -59,7 +56,7 @@ impl MetaDataParser {
                     self.value = Some(r.unwrap());
                     true
                 } else {
-                    for c in e.children.iter() {
+                    for c in node.children.borrow().iter() {
                         if self.iter(c) {
                             return true;
                         }
@@ -67,25 +64,23 @@ impl MetaDataParser {
                     false
                 }
             }
-            Node::Comment(_) => false,
-            Node::Text(_) => false,
+            _ => false,
         }
     }
 
     pub fn parse(&mut self, context: &str) -> bool {
-        let r = Dom::parse(context);
-        if r.is_err() {
-            log::error!("{} {}", gettext("Failed to parse HTML:"), r.unwrap_err());
-            return false;
-        }
-        let dom = r.unwrap();
-        if dom.errors.len() > 0 {
-            log::error!("{}", gettext("Some errors occured during parsing:"));
-            for i in dom.errors.iter() {
-                log::error!("{}", i);
+        let opts = ParseOpts::default();
+        let r = parse_document(RcDom::default(), opts)
+            .from_utf8()
+            .read_from(&mut context.as_bytes());
+        let dom = match r {
+            Ok(d) => d,
+            Err(e) => {
+                log::error!("{} {}", gettext("Failed to parse HTML:"), e.to_string());
+                return false;
             }
-        }
-        for n in dom.children.iter() {
+        };
+        for n in dom.document.children.borrow().iter() {
             if self.iter(n) {
                 return true;
             }

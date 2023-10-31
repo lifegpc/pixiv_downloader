@@ -1,8 +1,9 @@
 use crate::error::PixivDownloaderError;
 use crate::gettext;
 use crate::pixiv_link::remove_track;
-use html_parser::Dom;
-use html_parser::Node;
+use html5ever::tendril::TendrilSink;
+use html5ever::{parse_document, ParseOpts};
+use markup5ever_rcdom::{Node, NodeData, RcDom};
 use std::collections::HashMap;
 use std::default::Default;
 
@@ -125,17 +126,17 @@ impl DescriptionParser {
     }
 
     pub fn iter(&mut self, node: &Node) {
-        match node {
-            Node::Comment(_) => {}
-            Node::Text(s) => {
+        match &node.data {
+            NodeData::Text { contents } => {
+                let s = contents.borrow().to_string();
                 if self.nodes.len() == 0 {
-                    self.data += s;
+                    self.data += &s;
                 } else {
-                    self.nodes.last_mut().unwrap().data += s;
+                    self.nodes.last_mut().unwrap().data += &s;
                 }
             }
-            Node::Element(e) => {
-                let tag = e.name.as_str();
+            NodeData::Element { name, attrs, .. } => {
+                let tag = name.local.to_string();
                 if tag == "script" || tag == "style" {
                     return;
                 } else if tag == "br" {
@@ -147,20 +148,19 @@ impl DescriptionParser {
                     }
                     return;
                 }
-                let mut node = DescriptionNode::default();
-                node.tag = tag.to_string();
+                let mut nod = DescriptionNode::default();
+                nod.tag = tag.to_string();
+                let attrs = attrs.borrow();
                 if tag == "a" {
-                    let href = e.attributes.get("href");
+                    let href = attrs.iter().find(|k| k.name.local.to_string() == "href");
                     if href.is_some() {
-                        let href = href.unwrap();
-                        if href.is_some() {
-                            let link = remove_track(href.as_ref().unwrap());
-                            node.add_attr("href", link.as_str());
-                        }
+                        let href = href.unwrap().value.to_string();
+                        let link = remove_track(href);
+                        nod.add_attr("href", link.as_str());
                     }
                 }
-                self.nodes.push(node);
-                for n in e.children.iter() {
+                self.nodes.push(nod);
+                for n in node.children.borrow().iter() {
                     self.iter(n);
                 }
                 let node = self.nodes.pop().unwrap();
@@ -192,24 +192,24 @@ impl DescriptionParser {
                     n.data += s.as_str();
                 }
             }
+            _ => {}
         }
     }
 
     pub fn parse<S: AsRef<str> + ?Sized>(&mut self, desc: &S) -> Result<(), PixivDownloaderError> {
-        let r = Dom::parse(desc.as_ref());
-        if r.is_err() {
-            return Err(format!("{} {}", gettext("Failed to parse HTML:"), r.unwrap_err()).into());
-        }
-        let dom = r.unwrap();
-        if dom.errors.len() > 0 {
-            let mut s = String::from(gettext("Some errors occured during parsing:"));
-            for i in dom.errors.iter() {
-                s += "\n";
-                s += i;
+        let opts = ParseOpts::default();
+        let r = parse_document(RcDom::default(), opts)
+            .from_utf8()
+            .read_from(&mut desc.as_ref().as_bytes());
+        let dom = match r {
+            Ok(d) => d,
+            Err(e) => {
+                return Err(
+                    format!("{} {}", gettext("Failed to parse HTML:"), e.to_string()).into(),
+                )
             }
-            return Err(s.into());
-        }
-        for node in dom.children.iter() {
+        };
+        for node in dom.document.children.borrow().iter() {
             self.iter(node)
         }
         if self.nodes.len() != 0 {
@@ -254,7 +254,7 @@ fn test_parse_description() {
         parse_description("a <a href=\"https://a.com\">https://a.com</a>")
     );
     assert_eq!(
-        Some(String::from("a [a\n[bc](a.com)d](b.com)\ndata")),
+        Some(String::from("a [a\n](b.com)[bc](a.com)d\ndata")),
         parse_description("a <a href=\"b.com\">a<br/><a href=\"a.com\">bc</a>d</a><br>data")
     );
     assert_eq!(
