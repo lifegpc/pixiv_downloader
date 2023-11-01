@@ -1,5 +1,4 @@
 use crate::ext::rw_lock::GetRwLock;
-use lazy_static::lazy_static;
 use log::LevelFilter;
 use log4rs::append::console::ConsoleAppender;
 use log4rs::config::{Appender, Logger, Root};
@@ -8,6 +7,7 @@ use log4rs::{init_config, Config, Handle};
 use std::sync::RwLock;
 
 lazy_static! {
+    #[doc(hidden)]
     static ref HANDLE: RwLock<Option<Handle>> = RwLock::new(None);
 }
 

@@ -39,7 +39,7 @@ modular-bitfield = "0.11"
 multipart = { features = ["server"], git = 'https://github.com/lifegpc/multipart', optional = true, default-features = false }
 openssl = { version = "0.10", optional = true }
 parse-size = "1"
-percent-encoding = { version = "*", optional = true }
+percent-encoding = "*"
 proc_macros = { path = "proc_macros" }
 rand = { version = "0", optional = true }
 regex = "1"
@@ -66,7 +66,7 @@ db_all = ["db", "db_sqlite"]
 db_sqlite = ["rusqlite"]
 docker = []
 exif = ["bindgen", "c_fixed_string", "cmake", "link-cplusplus", "utf16string"]
-server = ["async-trait", "base64", "db", "hex", "hyper", "multipart", "openssl", "serde_json", "rand", "serde_urlencoded", "percent-encoding"]
+server = ["async-trait", "base64", "db", "hex", "hyper", "multipart", "openssl", "serde_json", "rand", "serde_urlencoded"]
 ugoira = ["avdict", "bindgen", "cmake", "link-cplusplus"]
 
 [patch.crates-io]

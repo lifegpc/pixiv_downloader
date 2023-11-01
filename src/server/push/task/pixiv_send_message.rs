@@ -393,7 +393,7 @@ impl<'a> RunContext<'a> {
                     }
                 }
                 if let Some(desc) = self.desc() {
-                    let mut p = DescriptionParser::new(true);
+                    let mut p = DescriptionParser::builder(true).ensure_link_ascii().build();
                     p.parse(desc)?;
                     while !text.ends_with("\n\n") {
                         text.push_str("\n");
@@ -473,7 +473,7 @@ impl<'a> RunContext<'a> {
                     }
                 }
                 if let Some(desc) = self.desc() {
-                    let mut p = DescriptionParser::new(true);
+                    let mut p = DescriptionParser::builder(true).ensure_link_ascii().build();
                     p.parse(desc)?;
                     while !text.ends_with("\n\n") {
                         text.push_str("\n");
