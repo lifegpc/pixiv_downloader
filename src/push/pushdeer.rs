@@ -9,10 +9,10 @@ pub struct PushdeerClient {
 }
 
 impl PushdeerClient {
-    pub fn new(server: String) -> Self {
+    pub fn new<S: AsRef<str> + ?Sized>(server: &S) -> Self {
         Self {
             client: WebClient::default(),
-            server,
+            server: server.as_ref().to_owned(),
         }
     }
 

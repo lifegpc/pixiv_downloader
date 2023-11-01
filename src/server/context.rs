@@ -11,6 +11,7 @@ use crate::get_helper;
 use crate::gettext;
 use crate::pixiv_app::PixivAppClient;
 use crate::pixiv_web::PixivWebClient;
+use crate::utils::get_file_name_from_url;
 use futures_util::lock::Mutex;
 use hyper::{http::response::Builder, Body, Request, Response};
 use json::JsonValue;
@@ -63,7 +64,15 @@ impl ServerContext {
         sha512.update(u.as_str().as_bytes());
         let sign = hex::encode(sha512.finish());
         map.insert("sign", &sign);
-        let url = format!("{}/proxy/pixiv?{}", base, serde_urlencoded::to_string(map)?);
+        let name = get_file_name_from_url(u.as_str())
+            .map(|v| format!("/{}", v))
+            .unwrap_or_default();
+        let url = format!(
+            "{}/proxy/pixiv{}?{}",
+            base,
+            name,
+            serde_urlencoded::to_string(map)?
+        );
         Ok(url)
     }
 

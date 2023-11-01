@@ -1576,6 +1576,7 @@ dependencies = [
  "multipart",
  "openssl",
  "parse-size",
+ "percent-encoding",
  "proc_macros",
  "rand",
  "regex",

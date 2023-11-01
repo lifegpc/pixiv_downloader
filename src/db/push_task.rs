@@ -94,9 +94,47 @@ pub struct EveryPushConfig {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PushDeerConfig {
+    /// Push server
+    pub push_server: String,
+    /// Push key
+    pub pushkey: String,
+    /// Push type
+    pub typ: EveryPushTextType,
+    #[serde(default = "defualt_author_locations")]
+    /// Author locations
+    /// Not supported when type is `Image`.
+    pub author_locations: Vec<AuthorLocation>,
+    #[serde(default = "default_true")]
+    /// Whether to filter author name
+    pub filter_author: bool,
+    #[serde(default = "default_true")]
+    /// Whether to add artwork link
+    pub add_link: bool,
+    #[serde(default = "default_true")]
+    /// Whether to add artwork link to title
+    /// Supported when type is `Text`.
+    pub add_link_to_title: bool,
+    #[serde(default = "default_true")]
+    /// Whether to add image link to image
+    pub add_link_to_image: bool,
+    #[serde(default = "default_true")]
+    /// Whether to add tags
+    pub add_tags: bool,
+    #[serde(default = "default_true")]
+    /// Whether to add AI tag
+    pub add_ai_tag: bool,
+    #[serde(default = "default_true")]
+    /// Whether to add translated tag
+    pub add_translated_tag: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum PushConfig {
     EveryPush(EveryPushConfig),
+    PushDeer(PushDeerConfig),
 }
 
 #[derive(Debug, Serialize, Deserialize)]

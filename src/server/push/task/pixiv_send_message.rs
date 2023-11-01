@@ -1,12 +1,14 @@
 use super::super::super::preclude::*;
-use crate::db::push_task::{AuthorLocation, EveryPushConfig, PushConfig};
+use crate::db::push_task::{AuthorLocation, EveryPushConfig, PushConfig, PushDeerConfig};
 use crate::error::PixivDownloaderError;
 use crate::opt::author_name_filter::AuthorFiler;
 use crate::parser::description::DescriptionParser;
 use crate::pixivapp::illust::PixivAppIllust;
 use crate::push::every_push::{EveryPushClient, EveryPushTextType};
+use crate::push::pushdeer::PushdeerClient;
 use crate::{get_helper, gettext};
 use json::JsonValue;
+use percent_encoding::{percent_encode, NON_ALPHANUMERIC};
 
 struct RunContext<'a> {
     ctx: Arc<ServerContext>,
@@ -99,6 +101,7 @@ impl<'a> RunContext<'a> {
     pub fn filter_author(&self) -> bool {
         match self.cfg {
             PushConfig::EveryPush(e) => e.filter_author,
+            PushConfig::PushDeer(e) => e.filter_author,
         }
     }
 
@@ -344,9 +347,190 @@ impl<'a> RunContext<'a> {
         }
         Ok(())
     }
+
+    pub async fn send_push_deer(&self, cfg: &PushDeerConfig) -> Result<(), PixivDownloaderError> {
+        let client = PushdeerClient::new(&cfg.push_server);
+        match &cfg.typ {
+            EveryPushTextType::Text => {
+                let mut title = self.title().map(|s| {
+                    if cfg.add_link_to_title {
+                        if let Some(id) = self.id() {
+                            format!("[{}](https://www.pixiv.net/artworks/{})", s, id)
+                        } else {
+                            s.to_owned()
+                        }
+                    } else {
+                        s.to_owned()
+                    }
+                });
+                let author = self.author();
+                if cfg.author_locations.contains(&AuthorLocation::Title) {
+                    if let Some(t) = &title {
+                        if let Some(a) = &author {
+                            let au = if let Some(uid) = self.user_id() {
+                                format!("[{}](https://www.pixiv.net/users/{})", a, uid)
+                            } else {
+                                a.to_owned()
+                            };
+                            title = Some(format!("{} - {}", t, au));
+                        }
+                    }
+                }
+                let mut text = String::new();
+                if let Some(t) = &title {
+                    text.push_str(t);
+                    text.push_str("\n\n");
+                }
+                if cfg.author_locations.contains(&AuthorLocation::Top) {
+                    if let Some(a) = &author {
+                        self.add_author(&mut text, a);
+                    }
+                }
+                if cfg.add_link {
+                    if let Some(id) = self.id() {
+                        let link = format!("https://www.pixiv.net/artworks/{}", id);
+                        text.push_str(&format!("[{}]({})  \n", link, link));
+                    }
+                }
+                if let Some(desc) = self.desc() {
+                    let mut p = DescriptionParser::new(true);
+                    p.parse(desc)?;
+                    while !text.ends_with("\n\n") {
+                        text.push_str("\n");
+                    }
+                    text.push_str(&p.data);
+                    if !p.data.ends_with("\n\n") {
+                        text.push_str("\n\n");
+                    }
+                }
+                if cfg.add_tags {
+                    if cfg.add_ai_tag && self.is_ai() {
+                        text.push_str("#");
+                        text.push_str(gettext("AI generated"));
+                        text.push_str(" ");
+                    }
+                    if let Some(i) = self.illust {
+                        for tag in i.tags() {
+                            if let Some(name) = tag.name() {
+                                let encoded = percent_encode(name.as_bytes(), NON_ALPHANUMERIC);
+                                text.push_str(&format!(
+                                    "[#{}](https://www.pixiv.net/tags/{}) ",
+                                    name, &encoded
+                                ));
+                                if cfg.add_translated_tag {
+                                    if let Some(t) = tag.translated_name() {
+                                        text.push_str(&format!(
+                                            "[#{}](https://www.pixiv.net/tags/{}) ",
+                                            t, &encoded
+                                        ));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    text.push_str(" \n");
+                }
+                if cfg.author_locations.contains(&AuthorLocation::Bottom) {
+                    if let Some(a) = &author {
+                        self.add_author(&mut text, a);
+                    }
+                }
+                client.push_text_message(&cfg.pushkey, &text).await?;
+            }
+            EveryPushTextType::Markdown => {
+                let mut title = self.title().map(|s| s.to_owned());
+                let author = self.author();
+                if cfg.author_locations.contains(&AuthorLocation::Title) {
+                    if let Some(t) = &title {
+                        if let Some(a) = &author {
+                            title = Some(format!("{} - {}", t, a));
+                        }
+                    }
+                }
+                let title = title.ok_or("title not found.")?;
+                let mut text = String::new();
+                let len = self.len().unwrap_or(1);
+                for i in 0..len {
+                    if let Some(url) = self.get_image_url(i).await? {
+                        if cfg.add_link_to_image {
+                            text.push_str("[");
+                        }
+                        text.push_str(&format!("![​]({})", url));
+                        if cfg.add_link_to_image {
+                            text.push_str(&format!("]({})", url));
+                        }
+                    }
+                }
+                if cfg.author_locations.contains(&AuthorLocation::Top) {
+                    if let Some(a) = &author {
+                        self.add_author(&mut text, a);
+                    }
+                }
+                if cfg.add_link {
+                    if let Some(id) = self.id() {
+                        let link = format!("https://www.pixiv.net/artworks/{}", id);
+                        text.push_str(&format!("[{}]({})  \n", link, link));
+                    }
+                }
+                if let Some(desc) = self.desc() {
+                    let mut p = DescriptionParser::new(true);
+                    p.parse(desc)?;
+                    while !text.ends_with("\n\n") {
+                        text.push_str("\n");
+                    }
+                    text.push_str(&p.data);
+                    if !p.data.ends_with("\n\n") {
+                        text.push_str("\n\n");
+                    }
+                }
+                if cfg.add_tags {
+                    if cfg.add_ai_tag && self.is_ai() {
+                        text.push_str("#");
+                        text.push_str(gettext("AI generated"));
+                        text.push_str(" ");
+                    }
+                    if let Some(i) = self.illust {
+                        for tag in i.tags() {
+                            if let Some(name) = tag.name() {
+                                let encoded = percent_encode(name.as_bytes(), NON_ALPHANUMERIC);
+                                text.push_str(&format!(
+                                    "[#{}](https://www.pixiv.net/tags/{}) ",
+                                    name, &encoded
+                                ));
+                                if cfg.add_translated_tag {
+                                    if let Some(t) = tag.translated_name() {
+                                        text.push_str(&format!(
+                                            "[#{}](https://www.pixiv.net/tags/{}) ",
+                                            t, &encoded
+                                        ));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    text.push_str(" \n");
+                }
+                if cfg.author_locations.contains(&AuthorLocation::Bottom) {
+                    if let Some(a) = &author {
+                        self.add_author(&mut text, a);
+                    }
+                }
+                client
+                    .push_markdown_message(&cfg.pushkey, &title, &text)
+                    .await?;
+            }
+            EveryPushTextType::Image => {
+                let url = self.get_image_url(0).await?.ok_or("image url not found.")?;
+                client.push_image(&cfg.pushkey, &url).await?;
+            }
+        }
+        Ok(())
+    }
+
     pub async fn run(&self) -> Result<(), PixivDownloaderError> {
         match self.cfg {
             PushConfig::EveryPush(e) => self.send_every_push(e).await,
+            PushConfig::PushDeer(e) => self.send_push_deer(e).await,
         }
     }
 }

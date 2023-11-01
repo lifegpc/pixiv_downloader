@@ -996,7 +996,7 @@ pub fn pushdeer_api_quick_test(item: TokenStream) -> TokenStream {
             match std::env::var("PUSHDEER_SERVER") {
                 Ok(server) => match std::env::var("PUSHDEER_TOKEN") {
                     Ok(token) => {
-                        let client = PushdeerClient::new(server);
+                        let client = PushdeerClient::new(&server);
                         match #expr.await {
                             Ok(_) => {},
                             Err(e) => {
