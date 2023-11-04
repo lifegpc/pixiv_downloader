@@ -57,8 +57,8 @@ pub async fn run_push_task(
 ) -> Result<(), PixivDownloaderError> {
     match &task.config {
         PushTaskConfig::Pixiv(config) => match &config.act {
-            PushTaskPixivAction::Follow { restrict } => {
-                pixiv_follow::run_push_task(ctx, task, config, restrict, send_mode).await
+            PushTaskPixivAction::Follow { restrict, mode } => {
+                pixiv_follow::run_push_task(ctx, task, config, restrict, mode, send_mode).await
             }
             _ => Ok(()),
         },

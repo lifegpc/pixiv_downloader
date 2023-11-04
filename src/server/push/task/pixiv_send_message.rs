@@ -6,7 +6,7 @@ use crate::parser::description::DescriptionParser;
 use crate::pixivapp::illust::PixivAppIllust;
 use crate::push::every_push::{EveryPushClient, EveryPushTextType};
 use crate::push::pushdeer::PushdeerClient;
-use crate::utils::get_file_name_from_url;
+use crate::utils::{get_file_name_from_url, parse_pixiv_id};
 use crate::{get_helper, gettext};
 use json::JsonValue;
 use percent_encoding::{percent_encode, NON_ALPHANUMERIC};
@@ -15,6 +15,9 @@ struct RunContext<'a> {
     ctx: Arc<ServerContext>,
     illust: Option<&'a PixivAppIllust>,
     data: Option<&'a JsonValue>,
+    pdata: Option<&'a JsonValue>,
+    tdata: Option<&'a JsonValue>,
+    translated_table: Option<&'a JsonValue>,
     cfg: &'a PushConfig,
 }
 
@@ -28,7 +31,11 @@ impl<'a> RunContext<'a> {
             None => {}
         }
         match self.data {
-            Some(d) => d["illustTitle"].as_str(),
+            Some(d) => return d["title"].as_str().or_else(|| d["illustTitle"].as_str()),
+            None => {}
+        }
+        match self.tdata {
+            Some(d) => d["title"].as_str(),
             None => None,
         }
     }
@@ -42,12 +49,11 @@ impl<'a> RunContext<'a> {
             None => {}
         }
         match self.data {
-            Some(d) => d["illustId"]
-                .as_u64()
-                .or_else(|| match d["illustId"].as_str() {
-                    Some(s) => s.parse().ok(),
-                    None => None,
-                }),
+            Some(d) => return parse_pixiv_id(&d["id"]).or_else(|| parse_pixiv_id(&d["illustId"])),
+            None => {}
+        }
+        match self.tdata {
+            Some(d) => parse_pixiv_id(&d["id"]),
             None => None,
         }
     }
@@ -61,6 +67,10 @@ impl<'a> RunContext<'a> {
             None => {}
         }
         match self.data {
+            Some(d) => return d["userName"].as_str(),
+            None => {}
+        }
+        match self.tdata {
             Some(d) => d["userName"].as_str(),
             None => None,
         }
@@ -90,10 +100,11 @@ impl<'a> RunContext<'a> {
             None => {}
         }
         match self.data {
-            Some(d) => d["userId"].as_u64().or_else(|| match d["userId"].as_str() {
-                Some(s) => s.parse().ok(),
-                None => None,
-            }),
+            Some(d) => return parse_pixiv_id(&d["userId"]),
+            None => {}
+        }
+        match self.tdata {
+            Some(d) => parse_pixiv_id(&d["userId"]),
             None => None,
         }
     }
@@ -112,7 +123,15 @@ impl<'a> RunContext<'a> {
             None => {}
         }
         match self.data {
-            Some(d) => d["pageCount"].as_u64(),
+            Some(d) => return d["pageCount"].as_u64(),
+            None => {}
+        }
+        match self.tdata {
+            Some(d) => return d["pageCount"].as_u64(),
+            None => {}
+        }
+        match self.pdata {
+            Some(d) => Some(d.len() as u64),
             None => None,
         }
     }
@@ -134,6 +153,20 @@ impl<'a> RunContext<'a> {
                 None => {}
             },
             None => {}
+        }
+        match self.pdata {
+            Some(d) => {
+                return d[index as usize]["urls"]["original"]
+                    .as_str()
+                    .map(|s| s.to_owned())
+            }
+            None => {}
+        }
+        if index == 0 {
+            match self.data {
+                Some(d) => return d["urls"]["original"].as_str().map(|s| s.to_owned()),
+                None => {}
+            }
         }
         None
     }
@@ -187,7 +220,99 @@ impl<'a> RunContext<'a> {
             }
             None => {}
         }
+        match self.data {
+            Some(d) => {
+                if let Some(id) = d["aiType"].as_u64() {
+                    if id == 2 {
+                        return true;
+                    }
+                }
+            }
+            None => {}
+        }
+        match self.tdata {
+            Some(d) => {
+                if let Some(id) = d["aiType"].as_u64() {
+                    if id == 2 {
+                        return true;
+                    }
+                }
+            }
+            None => {}
+        }
         false
+    }
+
+    pub fn add_ai_tag(&self) -> bool {
+        match self.cfg {
+            PushConfig::EveryPush(e) => e.add_ai_tag,
+            PushConfig::PushDeer(e) => e.add_ai_tag,
+        }
+    }
+
+    pub fn add_translated_tag(&self) -> bool {
+        match self.cfg {
+            PushConfig::EveryPush(e) => e.add_translated_tag,
+            PushConfig::PushDeer(e) => e.add_translated_tag,
+        }
+    }
+
+    pub fn add_tags_md(&self, text: &mut String, ensure_ascii: bool) {
+        if self.add_ai_tag() && self.is_ai() {
+            text.push_str("#");
+            text.push_str(gettext("AI generated"));
+            text.push_str(" ");
+        }
+        if let Some(i) = self.illust {
+            for tag in i.tags() {
+                if let Some(name) = tag.name() {
+                    let encoded = if ensure_ascii {
+                        percent_encode(name.as_bytes(), NON_ALPHANUMERIC).to_string()
+                    } else {
+                        name.to_owned()
+                    };
+                    text.push_str(&format!(
+                        "[#{}](https://www.pixiv.net/tags/{}) ",
+                        name, &encoded
+                    ));
+                    if self.add_translated_tag() {
+                        if let Some(t) = tag.translated_name() {
+                            text.push_str(&format!(
+                                "[#{}](https://www.pixiv.net/tags/{}) ",
+                                t, &encoded
+                            ));
+                        }
+                    }
+                }
+            }
+            text.push_str(" \n");
+            return;
+        }
+        if let Some(d) = self.data {
+            for tag in d["tags"]["tags"].members() {
+                if let Some(name) = &tag["tag"].as_str() {
+                    let encoded = if ensure_ascii {
+                        percent_encode(name.as_bytes(), NON_ALPHANUMERIC).to_string()
+                    } else {
+                        name.to_string()
+                    };
+                    text.push_str(&format!(
+                        "[#{}](https://www.pixiv.net/tags/{}) ",
+                        name, &encoded
+                    ));
+                    if self.add_translated_tag() {
+                        if let Some(t) = &tag["translation"]["en"].as_str() {
+                            text.push_str(&format!(
+                                "[#{}](https://www.pixiv.net/tags/{}) ",
+                                t, &encoded
+                            ));
+                        }
+                    }
+                }
+            }
+            text.push_str(" \n");
+            return;
+        }
     }
 
     pub async fn send_every_push(&self, cfg: &EveryPushConfig) -> Result<(), PixivDownloaderError> {
@@ -285,30 +410,7 @@ impl<'a> RunContext<'a> {
                     }
                 }
                 if cfg.add_tags {
-                    if cfg.add_ai_tag && self.is_ai() {
-                        text.push_str("#");
-                        text.push_str(gettext("AI generated"));
-                        text.push_str(" ");
-                    }
-                    if let Some(i) = self.illust {
-                        for tag in i.tags() {
-                            if let Some(name) = tag.name() {
-                                text.push_str(&format!(
-                                    "[#{}](https://www.pixiv.net/tags/{}) ",
-                                    name, name
-                                ));
-                                if cfg.add_translated_tag {
-                                    if let Some(t) = tag.translated_name() {
-                                        text.push_str(&format!(
-                                            "[#{}](https://www.pixiv.net/tags/{}) ",
-                                            t, name
-                                        ));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    text.push_str(" \n");
+                    self.add_tags_md(&mut text, false);
                 }
                 if cfg.author_locations.contains(&AuthorLocation::Bottom) {
                     if let Some(a) = &author {
@@ -415,31 +517,7 @@ impl<'a> RunContext<'a> {
                     }
                 }
                 if cfg.add_tags {
-                    if cfg.add_ai_tag && self.is_ai() {
-                        text.push_str("#");
-                        text.push_str(gettext("AI generated"));
-                        text.push_str(" ");
-                    }
-                    if let Some(i) = self.illust {
-                        for tag in i.tags() {
-                            if let Some(name) = tag.name() {
-                                let encoded = percent_encode(name.as_bytes(), NON_ALPHANUMERIC);
-                                text.push_str(&format!(
-                                    "[#{}](https://www.pixiv.net/tags/{}) ",
-                                    name, &encoded
-                                ));
-                                if cfg.add_translated_tag {
-                                    if let Some(t) = tag.translated_name() {
-                                        text.push_str(&format!(
-                                            "[#{}](https://www.pixiv.net/tags/{}) ",
-                                            t, &encoded
-                                        ));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    text.push_str(" \n");
+                    self.add_tags_md(&mut text, true);
                 }
                 if cfg.author_locations.contains(&AuthorLocation::Bottom) {
                     if let Some(a) = &author {
@@ -495,31 +573,7 @@ impl<'a> RunContext<'a> {
                     }
                 }
                 if cfg.add_tags {
-                    if cfg.add_ai_tag && self.is_ai() {
-                        text.push_str("#");
-                        text.push_str(gettext("AI generated"));
-                        text.push_str(" ");
-                    }
-                    if let Some(i) = self.illust {
-                        for tag in i.tags() {
-                            if let Some(name) = tag.name() {
-                                let encoded = percent_encode(name.as_bytes(), NON_ALPHANUMERIC);
-                                text.push_str(&format!(
-                                    "[#{}](https://www.pixiv.net/tags/{}) ",
-                                    name, &encoded
-                                ));
-                                if cfg.add_translated_tag {
-                                    if let Some(t) = tag.translated_name() {
-                                        text.push_str(&format!(
-                                            "[#{}](https://www.pixiv.net/tags/{}) ",
-                                            t, &encoded
-                                        ));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    text.push_str(" \n");
+                    self.add_tags_md(&mut text, true);
                 }
                 if cfg.author_locations.contains(&AuthorLocation::Bottom) {
                     if let Some(a) = &author {
@@ -550,12 +604,18 @@ pub async fn send_message(
     ctx: Arc<ServerContext>,
     illust: Option<&PixivAppIllust>,
     data: Option<&JsonValue>,
+    pdata: Option<&JsonValue>,
+    tdata: Option<&JsonValue>,
+    translated_table: Option<&JsonValue>,
     cfg: &PushConfig,
 ) -> Result<(), PixivDownloaderError> {
     let ctx = RunContext {
         ctx,
         illust,
         data,
+        pdata,
+        tdata,
+        translated_table,
         cfg,
     };
     ctx.run().await

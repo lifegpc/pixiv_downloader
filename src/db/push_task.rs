@@ -3,17 +3,53 @@ use crate::push::every_push::EveryPushTextType;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub enum PixivMode {
+    /// All artworks
+    All,
+    /// R18 artworks
+    R18,
+}
+
+impl PixivMode {
+    pub fn is_r18(&self) -> bool {
+        matches!(self, Self::R18)
+    }
+}
+
+fn default_restrict() -> PixivRestrictType {
+    PixivRestrictType::All
+}
+
+fn default_mode() -> PixivMode {
+    PixivMode::All
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum PushTaskPixivAction {
     Follow {
+        #[serde(default = "default_restrict")]
+        /// Follower's type
+        ///
+        /// Only supported when using Pixiv APP API.
         restrict: PixivRestrictType,
+        #[serde(default = "default_mode")]
+        /// Illust's type
+        ///
+        /// Only supported when using Pixiv Web API.
+        mode: PixivMode,
     },
     Bookmarks {
+        #[serde(default = "default_restrict")]
+        /// Bookmarks' type
         restrict: PixivRestrictType,
+        /// User ID
         uid: u64,
     },
     Illusts {
+        /// User ID
         uid: u64,
     },
 }
@@ -71,6 +107,7 @@ pub struct EveryPushConfig {
     pub topic_id: Option<String>,
     #[serde(default = "defualt_author_locations")]
     /// Author locations
+    ///
     /// If type is `Image`, this field only support [AuthorLocation::Title].
     pub author_locations: Vec<AuthorLocation>,
     #[serde(default = "default_true")]
@@ -104,6 +141,7 @@ pub struct PushDeerConfig {
     pub typ: EveryPushTextType,
     #[serde(default = "defualt_author_locations")]
     /// Author locations
+    ///
     /// Not supported when type is `Image`.
     pub author_locations: Vec<AuthorLocation>,
     #[serde(default = "default_true")]
@@ -114,6 +152,7 @@ pub struct PushDeerConfig {
     pub add_link: bool,
     #[serde(default = "default_true")]
     /// Whether to add artwork link to title
+    ///
     /// Supported when type is `Text`.
     pub add_link_to_title: bool,
     #[serde(default = "default_true")]
@@ -130,6 +169,7 @@ pub struct PushDeerConfig {
     pub add_translated_tag: bool,
     #[serde(default = "default_true")]
     /// Whether to add image link
+    ///
     /// Supported when type is `Text`.
     pub add_image_link: bool,
 }

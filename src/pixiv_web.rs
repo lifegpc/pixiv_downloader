@@ -290,6 +290,35 @@ impl PixivWebClient {
         v
     }
 
+    pub async fn get_follow(&self, page: u64, r18: bool) -> Option<JsonValue> {
+        self.auto_init();
+        let mut params = self.get_params().unwrap_or_else(|| json::object! {});
+        params["p"] = page.into();
+        params["mode"] = if r18 { "r18" } else { "all" }.into();
+        let r = self
+            .client
+            .get_with_param(
+                "https://www.pixiv.net/ajax/follow_latest/illust",
+                Some(params),
+                None,
+            )
+            .await;
+        if r.is_none() {
+            return None;
+        }
+        let r = r.unwrap();
+        let v = self.deal_json(r).await;
+        if v.is_some() {
+            log::debug!(
+                target: "pixiv_web",
+                "{} {}",
+                gettext("Follower's new illusts: "),
+                v.as_ref().unwrap().pretty(2)
+            );
+        }
+        v
+    }
+
     pub fn logined(&self) -> bool {
         let data = self.data.get_ref();
         if data.is_none() {

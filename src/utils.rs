@@ -1,4 +1,5 @@
 use crate::gettext;
+use json::JsonValue;
 use reqwest::IntoUrl;
 use std::env;
 use std::io::Write;
@@ -68,4 +69,11 @@ pub fn get_file_name_from_url<U: IntoUrl>(url: U) -> Option<String> {
         return None;
     }
     Some(String::from(r.unwrap()))
+}
+
+pub fn parse_pixiv_id(id: &JsonValue) -> Option<u64> {
+    id.as_u64().or_else(|| match id.as_str() {
+        Some(s) => s.parse::<u64>().ok(),
+        None => None,
+    })
 }

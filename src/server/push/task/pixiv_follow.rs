@@ -1,25 +1,24 @@
 use super::super::super::preclude::*;
 use super::pixiv_send_message::send_message;
 use super::TestSendMode;
-use crate::db::push_task::PushTaskPixivConfig;
+use crate::db::push_task::{PixivMode, PushTaskPixivConfig};
 use crate::db::PushTask;
 use crate::ext::rw_lock::GetRwLock;
 use crate::get_helper;
 use crate::pixiv_app::PixivRestrictType;
 use crate::pixivapp::illust::PixivAppIllust;
+use crate::utils::parse_pixiv_id;
 use json::JsonValue;
 use std::collections::HashMap;
 use std::sync::RwLock;
 
 struct PixivFollowData {
-    web_list: RwLock<Option<JsonValue>>,
     web_data: RwLock<HashMap<u64, JsonValue>>,
 }
 
 impl PixivFollowData {
     pub fn new() -> Self {
         Self {
-            web_list: RwLock::new(None),
             web_data: RwLock::new(HashMap::new()),
         }
     }
@@ -38,6 +37,7 @@ struct RunContext<'a> {
     task: &'a PushTask,
     config: &'a PushTaskPixivConfig,
     restrict: &'a PixivRestrictType,
+    mode: &'a PixivMode,
     send_mode: Option<&'a TestSendMode>,
     data: Arc<PixivFollowData>,
     use_app_api: bool,
@@ -51,6 +51,7 @@ impl<'a> RunContext<'a> {
         task: &'a PushTask,
         config: &'a PushTaskPixivConfig,
         restrict: &'a PixivRestrictType,
+        mode: &'a PixivMode,
         send_mode: Option<&'a TestSendMode>,
     ) -> Self {
         let helper = get_helper();
@@ -59,6 +60,7 @@ impl<'a> RunContext<'a> {
             task,
             config,
             restrict,
+            mode,
             send_mode,
             data: Arc::new(PixivFollowData::new()),
             use_app_api: config.use_app_api.unwrap_or(helper.use_app_api()),
@@ -72,6 +74,77 @@ impl<'a> RunContext<'a> {
     pub async fn run(&self) -> Result<(), PixivDownloaderError> {
         if self.use_app_api {
             self.app_run().await?;
+        } else {
+            self.web_run().await?;
+        }
+        Ok(())
+    }
+
+    pub async fn web_run(&self) -> Result<(), PixivDownloaderError> {
+        let pw = self.ctx.pixiv_web_client().await;
+        let data = pw
+            .get_follow(1, self.mode.is_r18())
+            .await
+            .ok_or("Failed to get follow.")?;
+        let illusts = &data["thumbnails"]["illust"];
+        match self.send_mode {
+            Some(m) => {
+                if m.is_all() {
+                    for i in illusts.members() {
+                        self.web_illust(i, &data).await?;
+                    }
+                } else {
+                    let index = m.to_index(illusts.len());
+                    if let Some(index) = index {
+                        self.web_illust(&illusts[index], &data).await?;
+                    }
+                }
+            }
+            None => {}
+        }
+        Ok(())
+    }
+
+    pub async fn web_illust(
+        &self,
+        illust: &JsonValue,
+        data: &JsonValue,
+    ) -> Result<(), PixivDownloaderError> {
+        let id = parse_pixiv_id(&illust["id"]).ok_or("illust id is none")?;
+        let wdata = match self.data.get_web_data(id) {
+            Some(d) => d,
+            None => {
+                let pw = self.ctx.pixiv_web_client().await;
+                let wdata = pw
+                    .get_artwork_ajax(id)
+                    .await
+                    .ok_or("Failed to get artwork ajax.")?;
+                self.data.set_web_data(id, wdata.clone());
+                wdata
+            }
+        };
+        let len = illust["pageCount"].as_u64().unwrap_or(1);
+        let pdata = if len != 1 {
+            let pw = self.ctx.pixiv_web_client().await;
+            let pdata = pw
+                .get_illust_pages(id)
+                .await
+                .ok_or("Failed to get illust pages.")?;
+            Some(pdata)
+        } else {
+            None
+        };
+        for i in self.task.push_configs.iter() {
+            send_message(
+                self.ctx.clone(),
+                None,
+                Some(&wdata),
+                pdata.as_ref(),
+                Some(illust),
+                Some(&data["tagTranslation"]),
+                i,
+            )
+            .await?;
         }
         Ok(())
     }
@@ -117,7 +190,16 @@ impl<'a> RunContext<'a> {
             }
         };
         for i in self.task.push_configs.iter() {
-            send_message(self.ctx.clone(), Some(&illust), data.as_ref(), i).await?;
+            send_message(
+                self.ctx.clone(),
+                Some(&illust),
+                data.as_ref(),
+                None,
+                None,
+                None,
+                i,
+            )
+            .await?;
         }
         Ok(())
     }
@@ -128,8 +210,9 @@ pub async fn run_push_task(
     task: &PushTask,
     config: &PushTaskPixivConfig,
     restrict: &PixivRestrictType,
+    mode: &PixivMode,
     send_mode: Option<&TestSendMode>,
 ) -> Result<(), PixivDownloaderError> {
-    let ctx = RunContext::new(ctx, task, config, restrict, send_mode);
+    let ctx = RunContext::new(ctx, task, config, restrict, mode, send_mode);
     ctx.run().await
 }
