@@ -6,6 +6,7 @@ use crate::parser::description::DescriptionParser;
 use crate::pixivapp::illust::PixivAppIllust;
 use crate::push::every_push::{EveryPushClient, EveryPushTextType};
 use crate::push::pushdeer::PushdeerClient;
+use crate::utils::get_file_name_from_url;
 use crate::{get_helper, gettext};
 use json::JsonValue;
 use percent_encoding::{percent_encode, NON_ALPHANUMERIC};
@@ -390,6 +391,16 @@ impl<'a> RunContext<'a> {
                     if let Some(id) = self.id() {
                         let link = format!("https://www.pixiv.net/artworks/{}", id);
                         text.push_str(&format!("[{}]({})  \n", link, link));
+                    }
+                }
+                if cfg.add_image_link {
+                    let len = self.len().unwrap_or(1);
+                    for i in 0..len {
+                        if let Some(url) = self.get_image_url(i).await? {
+                            let name =
+                                get_file_name_from_url(&url).unwrap_or_else(|| format!("{}", i));
+                            text.push_str(&format!("[{}]({})  \n", name, url));
+                        }
                     }
                 }
                 if let Some(desc) = self.desc() {

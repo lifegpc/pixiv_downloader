@@ -128,6 +128,10 @@ pub struct PushDeerConfig {
     #[serde(default = "default_true")]
     /// Whether to add translated tag
     pub add_translated_tag: bool,
+    #[serde(default = "default_true")]
+    /// Whether to add image link
+    /// Supported when type is `Text`.
+    pub add_image_link: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
