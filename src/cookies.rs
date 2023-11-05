@@ -309,16 +309,27 @@ impl CookieJarLine {
     }
 }
 
+fn cal_md5(cookies: &Vec<CookieJarLine>) -> String {
+    let mut s = String::new();
+    for c in cookies.iter() {
+        s += c.to_netscape_str().as_str();
+    }
+    let re = md5::compute(s.as_bytes());
+    format!("{:x}", re)
+}
+
 #[derive(Clone, Debug)]
 /// Cookies Jar
 pub struct CookieJar {
     cookies: Vec<CookieJarLine>,
+    md5: String,
 }
 
 impl CookieJar {
     pub fn new() -> Self {
         Self {
             cookies: Vec::new(),
+            md5: String::from("d41d8cd98f00b204e9800998ecf8427e"),
         }
     }
 
@@ -414,7 +425,12 @@ impl CookieJar {
             self.add(c);
         }
         self.check_expired();
+        self.md5 = cal_md5(&self.cookies);
         true
+    }
+
+    pub fn is_changed(&self) -> bool {
+        self.md5 != cal_md5(&self.cookies)
     }
 
     pub fn save<P: AsRef<Path> + ?Sized>(&mut self, file_name: &P) -> bool {
@@ -440,6 +456,7 @@ impl CookieJar {
                 return false;
             }
         }
+        self.md5 = cal_md5(&self.cookies);
         true
     }
 
@@ -482,6 +499,24 @@ impl CookieJarManager {
     pub fn new() -> Self {
         Self {
             jars: RwLock::new(HashMap::new()),
+        }
+    }
+
+    pub fn save(&self) {
+        let jars = self.jars.get_ref();
+        for (path, (jar, _)) in jars.iter() {
+            if jar.get_ref().is_changed() {
+                log::debug!("Cookies file changed: {}", path.display());
+                if !jar.get_mut().save(path) {
+                    log::warn!(
+                        "{} {}",
+                        gettext("Warning: Failed to save cookies file:"),
+                        path.display()
+                    );
+                } else {
+                    log::debug!("Cookies file saved: {}", path.display());
+                }
+            }
         }
     }
 
@@ -533,6 +568,10 @@ impl CookieJarManager {
 
 lazy_static! {
     static ref MANAGER: CookieJarManager = CookieJarManager::new();
+}
+
+pub fn save_all_cookies() {
+    MANAGER.save();
 }
 
 #[derive(Clone, Debug)]

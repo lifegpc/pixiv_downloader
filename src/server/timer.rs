@@ -12,6 +12,12 @@ pub async fn start_timer(ctx: Arc<ServerContext>) {
     loop {
         interval.tick().await;
         tasks.add_task(revoke_expired_tokens(ctx.clone())).await;
+        tasks
+            .add_task(async {
+                crate::cookies::save_all_cookies();
+                Ok(())
+            })
+            .await;
         tasks.join().await;
         for task in tasks.take_finished_tasks() {
             let re = task.await;

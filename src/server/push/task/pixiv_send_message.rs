@@ -548,6 +548,7 @@ impl<'a> RunContext<'a> {
                         if cfg.add_link_to_image {
                             text.push_str(&format!("]({})", url));
                         }
+                        text.push_str("  \n");
                     }
                 }
                 if cfg.author_locations.contains(&AuthorLocation::Top) {

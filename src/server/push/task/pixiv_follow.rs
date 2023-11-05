@@ -102,6 +102,10 @@ impl<'a> RunContext<'a> {
             self.web_run().await?;
         }
         if self.send_mode.is_none() {
+            let len = self.pushed.get_ref().len();
+            if len > self.config.max_len {
+                self.pushed.get_mut().drain(0..(len - self.config.max_len));
+            }
             let data = serde_json::to_string(self.pushed.get_ref().as_slice())?;
             self.ctx.db.set_push_task_data(self.task.id, &data).await?;
             self.ctx

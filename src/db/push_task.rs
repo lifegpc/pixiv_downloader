@@ -54,6 +54,10 @@ pub enum PushTaskPixivAction {
     },
 }
 
+fn default_pixiv_max_len() -> usize {
+    100
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PushTaskPixivConfig {
@@ -66,6 +70,9 @@ pub struct PushTaskPixivConfig {
     pub use_app_api: Option<bool>,
     /// Use data from webpage first.
     pub use_webpage: Option<bool>,
+    #[serde(default = "default_pixiv_max_len")]
+    /// Max length of cached pushed artworks list
+    pub max_len: usize,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
