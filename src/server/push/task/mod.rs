@@ -4,7 +4,11 @@ pub mod pixiv_send_message;
 use super::super::preclude::*;
 use crate::db::push_task::PushTaskPixivAction;
 use crate::db::{PushTask, PushTaskConfig};
+use crate::task_manager::{MaxCount, TaskManagerWithId};
+use futures_util::lock::Mutex;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use tokio::time::{interval_at, Duration, Instant};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -52,15 +56,51 @@ impl TestSendMode {
 
 pub async fn run_push_task(
     ctx: Arc<ServerContext>,
-    task: &PushTask,
+    task: Arc<PushTask>,
     send_mode: Option<&TestSendMode>,
 ) -> Result<(), PixivDownloaderError> {
     match &task.config {
         PushTaskConfig::Pixiv(config) => match &config.act {
             PushTaskPixivAction::Follow { restrict, mode } => {
-                pixiv_follow::run_push_task(ctx, task, config, restrict, mode, send_mode).await
+                pixiv_follow::run_push_task(ctx, task.clone(), config, restrict, mode, send_mode)
+                    .await
             }
             _ => Ok(()),
         },
+    }
+}
+
+pub async fn run_checking(ctx: Arc<ServerContext>) {
+    let mut interval = interval_at(Instant::now(), Duration::from_secs(1));
+    let manager = TaskManagerWithId::new(Arc::new(Mutex::new(0)), MaxCount::new(4));
+    loop {
+        interval.tick().await;
+        manager.check_task().await;
+        let tasks = manager.take_finished_tasks();
+        for (id, task) in tasks {
+            let re = task.await;
+            if let Ok(Err(e)) = re {
+                log::warn!("Push task error (task id: {}): {}", id, e);
+            } else if let Err(e) = re {
+                log::error!("Join error: {}", e);
+            } else if let Ok(Ok(())) = re {
+                log::debug!("Push task finished: {}", id);
+            }
+        }
+        let all_tasks = match ctx.db.get_all_push_tasks().await {
+            Ok(t) => t,
+            Err(e) => {
+                log::error!("Get all push tasks error: {}", e);
+                break;
+            }
+        };
+        for task in all_tasks {
+            if task.is_need_update() && !manager.is_pending_or_running(&task.id) {
+                let task = Arc::new(task);
+                manager
+                    .add_pending_task(task.id, run_push_task(ctx.clone(), task, None))
+                    .await;
+            }
+        }
     }
 }

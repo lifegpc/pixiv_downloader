@@ -8,7 +8,7 @@ use super::{Token, User};
 use chrono::{DateTime, Utc};
 use flagset::FlagSet;
 
-#[async_trait]
+#[async_trait(+Sync)]
 pub trait PixivDownloaderDb {
     /// Create a new instance of database
     /// * `cfg` - The database configuration
@@ -108,6 +108,9 @@ pub trait PixivDownloaderDb {
         id: u64,
         expired_at: &DateTime<Utc>,
     ) -> Result<(), PixivDownloaderDbError>;
+    #[cfg(feature = "server")]
+    /// Get all push tasks
+    async fn get_all_push_tasks(&self) -> Result<Vec<PushTask>, PixivDownloaderDbError>;
     /// Get a config from database
     /// * `key` - The config key
     async fn get_config(&self, key: &str) -> Result<Option<String>, PixivDownloaderDbError>;
@@ -142,6 +145,10 @@ pub trait PixivDownloaderDb {
     /// Get a push task by ID
     /// * `id` - The task's ID
     async fn get_push_task(&self, id: u64) -> Result<Option<PushTask>, PixivDownloaderDbError>;
+    #[cfg(feature = "server")]
+    /// Get a push task's data
+    /// * `id` - The task's ID
+    async fn get_push_task_data(&self, id: u64) -> Result<Option<String>, PixivDownloaderDbError>;
     #[cfg(feature = "server")]
     /// Get token by ID
     /// * `id` - The token ID
@@ -203,6 +210,11 @@ pub trait PixivDownloaderDb {
         password: &[u8],
         is_admin: bool,
     ) -> Result<User, PixivDownloaderDbError>;
+    #[cfg(feature = "server")]
+    /// Set push task's data
+    /// * `id`: The task's ID
+    /// * `data`: The task's data
+    async fn set_push_task_data(&self, id: u64, data: &str) -> Result<(), PixivDownloaderDbError>;
     #[cfg(feature = "server")]
     /// Update a push task
     /// * `id`: The task's ID

@@ -97,6 +97,7 @@ pub async fn start_server(
 ) -> Result<Server<AddrIncoming, PixivDownloaderMakeSvc>, hyper::Error> {
     let ctx = Arc::new(ServerContext::default().await);
     let ser = Server::try_bind(addr)?.serve(PixivDownloaderMakeSvc::new(&ctx));
-    tokio::spawn(super::timer::start_timer(ctx));
+    tokio::spawn(super::timer::start_timer(ctx.clone()));
+    tokio::task::spawn(super::push::task::run_checking(ctx));
     Ok(ser)
 }

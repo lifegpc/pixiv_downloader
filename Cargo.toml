@@ -70,6 +70,7 @@ server = ["async-trait", "base64", "db", "hex", "hyper", "multipart", "openssl",
 ugoira = ["avdict", "bindgen", "cmake", "link-cplusplus"]
 
 [patch.crates-io]
+async-trait = { git = "https://github.com/lifegpc/async-trait" }
 buf_redux = { git = "https://github.com/lifegpc/buf_redux" }
 openssl = { git = "https://github.com/lifegpc/rust-openssl" }
 openssl-sys = { git = "https://github.com/lifegpc/rust-openssl" }

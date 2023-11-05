@@ -127,7 +127,8 @@ impl PushContext {
                         .ok_or((400, "Missing test_send_mode."))?;
                     let test_send_mode: TestSendMode = serde_json::from_str(test_send_mode)
                         .try_err3(400, "Failed to parse test_send_mode:")?;
-                    run_push_task(self.ctx.clone(), &task, Some(&test_send_mode))
+                    let task = Arc::new(task);
+                    run_push_task(self.ctx.clone(), task, Some(&test_send_mode))
                         .await
                         .try_err3(1, "Failed to test push task:")?;
                     Ok(serde_json::to_value(true).try_err3(500, "Failed to serialize result:")?)

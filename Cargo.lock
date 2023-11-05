@@ -107,9 +107,8 @@ dependencies = [
 
 [[package]]
 name = "async-trait"
-version = "0.1.73"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc00ceb34980c03614e35a3a4e218276a0a824e911d07651cd0d858a51e8c0f0"
+version = "0.1.74"
+source = "git+https://github.com/lifegpc/async-trait#6fb1f56b170289e1681e864c1d6e51783783b3c7"
 dependencies = [
  "proc-macro2",
  "quote",

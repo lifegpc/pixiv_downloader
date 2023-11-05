@@ -3,6 +3,8 @@ use super::pixiv_send_message::send_message;
 use super::TestSendMode;
 use crate::db::push_task::{PixivMode, PushTaskPixivConfig};
 use crate::db::PushTask;
+use crate::ext::atomic::AtomicQuick;
+use crate::ext::replace::ReplaceWith2;
 use crate::ext::rw_lock::GetRwLock;
 use crate::get_helper;
 use crate::pixiv_app::PixivRestrictType;
@@ -10,6 +12,7 @@ use crate::pixivapp::illust::PixivAppIllust;
 use crate::utils::parse_pixiv_id;
 use json::JsonValue;
 use std::collections::HashMap;
+use std::sync::atomic::AtomicBool;
 use std::sync::RwLock;
 
 struct PixivFollowData {
@@ -34,7 +37,7 @@ impl PixivFollowData {
 
 struct RunContext<'a> {
     ctx: Arc<ServerContext>,
-    task: &'a PushTask,
+    task: Arc<PushTask>,
     config: &'a PushTaskPixivConfig,
     restrict: &'a PixivRestrictType,
     mode: &'a PixivMode,
@@ -43,12 +46,14 @@ struct RunContext<'a> {
     use_app_api: bool,
     use_web_description: bool,
     use_webpage: bool,
+    pushed: RwLock<Vec<u64>>,
+    first_run: AtomicBool,
 }
 
 impl<'a> RunContext<'a> {
     pub fn new(
         ctx: Arc<ServerContext>,
-        task: &'a PushTask,
+        task: Arc<PushTask>,
         config: &'a PushTaskPixivConfig,
         restrict: &'a PixivRestrictType,
         mode: &'a PixivMode,
@@ -68,14 +73,41 @@ impl<'a> RunContext<'a> {
                 .use_web_description
                 .unwrap_or(helper.use_web_description()),
             use_webpage: config.use_webpage.unwrap_or(helper.use_webpage()),
+            pushed: RwLock::new(Vec::new()),
+            first_run: AtomicBool::new(false),
         }
     }
 
     pub async fn run(&self) -> Result<(), PixivDownloaderError> {
+        let now = chrono::Utc::now();
+        if self.send_mode.is_none() {
+            match self.ctx.db.get_push_task_data(self.task.id).await? {
+                Some(data) => match serde_json::from_str(&data) {
+                    Ok(data) => {
+                        self.pushed.replace_with2(data);
+                    }
+                    Err(e) => {
+                        log::warn!(target: "pixiv_follow", "Failed to parse push task data: {}", e);
+                        log::debug!(target: "pixiv_follow", "Push task data: {}", data);
+                    }
+                },
+                None => {
+                    self.first_run.qstore(true);
+                }
+            }
+        }
         if self.use_app_api {
             self.app_run().await?;
         } else {
             self.web_run().await?;
+        }
+        if self.send_mode.is_none() {
+            let data = serde_json::to_string(self.pushed.get_ref().as_slice())?;
+            self.ctx.db.set_push_task_data(self.task.id, &data).await?;
+            self.ctx
+                .db
+                .update_push_task_last_updated(self.task.id, &now)
+                .await?;
         }
         Ok(())
     }
@@ -100,7 +132,19 @@ impl<'a> RunContext<'a> {
                     }
                 }
             }
-            None => {}
+            None => {
+                if self.first_run.qload() {
+                    for i in illusts.members() {
+                        if let Some(id) = parse_pixiv_id(&i["id"]) {
+                            self.pushed.get_mut().push(id);
+                        }
+                    }
+                } else {
+                    for i in illusts.members() {
+                        self.web_illust(i, &data).await?;
+                    }
+                }
+            }
         }
         Ok(())
     }
@@ -111,6 +155,9 @@ impl<'a> RunContext<'a> {
         data: &JsonValue,
     ) -> Result<(), PixivDownloaderError> {
         let id = parse_pixiv_id(&illust["id"]).ok_or("illust id is none")?;
+        if self.send_mode.is_none() && self.pushed.get_ref().contains(&id) {
+            return Ok(());
+        }
         let wdata = match self.data.get_web_data(id) {
             Some(d) => d,
             None => {
@@ -134,6 +181,9 @@ impl<'a> RunContext<'a> {
         } else {
             None
         };
+        if self.send_mode.is_none() {
+            self.pushed.get_mut().push(id);
+        }
         for i in self.task.push_configs.iter() {
             send_message(
                 self.ctx.clone(),
@@ -165,13 +215,28 @@ impl<'a> RunContext<'a> {
                     }
                 }
             }
-            None => {}
+            None => {
+                if self.first_run.qload() {
+                    for i in app_data.illusts.iter() {
+                        if let Some(id) = i.id() {
+                            self.pushed.get_mut().push(id);
+                        }
+                    }
+                } else {
+                    for i in app_data.illusts.iter() {
+                        self.app_illust(i).await?;
+                    }
+                }
+            }
         }
         Ok(())
     }
 
     pub async fn app_illust(&self, illust: &PixivAppIllust) -> Result<(), PixivDownloaderError> {
         let id = illust.id().ok_or("illust id is none")?;
+        if self.send_mode.is_none() && self.pushed.get_ref().contains(&id) {
+            return Ok(());
+        }
         let data = match self.data.get_web_data(id) {
             Some(d) => Some(d),
             None => {
@@ -189,6 +254,9 @@ impl<'a> RunContext<'a> {
                 }
             }
         };
+        if self.send_mode.is_none() {
+            self.pushed.get_mut().push(id);
+        }
         for i in self.task.push_configs.iter() {
             send_message(
                 self.ctx.clone(),
@@ -207,7 +275,7 @@ impl<'a> RunContext<'a> {
 
 pub async fn run_push_task(
     ctx: Arc<ServerContext>,
-    task: &PushTask,
+    task: Arc<PushTask>,
     config: &PushTaskPixivConfig,
     restrict: &PixivRestrictType,
     mode: &PixivMode,

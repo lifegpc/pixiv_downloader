@@ -4,7 +4,9 @@ use crate::ext::rw_lock::GetRwLock;
 use crate::opthelper::get_helper;
 use futures_util::lock::Mutex;
 use indicatif::MultiProgress;
+use std::collections::HashMap;
 use std::future::Future;
+use std::pin::Pin;
 use std::sync::Arc;
 use std::sync::RwLock;
 use std::time::Duration;
@@ -213,5 +215,100 @@ pub fn get_total_post_task_count() -> Arc<Mutex<usize>> {
 impl<O> Default for TaskManager<O> {
     fn default() -> Self {
         Self::new(get_total_download_task_count(), MaxDownloadTasks::new())
+    }
+}
+
+/// Task manager with ID
+pub struct TaskManagerWithId<K, T> {
+    /// Current running task
+    tasks: RwLock<HashMap<K, JoinHandle<T>>>,
+    /// Finished task
+    finished_tasks: RwLock<HashMap<K, JoinHandle<T>>>,
+    /// Pending task
+    pedding_tasks: RwLock<Vec<(K, Pin<Box<dyn Future<Output = T> + Send + Sync + 'static>>)>>,
+    /// Total task count
+    task_count: Arc<Mutex<usize>>,
+    max_count: Box<dyn GetMaxCount + Send + Sync>,
+}
+
+impl<K, O> TaskManagerWithId<K, O>
+where
+    K: Eq + std::hash::Hash,
+    O: Send + 'static,
+{
+    /// Create a new instance
+    pub fn new<T: GetMaxCount + Send + Sync + 'static>(
+        task_count: Arc<Mutex<usize>>,
+        max_count: T,
+    ) -> Self {
+        Self {
+            tasks: RwLock::new(HashMap::new()),
+            finished_tasks: RwLock::new(HashMap::new()),
+            pedding_tasks: RwLock::new(Vec::new()),
+            task_count,
+            max_count: Box::new(max_count),
+        }
+    }
+
+    /// Add pending task
+    pub async fn add_pending_task<F>(&self, id: K, future: F)
+    where
+        F: Future<Output = O> + Send + Sync + 'static,
+        F::Output: Send + 'static,
+    {
+        let total_count = self.max_count.get_max_count();
+        {
+            let mut count = self.task_count.lock().await;
+            if *count < total_count {
+                self.tasks.get_mut().insert(id, tokio::task::spawn(future));
+                count.replace_with(*count + 1);
+                return;
+            }
+        }
+        self.pedding_tasks.get_mut().push((id, Box::pin(future)));
+    }
+
+    /// Check running tasks and run pending tasks
+    pub async fn check_task(&self) {
+        let total_count = self.max_count.get_max_count();
+        let mut count = self.task_count.lock().await;
+        let tasks = self.tasks.replace_with2(HashMap::new());
+        let mut new_tasks = HashMap::new();
+        let mut new_count = *count;
+        for (k, v) in tasks {
+            if v.is_finished() {
+                self.finished_tasks.get_mut().insert(k, v);
+                new_count -= 1;
+            } else {
+                new_tasks.insert(k, v);
+            }
+        }
+        while new_count < total_count {
+            if let Some((k, v)) = self.pedding_tasks.get_mut().pop() {
+                new_tasks.insert(k, tokio::task::spawn(v));
+                new_count += 1;
+            } else {
+                break;
+            }
+        }
+        self.tasks.replace_with2(new_tasks);
+        count.replace_with(new_count);
+    }
+
+    pub fn is_pending(&self, id: &K) -> bool {
+        self.pedding_tasks.get_ref().iter().any(|(k, _)| k == id)
+    }
+
+    pub fn is_pending_or_running(&self, id: &K) -> bool {
+        self.is_running(id) || self.is_pending(id)
+    }
+
+    pub fn is_running(&self, id: &K) -> bool {
+        self.tasks.get_ref().contains_key(id)
+    }
+
+    /// Take all finished tasks
+    pub fn take_finished_tasks(&self) -> HashMap<K, JoinHandle<O>> {
+        self.finished_tasks.replace_with2(HashMap::new())
     }
 }

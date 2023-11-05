@@ -207,4 +207,11 @@ impl PushTask {
             ttl: 0,
         }
     }
+
+    pub fn is_need_update(&self) -> bool {
+        let now = Utc::now();
+        let last_updated = self.last_updated;
+        let ttl = self.ttl;
+        now.timestamp() - last_updated.timestamp() > ttl as i64
+    }
 }
