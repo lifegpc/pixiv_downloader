@@ -3,10 +3,10 @@ pub mod status;
 pub mod token;
 pub mod user;
 
-pub use pubkey::{AuthPubkeyContext, AuthPubkeyRoute, RSAKey};
-pub use status::{AuthStatusContext, AuthStatusRoute};
-pub use token::{revoke_expired_tokens, AuthTokenContext, AuthTokenRoute};
-pub use user::{AuthUserContext, AuthUserRoute};
+pub use pubkey::{AuthPubkeyRoute, RSAKey};
+pub use status::AuthStatusRoute;
+pub use token::{revoke_expired_tokens, AuthTokenRoute};
+pub use user::AuthUserRoute;
 
 const PASSWORD_SALT: [u8; 64] = [
     14, 169, 19, 53, 220, 112, 183, 235, 112, 165, 131, 132, 68, 29, 167, 65, 150, 219, 121, 212,

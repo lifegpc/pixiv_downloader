@@ -80,7 +80,7 @@ impl<'a> RunContext<'a> {
             first_run: AtomicBool::new(false),
             push_manager: TaskManagerWithId::new(
                 Arc::new(Mutex::new(0)),
-                MaxCount::new(helper.push_task_max_count()),
+                MaxCount::new(helper.push_task_max_push_count()),
             ),
         }
     }
@@ -212,10 +212,15 @@ impl<'a> RunContext<'a> {
             Some(d) => d,
             None => {
                 let pw = self.ctx.pixiv_web_client().await;
-                let wdata = pw
-                    .get_artwork_ajax(id)
-                    .await
-                    .ok_or("Failed to get artwork ajax.")?;
+                let wdata = if self.use_webpage {
+                    pw.get_artwork(id).await.ok_or("Failed to get artwork.")?["illust"]
+                        [format!("{}", id)]
+                    .clone()
+                } else {
+                    pw.get_artwork_ajax(id)
+                        .await
+                        .ok_or("Failed to get artwork ajax.")?
+                };
                 self.data.set_web_data(id, wdata.clone());
                 wdata
             }
