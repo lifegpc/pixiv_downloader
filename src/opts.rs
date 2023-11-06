@@ -136,6 +136,9 @@ pub struct CommandOpts {
     #[cfg(feature = "server")]
     /// The maximum number of tasks to push to client at the same time.
     pub push_task_max_push_count: Option<usize>,
+    #[cfg(feature = "server")]
+    /// Whether to prevent to run push task.
+    pub disable_push_task: bool,
 }
 
 impl CommandOpts {
@@ -187,6 +190,8 @@ impl CommandOpts {
             push_task_max_count: None,
             #[cfg(feature = "server")]
             push_task_max_push_count: None,
+            #[cfg(feature = "server")]
+            disable_push_task: false,
         }
     }
 
@@ -686,6 +691,12 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         gettext("The maximum number of tasks to push to client at the same time."),
         "COUNT",
     );
+    #[cfg(feature = "server")]
+    opts.optflag(
+        "",
+        "disable-push-task",
+        gettext("Prevent to run push task."),
+    );
     let result = match opts.parse(&argv[1..]) {
         Ok(m) => m,
         Err(err) => {
@@ -1114,6 +1125,10 @@ pub fn parse_cmd() -> Option<CommandOpts> {
             );
             return None;
         }
+    }
+    #[cfg(feature = "server")]
+    {
+        re.as_mut().unwrap().disable_push_task = result.opt_present("disable-push-task");
     }
     re
 }

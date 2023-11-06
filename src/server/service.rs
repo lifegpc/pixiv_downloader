@@ -1,6 +1,7 @@
 use super::context::ServerContext;
 use super::preclude::*;
 use super::route::ServerRoutes;
+use crate::get_helper;
 use hyper::server::conn::AddrIncoming;
 use hyper::server::Server;
 use hyper::service::Service;
@@ -98,6 +99,8 @@ pub async fn start_server(
     let ctx = Arc::new(ServerContext::default().await);
     let ser = Server::try_bind(addr)?.serve(PixivDownloaderMakeSvc::new(&ctx));
     tokio::spawn(super::timer::start_timer(ctx.clone()));
-    tokio::task::spawn(super::push::task::run_checking(ctx));
+    if !get_helper().disable_push_task() {
+        tokio::spawn(super::push::task::run_checking(ctx));
+    }
     Ok(ser)
 }

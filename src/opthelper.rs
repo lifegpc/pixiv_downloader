@@ -617,6 +617,12 @@ impl OptHelper {
         }
         4
     }
+
+    #[cfg(feature = "server")]
+    /// Whether to prevent to run push task.
+    pub fn disable_push_task(&self) -> bool {
+        self.opt.get_ref().disable_push_task
+    }
 }
 
 impl Default for OptHelper {

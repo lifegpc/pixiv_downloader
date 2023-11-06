@@ -1,4 +1,5 @@
 pub mod pixiv_follow;
+pub mod pixiv_illusts;
 pub mod pixiv_send_message;
 
 use super::super::preclude::*;
@@ -65,6 +66,17 @@ pub async fn run_push_task(
             PushTaskPixivAction::Follow { restrict, mode } => {
                 pixiv_follow::run_push_task(ctx, task.clone(), config, restrict, mode, send_mode)
                     .await
+            }
+            PushTaskPixivAction::Illusts { uid, max_len_used } => {
+                pixiv_illusts::run_push_task(
+                    ctx,
+                    task.clone(),
+                    config,
+                    uid.clone(),
+                    max_len_used.clone(),
+                    send_mode,
+                )
+                .await
             }
             _ => Ok(()),
         },

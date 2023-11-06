@@ -9,6 +9,7 @@ pub struct PixivAppIllusts {
     pub illusts: Vec<PixivAppIllust>,
     next_url: Option<String>,
     client: Arc<PixivAppClientInternal>,
+    pub user: Option<JsonValue>,
 }
 
 impl PixivAppIllusts {
@@ -49,14 +50,19 @@ impl PixivAppIllusts {
         for item in oillusts.members() {
             illusts.push(PixivAppIllust::new(item.clone()));
         }
-        let next_url = match value["nextUrl"].as_str() {
+        let next_url = match value["next_url"].as_str() {
             Some(next_url) => Some(next_url.to_owned()),
             None => None,
+        };
+        let user = match value["user"].is_null() {
+            true => None,
+            false => Some(value["user"].clone()),
         };
         Ok(Self {
             illusts,
             next_url,
             client,
+            user,
         })
     }
 }

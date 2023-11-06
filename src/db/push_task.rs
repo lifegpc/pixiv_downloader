@@ -26,6 +26,10 @@ fn default_mode() -> PixivMode {
     PixivMode::All
 }
 
+fn default_max_len_used() -> usize {
+    50
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum PushTaskPixivAction {
@@ -51,6 +55,11 @@ pub enum PushTaskPixivAction {
     Illusts {
         /// User ID
         uid: u64,
+        #[serde(default = "default_max_len_used")]
+        /// Maximum count of checked artworks.
+        ///
+        /// Only supported when using Pixiv Web API.
+        max_len_used: usize,
     },
 }
 

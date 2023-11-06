@@ -319,6 +319,34 @@ impl PixivWebClient {
         v
     }
 
+    /// Get user's works
+    /// * `uid` - User's id
+    pub async fn get_user_works(&self, uid: u64) -> Option<JsonValue> {
+        self.auto_init();
+        let r = self
+            .client
+            .get_with_param(
+                format!("https://www.pixiv.net/ajax/user/{}/profile/all", uid),
+                self.get_params(),
+                None,
+            )
+            .await;
+        let r = match r {
+            Some(r) => r,
+            None => return None,
+        };
+        let v = self.deal_json(r).await;
+        if v.is_some() {
+            log::debug!(
+                target: "pixiv_web",
+                "{} {}",
+                gettext("User's works: "),
+                v.as_ref().unwrap().pretty(2)
+            );
+        }
+        v
+    }
+
     pub fn logined(&self) -> bool {
         let data = self.data.get_ref();
         if data.is_none() {

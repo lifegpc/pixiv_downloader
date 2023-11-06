@@ -325,6 +325,22 @@ impl PixivAppClientInternal {
         log::debug!("{}{}", info, obj.pretty(2).as_str());
         Ok(obj)
     }
+
+    pub async fn get_user_illusts(&self, uid: u64) -> Result<JsonValue, PixivDownloaderError> {
+        self.auto_handle().await?;
+        let re = self
+            .client
+            .get_with_param(
+                "https://app-api.pixiv.net/v1/user/illusts",
+                json::object! {"type": "illust", "user_id": uid, "filter": "for_ios"},
+                None,
+            )
+            .await
+            .ok_or(gettext("Failed to get user's illusts."))?;
+        let obj = handle_error(re).await?;
+        log::debug!("{}{}", gettext("User's illusts: "), obj.pretty(2).as_str());
+        Ok(obj)
+    }
 }
 
 #[derive(Clone)]
@@ -370,6 +386,14 @@ impl PixivAppClient {
         restrict: &PixivRestrictType,
     ) -> Result<PixivAppIllusts, PixivDownloaderError> {
         let obj = self.internal.get_follow(restrict).await?;
+        PixivAppIllusts::new(self.internal.clone(), obj)
+    }
+
+    pub async fn get_user_illusts(
+        &self,
+        uid: u64,
+    ) -> Result<PixivAppIllusts, PixivDownloaderError> {
+        let obj = self.internal.get_user_illusts(uid).await?;
         PixivAppIllusts::new(self.internal.clone(), obj)
     }
 }
