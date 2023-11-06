@@ -4,6 +4,7 @@ pub mod pixiv_send_message;
 use super::super::preclude::*;
 use crate::db::push_task::PushTaskPixivAction;
 use crate::db::{PushTask, PushTaskConfig};
+use crate::get_helper;
 use crate::task_manager::{MaxCount, TaskManagerWithId};
 use futures_util::lock::Mutex;
 use serde::{Deserialize, Serialize};
@@ -72,7 +73,10 @@ pub async fn run_push_task(
 
 pub async fn run_checking(ctx: Arc<ServerContext>) {
     let mut interval = interval_at(Instant::now(), Duration::from_secs(1));
-    let manager = TaskManagerWithId::new(Arc::new(Mutex::new(0)), MaxCount::new(4));
+    let manager = TaskManagerWithId::new(
+        Arc::new(Mutex::new(0)),
+        MaxCount::new(get_helper().push_task_max_count()),
+    );
     loop {
         interval.tick().await;
         manager.check_task().await;

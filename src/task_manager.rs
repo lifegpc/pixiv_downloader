@@ -268,6 +268,51 @@ where
         self.pedding_tasks.get_mut().push((id, Box::pin(future)));
     }
 
+    /// Add a new task.
+    /// Wait until there is a free slot.
+    /// * `before_pedding` - If true, add task before pending tasks, else add task after pending tasks.
+    pub async fn add_task<F>(&self, id: K, future: F, before_pedding: bool)
+    where
+        F: Future<Output = O> + Send + 'static,
+        F::Output: Send + 'static,
+    {
+        let total_count = self.max_count.get_max_count();
+        loop {
+            {
+                let mut count = self.task_count.lock().await;
+                let tasks = self.tasks.replace_with2(HashMap::new());
+                let mut new_tasks = HashMap::new();
+                let mut new_count = *count;
+                for (k, v) in tasks {
+                    if v.is_finished() {
+                        self.finished_tasks.get_mut().insert(k, v);
+                        new_count -= 1;
+                    } else {
+                        new_tasks.insert(k, v);
+                    }
+                }
+                if !before_pedding {
+                    while new_count < total_count {
+                        if let Some((k, v)) = self.pedding_tasks.get_mut().pop() {
+                            new_tasks.insert(k, tokio::task::spawn(v));
+                            new_count += 1;
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                self.tasks.replace_with2(new_tasks);
+                count.replace_with(new_count);
+                if *count < total_count {
+                    self.tasks.get_mut().insert(id, tokio::task::spawn(future));
+                    count.replace_with(*count + 1);
+                    break;
+                }
+            }
+            tokio::time::sleep(Duration::new(0, 10_000_000)).await;
+        }
+    }
+
     /// Check running tasks and run pending tasks
     pub async fn check_task(&self) {
         let total_count = self.max_count.get_max_count();
@@ -305,6 +350,41 @@ where
 
     pub fn is_running(&self, id: &K) -> bool {
         self.tasks.get_ref().contains_key(id)
+    }
+
+    /// Wait all tasks finished.
+    pub async fn join(&self) {
+        let total_count = self.max_count.get_max_count();
+        loop {
+            {
+                let mut count = self.task_count.lock().await;
+                let tasks = self.tasks.replace_with2(HashMap::new());
+                if tasks.len() == 0 && self.pedding_tasks.get_ref().len() == 0 {
+                    break;
+                }
+                let mut new_tasks = HashMap::new();
+                let mut new_count = *count;
+                for (k, v) in tasks {
+                    if v.is_finished() {
+                        self.finished_tasks.get_mut().insert(k, v);
+                        new_count -= 1;
+                    } else {
+                        new_tasks.insert(k, v);
+                    }
+                }
+                while new_count < total_count {
+                    if let Some((k, v)) = self.pedding_tasks.get_mut().pop() {
+                        new_tasks.insert(k, tokio::task::spawn(v));
+                        new_count += 1;
+                    } else {
+                        break;
+                    }
+                }
+                self.tasks.replace_with2(new_tasks);
+                count.replace_with(new_count);
+            }
+            tokio::time::sleep(Duration::new(0, 10_000_000)).await;
+        }
     }
 
     /// Take all finished tasks

@@ -6,10 +6,12 @@ use crate::db::PushTask;
 use crate::ext::atomic::AtomicQuick;
 use crate::ext::replace::ReplaceWith2;
 use crate::ext::rw_lock::GetRwLock;
-use crate::get_helper;
 use crate::pixiv_app::PixivRestrictType;
 use crate::pixivapp::illust::PixivAppIllust;
+use crate::task_manager::{MaxCount, TaskManagerWithId};
 use crate::utils::parse_pixiv_id;
+use crate::{concat_pixiv_downloader_error, get_helper};
+use futures_util::lock::Mutex;
 use json::JsonValue;
 use std::collections::HashMap;
 use std::sync::atomic::AtomicBool;
@@ -48,6 +50,7 @@ struct RunContext<'a> {
     use_webpage: bool,
     pushed: RwLock<Vec<u64>>,
     first_run: AtomicBool,
+    push_manager: TaskManagerWithId<usize, Result<(), PixivDownloaderError>>,
 }
 
 impl<'a> RunContext<'a> {
@@ -75,7 +78,50 @@ impl<'a> RunContext<'a> {
             use_webpage: config.use_webpage.unwrap_or(helper.use_webpage()),
             pushed: RwLock::new(Vec::new()),
             first_run: AtomicBool::new(false),
+            push_manager: TaskManagerWithId::new(
+                Arc::new(Mutex::new(0)),
+                MaxCount::new(helper.push_task_max_count()),
+            ),
         }
+    }
+
+    pub async fn handle_finished_tasks(&self) -> Result<(), PixivDownloaderError> {
+        let tasks = self.push_manager.take_finished_tasks();
+        let mut error = Ok(());
+        for (i, task) in tasks {
+            let cfg = self
+                .task
+                .push_configs
+                .get(i)
+                .ok_or("push config not found")?;
+            let re = task.await;
+            match re {
+                Ok(re) => match re {
+                    Ok(_) => {
+                        log::debug!(target: "pixiv_follow", "Push task success (task id: {}, index: {}).", self.task.id, i);
+                    }
+                    Err(e) => {
+                        if cfg.allow_failed() {
+                            log::warn!(target: "pixiv_follow", "Push task error (task id: {}, index: {}): {}", self.task.id, i, e);
+                        } else {
+                            log::debug!(target: "pixiv_follow", "Push task error (task id: {}, index: {}): {}", self.task.id, i, e);
+                            let e: Result<(), _> = Err(e);
+                            concat_pixiv_downloader_error!(error, e);
+                        }
+                    }
+                },
+                Err(e) => {
+                    if cfg.allow_failed() {
+                        log::error!(target: "pixiv_follow", "Push task join error (task id: {}, index: {}): {}", self.task.id, i, e);
+                    } else {
+                        log::info!(target: "pixiv_follow", "Push task join error (task id: {}, index: {}): {}", self.task.id, i, e);
+                        let e: Result<(), _> = Err(e);
+                        concat_pixiv_downloader_error!(error, e);
+                    }
+                }
+            }
+        }
+        error
     }
 
     pub async fn run(&self) -> Result<(), PixivDownloaderError> {
@@ -138,13 +184,13 @@ impl<'a> RunContext<'a> {
             }
             None => {
                 if self.first_run.qload() {
-                    for i in illusts.members() {
+                    for i in illusts.members().rev() {
                         if let Some(id) = parse_pixiv_id(&i["id"]) {
                             self.pushed.get_mut().push(id);
                         }
                     }
                 } else {
-                    for i in illusts.members() {
+                    for i in illusts.members().rev() {
                         self.web_illust(i, &data).await?;
                     }
                 }
@@ -181,25 +227,38 @@ impl<'a> RunContext<'a> {
                 .get_illust_pages(id)
                 .await
                 .ok_or("Failed to get illust pages.")?;
-            Some(pdata)
+            Some(Arc::new(pdata))
         } else {
             None
         };
         if self.send_mode.is_none() {
             self.pushed.get_mut().push(id);
         }
+        let wdata = Arc::new(wdata);
+        let illust = Arc::new(illust.clone());
+        let trans = Arc::new(data["tagTranslation"].clone());
+        let mut index = 0;
         for i in self.task.push_configs.iter() {
-            send_message(
-                self.ctx.clone(),
-                None,
-                Some(&wdata),
-                pdata.as_ref(),
-                Some(illust),
-                Some(&data["tagTranslation"]),
-                i,
-            )
-            .await?;
+            let cfg = Arc::new(i.clone());
+            self.push_manager
+                .add_task(
+                    index,
+                    send_message(
+                        self.ctx.clone(),
+                        None,
+                        Some(wdata.clone()),
+                        pdata.clone(),
+                        Some(illust.clone()),
+                        Some(trans.clone()),
+                        cfg,
+                    ),
+                    true,
+                )
+                .await;
+            index += 1;
         }
+        self.push_manager.join().await;
+        self.handle_finished_tasks().await?;
         Ok(())
     }
 
@@ -221,13 +280,13 @@ impl<'a> RunContext<'a> {
             }
             None => {
                 if self.first_run.qload() {
-                    for i in app_data.illusts.iter() {
+                    for i in app_data.illusts.iter().rev() {
                         if let Some(id) = i.id() {
                             self.pushed.get_mut().push(id);
                         }
                     }
                 } else {
-                    for i in app_data.illusts.iter() {
+                    for i in app_data.illusts.iter().rev() {
                         self.app_illust(i).await?;
                     }
                 }
@@ -242,14 +301,14 @@ impl<'a> RunContext<'a> {
             return Ok(());
         }
         let data = match self.data.get_web_data(id) {
-            Some(d) => Some(d),
+            Some(d) => Some(Arc::new(d)),
             None => {
                 if self.use_web_description && illust.caption_is_empty() {
                     let pw = self.ctx.pixiv_web_client().await;
                     match pw.get_artwork_ajax(id).await {
                         Some(data) => {
                             self.data.set_web_data(id, data.clone());
-                            Some(data)
+                            Some(Arc::new(data))
                         }
                         None => None,
                     }
@@ -261,18 +320,29 @@ impl<'a> RunContext<'a> {
         if self.send_mode.is_none() {
             self.pushed.get_mut().push(id);
         }
+        let illust = Arc::new(illust.clone());
+        let mut index = 0;
         for i in self.task.push_configs.iter() {
-            send_message(
-                self.ctx.clone(),
-                Some(&illust),
-                data.as_ref(),
-                None,
-                None,
-                None,
-                i,
-            )
-            .await?;
+            let i = Arc::new(i.clone());
+            self.push_manager
+                .add_task(
+                    index,
+                    send_message(
+                        self.ctx.clone(),
+                        Some(illust.clone()),
+                        data.clone(),
+                        None,
+                        None,
+                        None,
+                        i,
+                    ),
+                    true,
+                )
+                .await;
+            index += 1;
         }
+        self.push_manager.join().await;
+        self.handle_finished_tasks().await?;
         Ok(())
     }
 }

@@ -69,6 +69,10 @@ pub fn get_settings_list() -> Vec<SettingDes> {
         SettingDes::new("add-history", gettext("Whether to add artworks to pixiv's history. Only works for APP API."), JsonValueType::Boolean, None).unwrap(),
         #[cfg(feature = "server")]
         SettingDes::new("server-base", gettext("The server's host name. Used in some proxy."), JsonValueType::Str, None).unwrap(),
+        #[cfg(feature = "server")]
+        SettingDes::new("push-task-max-count", gettext("The maximum number of push tasks running at the same time."), JsonValueType::Number, Some(check_nozero_usize)).unwrap(),
+        #[cfg(feature = "server")]
+        SettingDes::new("push-task-max-push-count", gettext("The maximum number of tasks to push to client at the same time."), JsonValueType::Number, Some(check_nozero_usize)).unwrap(),
     ]
 }
 

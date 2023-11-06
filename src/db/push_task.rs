@@ -101,7 +101,7 @@ fn default_true() -> bool {
     true
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EveryPushConfig {
     /// Push server
@@ -135,9 +135,12 @@ pub struct EveryPushConfig {
     #[serde(default = "default_true")]
     /// Whether to add translated tag
     pub add_translated_tag: bool,
+    #[serde(default = "default_true")]
+    /// Whether to allow failed
+    pub allow_failed: bool,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PushDeerConfig {
     /// Push server
@@ -179,13 +182,26 @@ pub struct PushDeerConfig {
     ///
     /// Supported when type is `Text`.
     pub add_image_link: bool,
+    #[serde(default = "default_true")]
+    /// Whether to allow failed
+    pub allow_failed: bool,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum PushConfig {
     EveryPush(EveryPushConfig),
     PushDeer(PushDeerConfig),
+}
+
+impl PushConfig {
+    /// Whether to allow failed
+    pub fn allow_failed(&self) -> bool {
+        match self {
+            Self::EveryPush(config) => config.allow_failed,
+            Self::PushDeer(config) => config.allow_failed,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -4,6 +4,7 @@ use super::tag::Tag;
 use json::JsonValue;
 use proc_macros::check_json_keys;
 
+#[derive(Clone)]
 pub struct PixivAppIllust {
     data: JsonValue,
 }

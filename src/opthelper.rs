@@ -581,6 +581,42 @@ impl OptHelper {
     pub fn server_base(&self) -> Option<String> {
         self.settings.get_ref().get_str("server-base")
     }
+
+    #[cfg(feature = "server")]
+    /// The maximum number of push tasks running at the same time.
+    pub fn push_task_max_count(&self) -> usize {
+        match self.opt.get_ref().push_task_max_count {
+            Some(r) => {
+                return r;
+            }
+            None => {}
+        }
+        if self.settings.get_ref().have("push-task-max-count") {
+            let v = self.settings.get_ref().get("push-task-max-count").unwrap();
+            return v.as_usize().unwrap();
+        }
+        4
+    }
+
+    #[cfg(feature = "server")]
+    /// The maximum number of tasks to push to client at the same time.
+    pub fn push_task_max_push_count(&self) -> usize {
+        match self.opt.get_ref().push_task_max_push_count {
+            Some(r) => {
+                return r;
+            }
+            None => {}
+        }
+        if self.settings.get_ref().have("push-task-max-push-count") {
+            let v = self
+                .settings
+                .get_ref()
+                .get("push-task-max-push-count")
+                .unwrap();
+            return v.as_usize().unwrap();
+        }
+        4
+    }
 }
 
 impl Default for OptHelper {

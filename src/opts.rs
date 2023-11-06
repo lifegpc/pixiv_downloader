@@ -130,6 +130,12 @@ pub struct CommandOpts {
     pub use_web_description: Option<bool>,
     /// Whether to add artworks to pixiv's history. Only works for APP API.
     pub add_history: Option<bool>,
+    #[cfg(feature = "server")]
+    /// The maximum number of push tasks running at the same time.
+    pub push_task_max_count: Option<usize>,
+    #[cfg(feature = "server")]
+    /// The maximum number of tasks to push to client at the same time.
+    pub push_task_max_push_count: Option<usize>,
 }
 
 impl CommandOpts {
@@ -177,6 +183,10 @@ impl CommandOpts {
             use_app_api: None,
             use_web_description: None,
             add_history: None,
+            #[cfg(feature = "server")]
+            push_task_max_count: None,
+            #[cfg(feature = "server")]
+            push_task_max_push_count: None,
         }
     }
 
@@ -662,6 +672,20 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         HasArg::Maybe,
         getopts::Occur::Optional,
     );
+    #[cfg(feature = "server")]
+    opts.optopt(
+        "",
+        "push-task-max-count",
+        gettext("The maximum number of push tasks running at the same time."),
+        "COUNT",
+    );
+    #[cfg(feature = "server")]
+    opts.optopt(
+        "",
+        "push-task-max-push-count",
+        gettext("The maximum number of tasks to push to client at the same time."),
+        "COUNT",
+    );
     let result = match opts.parse(&argv[1..]) {
         Ok(m) => m,
         Err(err) => {
@@ -1057,6 +1081,34 @@ pub fn parse_cmd() -> Option<CommandOpts> {
                 "{} {}",
                 gettext("Failed to parse <opt>:")
                     .replace("<opt>", "add-history")
+                    .as_str(),
+                e
+            );
+            return None;
+        }
+    }
+    #[cfg(feature = "server")]
+    match parse_nonempty_usize(result.opt_str("push-task-max-count")) {
+        Ok(r) => re.as_mut().unwrap().push_task_max_count = r,
+        Err(e) => {
+            log::error!(
+                "{} {}",
+                gettext("Failed to parse <opt>:")
+                    .replace("<opt>", "push-task-max-count")
+                    .as_str(),
+                e
+            );
+            return None;
+        }
+    }
+    #[cfg(feature = "server")]
+    match parse_nonempty_usize(result.opt_str("push-task-max-push-count")) {
+        Ok(r) => re.as_mut().unwrap().push_task_max_push_count = r,
+        Err(e) => {
+            log::error!(
+                "{} {}",
+                gettext("Failed to parse <opt>:")
+                    .replace("<opt>", "push-task-max-push-count")
                     .as_str(),
                 e
             );

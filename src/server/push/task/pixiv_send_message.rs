@@ -11,66 +11,66 @@ use crate::{get_helper, gettext};
 use json::JsonValue;
 use percent_encoding::{percent_encode, NON_ALPHANUMERIC};
 
-struct RunContext<'a> {
+struct RunContext {
     ctx: Arc<ServerContext>,
-    illust: Option<&'a PixivAppIllust>,
-    data: Option<&'a JsonValue>,
-    pdata: Option<&'a JsonValue>,
-    tdata: Option<&'a JsonValue>,
-    translated_table: Option<&'a JsonValue>,
-    cfg: &'a PushConfig,
+    illust: Option<Arc<PixivAppIllust>>,
+    data: Option<Arc<JsonValue>>,
+    pdata: Option<Arc<JsonValue>>,
+    tdata: Option<Arc<JsonValue>>,
+    translated_table: Option<Arc<JsonValue>>,
+    cfg: Arc<PushConfig>,
 }
 
-impl<'a> RunContext<'a> {
+impl RunContext {
     pub fn title(&self) -> Option<&str> {
-        match self.illust {
+        match self.illust.as_ref() {
             Some(i) => match i.title() {
                 Some(t) => return Some(t),
                 None => {}
             },
             None => {}
         }
-        match self.data {
+        match self.data.as_ref() {
             Some(d) => return d["title"].as_str().or_else(|| d["illustTitle"].as_str()),
             None => {}
         }
-        match self.tdata {
+        match self.tdata.as_ref() {
             Some(d) => d["title"].as_str(),
             None => None,
         }
     }
 
     pub fn id(&self) -> Option<u64> {
-        match self.illust {
+        match self.illust.as_ref() {
             Some(i) => match i.id() {
                 Some(i) => return Some(i),
                 None => {}
             },
             None => {}
         }
-        match self.data {
+        match self.data.as_ref() {
             Some(d) => return parse_pixiv_id(&d["id"]).or_else(|| parse_pixiv_id(&d["illustId"])),
             None => {}
         }
-        match self.tdata {
+        match self.tdata.as_ref() {
             Some(d) => parse_pixiv_id(&d["id"]),
             None => None,
         }
     }
 
     pub fn _author(&self) -> Option<&str> {
-        match self.illust {
+        match self.illust.as_ref() {
             Some(i) => match i.user_name() {
                 Some(u) => return Some(u),
                 None => {}
             },
             None => {}
         }
-        match self.data {
+        match self.data.as_ref() {
             Some(d) => return d["userName"].as_str(),
             None => {}
         }
-        match self.tdata {
+        match self.tdata.as_ref() {
             Some(d) => d["userName"].as_str(),
             None => None,
         }
@@ -92,18 +92,18 @@ impl<'a> RunContext<'a> {
     }
 
     pub fn user_id(&self) -> Option<u64> {
-        match self.illust {
+        match self.illust.as_ref() {
             Some(i) => match i.user_id() {
                 Some(u) => return Some(u),
                 None => {}
             },
             None => {}
         }
-        match self.data {
+        match self.data.as_ref() {
             Some(d) => return parse_pixiv_id(&d["userId"]),
             None => {}
         }
-        match self.tdata {
+        match self.tdata.as_ref() {
             Some(d) => parse_pixiv_id(&d["userId"]),
             None => None,
         }
@@ -111,26 +111,26 @@ impl<'a> RunContext<'a> {
 
     /// Whether to filter author name
     pub fn filter_author(&self) -> bool {
-        match self.cfg {
+        match self.cfg.as_ref() {
             PushConfig::EveryPush(e) => e.filter_author,
             PushConfig::PushDeer(e) => e.filter_author,
         }
     }
 
     pub fn len(&self) -> Option<u64> {
-        match self.illust {
+        match self.illust.as_ref() {
             Some(i) => return i.page_count(),
             None => {}
         }
-        match self.data {
+        match self.data.as_ref() {
             Some(d) => return d["pageCount"].as_u64(),
             None => {}
         }
-        match self.tdata {
+        match self.tdata.as_ref() {
             Some(d) => return d["pageCount"].as_u64(),
             None => {}
         }
-        match self.pdata {
+        match self.pdata.as_ref() {
             Some(d) => Some(d.len() as u64),
             None => None,
         }
@@ -142,19 +142,19 @@ impl<'a> RunContext<'a> {
             return None;
         }
         if len == 1 {
-            match self.illust {
+            match self.illust.as_ref() {
                 Some(i) => return i.original_image_url().map(|s| s.to_owned()),
                 None => {}
             }
         }
-        match self.illust {
+        match self.illust.as_ref() {
             Some(i) => match i.meta_pages().get(index as usize) {
                 Some(p) => return p.original().map(|s| s.to_owned()),
                 None => {}
             },
             None => {}
         }
-        match self.pdata {
+        match self.pdata.as_ref() {
             Some(d) => {
                 return d[index as usize]["urls"]["original"]
                     .as_str()
@@ -163,7 +163,7 @@ impl<'a> RunContext<'a> {
             None => {}
         }
         if index == 0 {
-            match self.data {
+            match self.data.as_ref() {
                 Some(d) => return d["urls"]["original"].as_str().map(|s| s.to_owned()),
                 None => {}
             }
@@ -193,7 +193,7 @@ impl<'a> RunContext<'a> {
     }
 
     pub fn desc(&self) -> Option<&str> {
-        match self.illust {
+        match self.illust.as_ref() {
             Some(i) => {
                 if !i.caption_is_empty() {
                     return i.caption();
@@ -201,7 +201,7 @@ impl<'a> RunContext<'a> {
             }
             None => {}
         }
-        match self.data {
+        match self.data.as_ref() {
             Some(d) => d["description"]
                 .as_str()
                 .or_else(|| d["illustComment"].as_str()),
@@ -210,7 +210,7 @@ impl<'a> RunContext<'a> {
     }
 
     pub fn is_ai(&self) -> bool {
-        match self.illust {
+        match self.illust.as_ref() {
             Some(i) => {
                 if let Some(id) = i.illust_ai_type() {
                     if id == 2 {
@@ -220,7 +220,7 @@ impl<'a> RunContext<'a> {
             }
             None => {}
         }
-        match self.data {
+        match self.data.as_ref() {
             Some(d) => {
                 if let Some(id) = d["aiType"].as_u64() {
                     if id == 2 {
@@ -230,7 +230,7 @@ impl<'a> RunContext<'a> {
             }
             None => {}
         }
-        match self.tdata {
+        match self.tdata.as_ref() {
             Some(d) => {
                 if let Some(id) = d["aiType"].as_u64() {
                     if id == 2 {
@@ -244,14 +244,14 @@ impl<'a> RunContext<'a> {
     }
 
     pub fn add_ai_tag(&self) -> bool {
-        match self.cfg {
+        match self.cfg.as_ref() {
             PushConfig::EveryPush(e) => e.add_ai_tag,
             PushConfig::PushDeer(e) => e.add_ai_tag,
         }
     }
 
     pub fn add_translated_tag(&self) -> bool {
-        match self.cfg {
+        match self.cfg.as_ref() {
             PushConfig::EveryPush(e) => e.add_translated_tag,
             PushConfig::PushDeer(e) => e.add_translated_tag,
         }
@@ -263,7 +263,7 @@ impl<'a> RunContext<'a> {
             text.push_str(gettext("AI generated"));
             text.push_str(" ");
         }
-        if let Some(i) = self.illust {
+        if let Some(i) = self.illust.as_ref() {
             for tag in i.tags() {
                 if let Some(name) = tag.name() {
                     let encoded = if ensure_ascii {
@@ -288,7 +288,7 @@ impl<'a> RunContext<'a> {
             text.push_str(" \n");
             return;
         }
-        if let Some(d) = self.data {
+        if let Some(d) = self.data.as_ref() {
             for tag in d["tags"]["tags"].members() {
                 if let Some(name) = &tag["tag"].as_str() {
                     let encoded = if ensure_ascii {
@@ -594,7 +594,7 @@ impl<'a> RunContext<'a> {
     }
 
     pub async fn run(&self) -> Result<(), PixivDownloaderError> {
-        match self.cfg {
+        match self.cfg.as_ref() {
             PushConfig::EveryPush(e) => self.send_every_push(e).await,
             PushConfig::PushDeer(e) => self.send_push_deer(e).await,
         }
@@ -603,12 +603,12 @@ impl<'a> RunContext<'a> {
 
 pub async fn send_message(
     ctx: Arc<ServerContext>,
-    illust: Option<&PixivAppIllust>,
-    data: Option<&JsonValue>,
-    pdata: Option<&JsonValue>,
-    tdata: Option<&JsonValue>,
-    translated_table: Option<&JsonValue>,
-    cfg: &PushConfig,
+    illust: Option<Arc<PixivAppIllust>>,
+    data: Option<Arc<JsonValue>>,
+    pdata: Option<Arc<JsonValue>>,
+    tdata: Option<Arc<JsonValue>>,
+    translated_table: Option<Arc<JsonValue>>,
+    cfg: Arc<PushConfig>,
 ) -> Result<(), PixivDownloaderError> {
     let ctx = RunContext {
         ctx,
