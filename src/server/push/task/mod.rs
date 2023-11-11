@@ -1,3 +1,4 @@
+pub mod pixiv_bookmarks;
 pub mod pixiv_follow;
 pub mod pixiv_illusts;
 pub mod pixiv_send_message;
@@ -78,7 +79,18 @@ pub async fn run_push_task(
                 )
                 .await
             }
-            _ => Ok(()),
+            PushTaskPixivAction::Bookmarks { uid, tag, restrict } => {
+                pixiv_bookmarks::run_push_task(
+                    ctx,
+                    task.clone(),
+                    config,
+                    uid.clone(),
+                    restrict,
+                    tag.as_ref().map(|s| s.as_str()),
+                    send_mode,
+                )
+                .await
+            }
         },
     }
 }

@@ -319,6 +319,50 @@ impl PixivWebClient {
         v
     }
 
+    /// Get user's bookmarks
+    /// * `uid` - User's id
+    /// * `is_hide` - Whether to get hidden bookmarks
+    /// * `tag` - Tag
+    /// * `offset` - Offset
+    /// * `limit` - Limit. Default: `48`
+    pub async fn get_user_bookmarks(
+        &self,
+        uid: u64,
+        is_hide: bool,
+        tag: Option<&str>,
+        offset: Option<usize>,
+        limit: Option<usize>,
+    ) -> Option<JsonValue> {
+        self.auto_init();
+        let mut params = self.get_params().unwrap_or_else(|| json::object! {});
+        params["rest"] = if is_hide { "hide" } else { "show" }.into();
+        params["tag"] = tag.unwrap_or("").into();
+        params["offset"] = offset.unwrap_or(0).into();
+        params["limit"] = limit.unwrap_or(48).into();
+        let r = self
+            .client
+            .get_with_param(
+                format!("https://www.pixiv.net/ajax/user/{}/illusts/bookmarks", uid),
+                Some(params),
+                None,
+            )
+            .await;
+        let r = match r {
+            Some(r) => r,
+            None => return None,
+        };
+        let v = self.deal_json(r).await;
+        if v.is_some() {
+            log::debug!(
+                target: "pixiv_web",
+                "{} {}",
+                gettext("User's bookmarks: "),
+                v.as_ref().unwrap().pretty(2)
+            );
+        }
+        v
+    }
+
     /// Get user's works
     /// * `uid` - User's id
     pub async fn get_user_works(&self, uid: u64) -> Option<JsonValue> {

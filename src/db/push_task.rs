@@ -22,6 +22,10 @@ fn default_restrict() -> PixivRestrictType {
     PixivRestrictType::All
 }
 
+fn default_bookmarks_restrict() -> PixivRestrictType {
+    PixivRestrictType::Public
+}
+
 fn default_mode() -> PixivMode {
     PixivMode::All
 }
@@ -46,11 +50,15 @@ pub enum PushTaskPixivAction {
         mode: PixivMode,
     },
     Bookmarks {
-        #[serde(default = "default_restrict")]
-        /// Bookmarks' type
+        #[serde(default = "default_bookmarks_restrict")]
+        /// Bookmarks' type.
+        /// # Note
+        /// [PixivRestrictType::All] will send two requests.
         restrict: PixivRestrictType,
         /// User ID
         uid: u64,
+        /// Tag
+        tag: Option<String>,
     },
     Illusts {
         /// User ID

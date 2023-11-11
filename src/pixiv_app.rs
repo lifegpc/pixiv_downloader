@@ -27,12 +27,28 @@ pub enum PixivRestrictType {
     All,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum PixivRestrictLessType {
+    Public,
+    Private,
+}
+
 impl ToString for PixivRestrictType {
     fn to_string(&self) -> String {
         match self {
             PixivRestrictType::Public => String::from("public"),
             PixivRestrictType::Private => String::from("private"),
             PixivRestrictType::All => String::from("all"),
+        }
+    }
+}
+
+impl ToString for PixivRestrictLessType {
+    fn to_string(&self) -> String {
+        match self {
+            PixivRestrictLessType::Public => String::from("public"),
+            PixivRestrictLessType::Private => String::from("private"),
         }
     }
 }
@@ -326,6 +342,35 @@ impl PixivAppClientInternal {
         Ok(obj)
     }
 
+    pub async fn get_user_bookmarks(
+        &self,
+        uid: u64,
+        restrict: &PixivRestrictLessType,
+        tag: Option<&str>,
+    ) -> Result<JsonValue, PixivDownloaderError> {
+        self.auto_handle().await?;
+        let mut params = json::object! {"user_id": uid, "restrict": restrict.to_string()};
+        if let Some(tag) = tag {
+            params.insert("tag", tag)?;
+        }
+        let re = self
+            .client
+            .get_with_param(
+                "https://app-api.pixiv.net/v1/user/bookmarks/illust",
+                params,
+                None,
+            )
+            .await
+            .ok_or(gettext("Failed to get user's bookmarks."))?;
+        let obj = handle_error(re).await?;
+        log::debug!(
+            "{}{}",
+            gettext("User's bookmarks: "),
+            obj.pretty(2).as_str()
+        );
+        Ok(obj)
+    }
+
     pub async fn get_user_illusts(&self, uid: u64) -> Result<JsonValue, PixivDownloaderError> {
         self.auto_handle().await?;
         let re = self
@@ -386,6 +431,16 @@ impl PixivAppClient {
         restrict: &PixivRestrictType,
     ) -> Result<PixivAppIllusts, PixivDownloaderError> {
         let obj = self.internal.get_follow(restrict).await?;
+        PixivAppIllusts::new(self.internal.clone(), obj)
+    }
+
+    pub async fn get_user_bookmarks(
+        &self,
+        uid: u64,
+        restrict: &PixivRestrictLessType,
+        tag: Option<&str>,
+    ) -> Result<PixivAppIllusts, PixivDownloaderError> {
+        let obj = self.internal.get_user_bookmarks(uid, restrict, tag).await?;
         PixivAppIllusts::new(self.internal.clone(), obj)
     }
 
