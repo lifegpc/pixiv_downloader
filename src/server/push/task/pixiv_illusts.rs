@@ -187,11 +187,11 @@ impl<'a> RunContext<'a> {
             }
             None => {
                 if self.first_run.qload() {
-                    for i in illusts.iter().rev() {
+                    for i in illusts.iter() {
                         self.pushed.get_mut().push(i.clone());
                     }
                 } else {
-                    for i in illusts.iter().rev() {
+                    for i in illusts.iter() {
                         self.web_illust(i).await?;
                     }
                 }

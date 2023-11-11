@@ -176,10 +176,8 @@ impl<'a> RunContext<'a> {
                         self.web_illust(i, &data).await?;
                     }
                 } else {
-                    let len = illusts.len();
-                    let index = m.to_index(len);
-                    if let Some(index) = index {
-                        self.web_illust(&illusts[len - index - 1], &data).await?;
+                    if let Some(index) = m.to_index(illusts.len()) {
+                        self.web_illust(&illusts[index], &data).await?;
                     }
                 }
             }
