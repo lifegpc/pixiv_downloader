@@ -1,7 +1,16 @@
 use crate::error::PixivDownloaderError;
+use crate::ext::replace::ReplaceWith;
 use html5ever::tendril::TendrilSink;
 use html5ever::{parse_document, ParseOpts, QualName};
 use markup5ever_rcdom::{Node, NodeData, RcDom};
+use std::collections::BTreeMap;
+
+fn encode_data<S: AsRef<str> + ?Sized>(data: &S) -> String {
+    data.as_ref()
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+}
 
 #[derive(Clone, Debug, PartialEq)]
 /// Message Entity Type
@@ -112,6 +121,14 @@ impl Stack {
     }
 }
 
+fn push_end(ends: &mut BTreeMap<usize, Vec<String>>, end: usize, s: String) {
+    if let Some(i) = ends.get_mut(&end) {
+        i.push(s);
+    } else {
+        ends.insert(end, vec![s]);
+    }
+}
+
 pub struct TextSpliter {
     entities: Vec<MessageEntity>,
     text: String,
@@ -122,6 +139,156 @@ pub struct TextSpliter {
 impl TextSpliter {
     pub fn builder() -> TextSpliterBuilder {
         TextSpliterBuilder::default()
+    }
+
+    pub fn get_str(&mut self, len: usize) -> String {
+        let mut ends = BTreeMap::<usize, Vec<String>>::new();
+        let mut cur_pos = 0usize;
+        let mut text = String::new();
+        let mut first = true;
+        while let Some(pos) = {
+            if first {
+                first = false;
+                self.entities
+                    .iter()
+                    .find(|e| e.offset >= cur_pos && e.offset < len)
+                    .map(|e| e.offset.clone())
+            } else {
+                let fend = ends
+                    .first_key_value()
+                    .filter(|(k, _)| *k <= &len)
+                    .map(|(k, _)| k.clone());
+                let start = self
+                    .entities
+                    .iter()
+                    .find(|e| e.offset > cur_pos && e.offset < len)
+                    .map(|e| e.offset.clone());
+                if let Some(fend) = fend {
+                    if let Some(start) = start {
+                        Some(start.min(fend))
+                    } else {
+                        Some(fend)
+                    }
+                } else {
+                    start
+                }
+            }
+        } {
+            if cur_pos < pos {
+                text.push_str(&encode_data(&self.text_get(cur_pos, pos)));
+                cur_pos = pos;
+            }
+            if let Some(end) = ends.remove(&pos) {
+                for i in end.iter().rev() {
+                    text.push_str(i);
+                }
+            }
+            for i in self.entities.iter() {
+                if i.offset != pos {
+                    continue;
+                }
+                let end = match &i.typ {
+                    MessageEntityType::Url => {
+                        if len >= i.offset + i.length {
+                            ""
+                        } else {
+                            text.push_str("<a href=\"");
+                            let link = encode_data(&self.text_get(i.offset, i.offset + i.length));
+                            text.push_str(&link);
+                            text.push_str("\">");
+                            "</a>"
+                        }
+                    }
+                    MessageEntityType::Bold => {
+                        text.push_str("<b>");
+                        "</b>"
+                    }
+                    MessageEntityType::Italic => {
+                        text.push_str("<i>");
+                        "</i>"
+                    }
+                    MessageEntityType::Underline => {
+                        text.push_str("<u>");
+                        "</u>"
+                    }
+                    MessageEntityType::Strikethrough => {
+                        text.push_str("<s>");
+                        "</s>"
+                    }
+                    MessageEntityType::Spoiler => {
+                        text.push_str("<tg-spoiler>");
+                        "</tg-spiler>"
+                    }
+                    MessageEntityType::Code => {
+                        text.push_str("<code>");
+                        "</code>"
+                    }
+                    MessageEntityType::Pre { language } => match language {
+                        Some(language) => {
+                            text.push_str("<pre><code class=\"");
+                            text.push_str(&encode_data(language));
+                            text.push_str("\">");
+                            "</code></pre>"
+                        }
+                        None => {
+                            text.push_str("<pre>");
+                            "</pre>"
+                        }
+                    },
+                    MessageEntityType::TextLink { url } => {
+                        text.push_str("<a href=\"");
+                        text.push_str(&encode_data(url));
+                        text.push_str("\">");
+                        "</a>"
+                    }
+                    MessageEntityType::CustomEmoji { custom_emoji_id } => {
+                        text.push_str("<tg-emoji emoji-id=\"");
+                        text.push_str(&encode_data(custom_emoji_id));
+                        text.push_str("\">");
+                        "</tg-emoji>"
+                    }
+                };
+                push_end(&mut ends, i.offset + i.length, end.to_string());
+            }
+        }
+        if cur_pos < len {
+            text.push_str(&encode_data(&self.text_get(cur_pos, len)));
+        }
+        for (_, v) in ends.iter() {
+            for i in v.iter().rev() {
+                text.push_str(i);
+            }
+        }
+        let entities = self.entities.replace_with(Vec::new());
+        for e in entities {
+            if e.offset + e.length > len {
+                if e.offset >= len {
+                    self.entities.push(MessageEntity {
+                        offset: e.offset - len,
+                        ..e
+                    })
+                } else {
+                    if matches!(e.typ, MessageEntityType::Url) {
+                        self.entities.push(MessageEntity {
+                            offset: 0,
+                            length: e.offset + e.length - len,
+                            typ: MessageEntityType::TextLink {
+                                url: self.text_get(e.offset, e.offset + e.length),
+                            },
+                        })
+                    } else {
+                        self.entities.push(MessageEntity {
+                            offset: 0,
+                            length: e.offset + e.length - len,
+                            ..e
+                        })
+                    }
+                }
+            }
+        }
+        let v = self.text.encode_utf16().skip(len).collect::<Vec<_>>();
+        self.text = String::from_utf16_lossy(&v);
+        text
     }
 
     fn is_conflict_with_link_entities(&self, offset: usize, length: usize) -> bool {
@@ -138,6 +305,15 @@ impl TextSpliter {
                 return true;
             }
             if offset <= entity.offset && eesize >= esize {
+                return true;
+            }
+        }
+        false
+    }
+
+    fn is_in_entities(&self, pos: usize) -> bool {
+        for entity in &self.entities {
+            if pos >= entity.offset && pos < entity.offset + entity.length {
                 return true;
             }
         }
@@ -311,6 +487,43 @@ impl TextSpliter {
         }
     }
 
+    pub fn to_html(&mut self, max_len: Option<usize>) -> String {
+        let max_len = max_len.unwrap_or(self.opts._max_length);
+        let mut len = self.text_len();
+        let lens = self
+            .text
+            .split('\n')
+            .map(|s| s.encode_utf16().count())
+            .collect::<Vec<_>>();
+        for i in lens.iter().rev() {
+            if len <= max_len {
+                if !self.is_in_entities(len) {
+                    return self.get_str(len);
+                }
+            }
+            len -= i;
+            if len > 0 {
+                len -= 1;
+            }
+        }
+        len = self.text_len();
+        for i in lens.iter().rev() {
+            if len <= max_len {
+                return self.get_str(len);
+            }
+            len -= i;
+        }
+        let max_len = max_len.min(self.text_len());
+        for i in self.entities.iter() {
+            if max_len > i.offset && max_len < i.offset + i.length {
+                if matches!(i.typ, MessageEntityType::CustomEmoji { .. }) {
+                    return self.get_str(i.offset);
+                }
+            }
+        }
+        self.get_str(max_len)
+    }
+
     pub fn parse<S: AsRef<str> + ?Sized>(&mut self, text: &S) -> Result<(), PixivDownloaderError> {
         let opts = ParseOpts::default();
         let dom = parse_document(RcDom::default(), opts)
@@ -329,10 +542,17 @@ impl TextSpliter {
 
     fn scan_link(&mut self) {
         let mut offset = 0;
-        while let Some(i) = self.text[offset..]
-            .find("http://")
-            .or_else(|| self.text[offset..].find("https://"))
-        {
+        while let Some(i) = {
+            let i = self.text[offset..].find("http://");
+            let i2 = self.text[offset..].find("https://");
+            match i {
+                Some(i) => match i2 {
+                    Some(i2) => Some(i.min(i2)),
+                    None => Some(i),
+                },
+                None => i2,
+            }
+        } {
             let mut length = 0;
             for c in self.text[offset + i..].chars() {
                 if c != ' ' && c != '\n' && c != '\r' && c != '\t' {
@@ -342,7 +562,9 @@ impl TextSpliter {
                 }
             }
             let boffset = self.text[..offset + i].encode_utf16().count();
-            let tlen = self.text[offset + i..offset + i + length].encode_utf16().count();
+            let tlen = self.text[offset + i..offset + i + length]
+                .encode_utf16()
+                .count();
             if length > 0 && !self.is_conflict_with_link_entities(boffset, tlen) {
                 self.entities.push(MessageEntity {
                     typ: MessageEntityType::Url,
@@ -354,13 +576,22 @@ impl TextSpliter {
         }
     }
 
-
     fn sort(&mut self) {
         self.entities.sort_by(|a, b| {
             a.offset
                 .cmp(&b.offset)
-                .then_with(|| a.length.cmp(&b.length))
+                .then_with(|| b.length.cmp(&a.length))
         });
+    }
+
+    fn text_get(&self, start: usize, end: usize) -> String {
+        let v = self
+            .text
+            .encode_utf16()
+            .skip(start)
+            .take(end - start)
+            .collect::<Vec<_>>();
+        String::from_utf16_lossy(&v)
     }
 
     #[inline]
@@ -500,5 +731,92 @@ fn test_parse2() {
             offset: 0,
             length: 2,
         },]
+    );
+}
+
+#[test]
+fn test_split() {
+    let mut spliter = TextSpliter::default();
+    spliter
+        .parse("<b><i>test</i>d<i>ad</b></i>1234&lt;&gt;&amp;")
+        .unwrap();
+    assert_eq!(
+        spliter.to_html(None),
+        "<b><i>test</i>d<i>ad</i></b>1234&lt;&gt;&amp;"
+    );
+    assert_eq!(spliter.entities.len(), 0);
+    assert_eq!(spliter.text, String::from(""));
+}
+
+#[test]
+fn test_split2() {
+    let mut spliter = TextSpliter::default();
+    spliter.parse("<b>test</b><i>test</i>").unwrap();
+    assert_eq!(spliter.to_html(Some(5)), "<b>test</b><i>t</i>");
+    assert_eq!(spliter.entities.len(), 1);
+    assert_eq!(spliter.text, String::from("est"));
+    assert_eq!(spliter.to_html(Some(5)), "<i>est</i>");
+    assert_eq!(spliter.entities.len(), 0);
+    assert_eq!(spliter.text, String::from(""));
+}
+
+#[test]
+fn test_split3() {
+    let mut spliter = TextSpliter::default();
+    spliter
+        .parse("<b>testd\nhttps://www.pixiv.net</b>")
+        .unwrap();
+    assert_eq!(spliter.to_html(Some(22)), "<b>testd\n</b>");
+    assert_eq!(spliter.entities.len(), 2);
+    assert_eq!(spliter.to_html(Some(22)), "<b>https://www.pixiv.net</b>");
+}
+
+#[test]
+fn test_split4() {
+    let mut spliter = TextSpliter::builder().max_length(12).build();
+    spliter.parse("https://www.pixiv.net").unwrap();
+    assert_eq!(
+        spliter.to_html(None),
+        "<a href=\"https://www.pixiv.net\">https://www.</a>"
+    );
+    assert_eq!(
+        spliter.to_html(None),
+        "<a href=\"https://www.pixiv.net\">pixiv.net</a>"
+    );
+    assert_eq!(spliter.entities.len(), 0);
+}
+
+#[test]
+fn test_split5() {
+    let mut spliter = TextSpliter::builder()
+        .max_length(12)
+        .disable_scan_link()
+        .build();
+    spliter.parse("https://www.pixiv.net").unwrap();
+    assert_eq!(spliter.to_html(None), "https://www.");
+    assert_eq!(spliter.to_html(None), "pixiv.net");
+    assert_eq!(spliter.entities.len(), 0);
+}
+
+#[test]
+fn test_split6() {
+    let mut spliter = TextSpliter::default();
+    spliter
+        .parse("<b>test</b>\n<i>test\n<b>123</b></i>")
+        .unwrap();
+    assert_eq!(spliter.to_html(Some(12)), "<b>test</b>");
+    assert_eq!(spliter.entities.len(), 2);
+}
+
+#[test]
+fn test_split7() {
+    let mut spliter = TextSpliter::builder().max_length(3).build();
+    spliter
+        .parse("中文<tg-emoji emoji-id=\"536\">👍</tg-emoji>")
+        .unwrap();
+    assert_eq!(spliter.to_html(None), "中文");
+    assert_eq!(
+        spliter.to_html(None),
+        "<tg-emoji emoji-id=\"536\">👍</tg-emoji>"
     );
 }
