@@ -360,17 +360,20 @@ impl WebClient {
         let mut r = self.client.get(s);
         for (k, v) in self.get_headers().iter() {
             r = r.header(k, v);
+            log::debug!(target: "webclient", "{}: {}", k, v);
         }
         let headers = headers.to_headers();
         if headers.is_some() {
             let h = headers.unwrap();
             for (k, v) in h.iter() {
                 r = r.header(k, v);
+                log::debug!(target: "webclient", "{}: {}", k, v);
             }
         }
         let c = gen_cookie_header(&self, s);
         if c.len() > 0 {
             r = r.header("Cookie", c.as_str());
+            log::debug!(target: "webclient", "Cookie: {}", c.as_str());
         }
         self.handle_req_middlewares(r.build()?)
     }

@@ -7,6 +7,7 @@ use crate::ext::use_or_not::ToBool;
 use crate::ext::use_or_not::UseOrNot;
 use crate::list::NonTailList;
 use crate::opt::author_name_filter::AuthorNameFilter;
+use crate::opt::header_map::HeaderMap;
 use crate::opt::proxy::ProxyChain;
 use crate::opt::size::parse_u32_size;
 use crate::opt::use_progress_bar::UseProgressBar;
@@ -48,6 +49,7 @@ pub struct OptHelper {
     _proxy_chain: RwLock<ProxyChain>,
     #[cfg(feature = "server")]
     _cors_entries: RwLock<Vec<CorsEntry>>,
+    _fanbox_http_headers: RwLock<HeaderMap>,
 }
 
 impl OptHelper {
@@ -198,6 +200,10 @@ impl OptHelper {
         self.download_multiple_files() && self.max_download_tasks() > 1
     }
 
+    pub fn fanbox_http_headers(&self) -> HeaderMap {
+        self._fanbox_http_headers.get_ref().clone()
+    }
+
     #[cfg(feature = "ugoira")]
     /// Return whether to force yuv420p as output pixel format when converting ugoira(GIF) to video.
     pub fn force_yuv420p(&self) -> bool {
@@ -344,6 +350,11 @@ impl OptHelper {
         if settings.have("cors-entries") {
             self._cors_entries
                 .replace_with2(parse_cors_entries(&settings.get("cors-entries").unwrap()).unwrap());
+        }
+        if settings.have("fanbox-http-headers") {
+            self._fanbox_http_headers.replace_with2(
+                HeaderMap::from_json(&settings.get("fanbox-http-headers").unwrap()).unwrap(),
+            );
         }
         self.opt.replace_with2(opt);
         self.settings.replace_with2(settings);
@@ -638,6 +649,7 @@ impl Default for OptHelper {
             _proxy_chain: RwLock::new(ProxyChain::default()),
             #[cfg(feature = "server")]
             _cors_entries: RwLock::new(Vec::new()),
+            _fanbox_http_headers: RwLock::new(HeaderMap::new()),
         };
         s.init_log();
         s

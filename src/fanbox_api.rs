@@ -86,6 +86,10 @@ impl FanboxClientInternal {
         self.client.set_header("User-Agent", &helper.user_agent());
         self.client.set_header("referer", "https://www.fanbox.cc/");
         self.client.set_header("origin", "https://www.fanbox.cc");
+        let headers = helper.fanbox_http_headers();
+        for (k, v) in headers.iter() {
+            self.client.set_header(k, v);
+        }
         self.inited.qstore(true);
         true
     }
@@ -116,6 +120,7 @@ impl FanboxClientInternal {
                 let code = status.as_u16();
                 if code >= 400 {
                     log::error!(target: "fanbox_api", "{} {}", gettext("Failed to get fanbox main page:"), status);
+                    log::debug!(target: "fanbox_api", "{}", r.text_with_charset("UTF-8").await.unwrap_or(String::from("")));
                     return false;
                 }
                 match r.text_with_charset("UTF-8").await {

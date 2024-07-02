@@ -9,6 +9,7 @@ use crate::settings::JsonValueType;
 use crate::opt::author_name_filter::check_author_name_filters;
 #[cfg(feature = "ugoira")]
 use crate::opt::crf::check_crf;
+use crate::opt::header_map::check_header_map;
 use crate::opt::proxy::check_proxy;
 use crate::opt::size::parse_u32_size;
 #[cfg(feature = "server")]
@@ -73,6 +74,7 @@ pub fn get_settings_list() -> Vec<SettingDes> {
         SettingDes::new("push-task-max-count", gettext("The maximum number of push tasks running at the same time."), JsonValueType::Number, Some(check_nozero_usize)).unwrap(),
         #[cfg(feature = "server")]
         SettingDes::new("push-task-max-push-count", gettext("The maximum number of tasks to push to client at the same time."), JsonValueType::Number, Some(check_nozero_usize)).unwrap(),
+        SettingDes::new("fanbox-http-headers", gettext("Extra http headers for fanbox.cc."), JsonValueType::Object, Some(check_header_map)).unwrap(),
     ]
 }
 
