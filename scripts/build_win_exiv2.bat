@@ -8,9 +8,9 @@ IF NOT EXIST cbuild (
     MD cbuild || EXIT /B 1
 )
 CD cbuild || EXIT /B 1
-git clone "https://github.com/Exiv2/exiv2" || EXIT /B %ERRORLEVEL%
+git clone --depth 1 "https://github.com/Exiv2/exiv2" || EXIT /B %ERRORLEVEL%
 CD exiv2 || EXIT /B %ERRORLEVEL%
-git apply -3 %PATCH_DIR%\basicio.cpp.patch || EXIT /B %ERRORLEVEL%
+git apply %PATCH_DIR%\basicio.cpp.patch || EXIT /B %ERRORLEVEL%
 IF NOT EXIST build (
     MD build || EXIT /B 1
 )
