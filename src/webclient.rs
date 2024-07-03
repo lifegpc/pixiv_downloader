@@ -62,15 +62,19 @@ impl ToHeaders for JsonValue {
 pub fn gen_cookie_header<U: IntoUrl>(c: &WebClient, url: U) -> String {
     c.get_cookies_as_mut().jar.get_mut().check_expired();
     let mut s = String::from("");
+    let mut k = String::from("");
     let u = url.as_str();
     for a in c.get_cookies().jar.get_ref().iter() {
         if a.matched(u) {
             if s.len() > 0 {
                 s += " ";
+                k += ", ";
             }
             s += a.get_name_value().as_str();
+            k += a.name();
         }
     }
+    log::debug!(target: "webclient", "Cookie List: {}", k);
     s
 }
 
@@ -373,7 +377,6 @@ impl WebClient {
         let c = gen_cookie_header(&self, s);
         if c.len() > 0 {
             r = r.header("Cookie", c.as_str());
-            log::debug!(target: "webclient", "Cookie: {}", c.as_str());
         }
         self.handle_req_middlewares(r.build()?)
     }
@@ -445,12 +448,14 @@ impl WebClient {
         let mut r = self.client.post(s);
         for (k, v) in self.get_headers().iter() {
             r = r.header(k, v);
+            log::debug!(target: "webclient", "{}: {}", k, v);
         }
         let headers = headers.to_headers();
         if headers.is_some() {
             let h = headers.unwrap();
             for (k, v) in h.iter() {
                 r = r.header(k, v);
+                log::debug!(target: "webclient", "{}: {}", k, v);
             }
         }
         let c = gen_cookie_header(&self, s);

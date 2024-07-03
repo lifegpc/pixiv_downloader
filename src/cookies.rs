@@ -197,6 +197,10 @@ impl Cookie {
         ))
     }
 
+    pub fn name(&self) -> &str {
+        &self._name
+    }
+
     /// Get name and value string: name=value;
     pub fn get_name_value(&self) -> String {
         format!("{}={};", self._name.as_str(), self._value.as_str())
