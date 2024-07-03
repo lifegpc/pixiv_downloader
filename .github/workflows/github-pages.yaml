@@ -46,7 +46,7 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: Check out
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           submodules: true
@@ -60,7 +60,7 @@ jobs:
           python3 get_cache_key.py exiv2 libzip x264 ffmpeg || exit 1
       - name: Cache
         id: cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: clib/
           key: ${{ runner.os }}-${{ steps.cache_key.outputs.cache_key }}
@@ -87,11 +87,11 @@ jobs:
         run: |
           echo '<!DOCTYPE HTML><html><head><script>window.location.href="pixiv_downloader/"</script></head><body><a href="pixiv_downloader/">Content Moved</a></body></html>' > target/doc/index.html
       - name: Setup Pages
-        uses: actions/configure-pages@v2
+        uses: actions/configure-pages@v5
       - name: Upload documents
-        uses: actions/upload-pages-artifact@v1
+        uses: actions/upload-pages-artifact@v3
         with:
           path: target/doc
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@main
+        uses: actions/deploy-pages@v4
