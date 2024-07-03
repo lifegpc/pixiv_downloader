@@ -10,9 +10,8 @@ IF NOT EXIST cbuild (
     MD cbuild || EXIT /B 1
 )
 CD cbuild || EXIT /B 1
-CALL %DOWNLOAD_RESOURCE% -o "zlib-1.3.tar.gz" "https://www.zlib.net/zlib-1.3.tar.gz" || EXIT /B %ERRORLEVEL%
-tar -xzvf "zlib-1.3.tar.gz" || EXIT /B %ERRORLEVEL%
-CD zlib-1.3 || EXIT /B 1
+git clone --depth 1 "https://github.com/lifegpc/zlib" || EXIT /B %ERRORLEVEL%
+CD zlib || EXIT /B 1
 IF NOT EXIST build (
     MD build || EXIT /B 1
 )
