@@ -413,20 +413,22 @@ impl OptHelper {
     #[cfg(feature = "server")]
     /// Return the server
     pub fn server(&self) -> SocketAddr {
-        match self.opt.get_ref().server {
-            Some(server) => {
-                return server;
-            }
-            None => {}
-        }
-        if self.settings.get_ref().have("server") {
-            let v = self.settings.get_ref().get("server").unwrap();
-            return SocketAddr::from_str(v.as_str().unwrap()).unwrap();
-        }
         #[cfg(feature = "docker")]
         return SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), 8080);
         #[cfg(not(feature = "docker"))]
-        SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080)
+        {
+            match self.opt.get_ref().server {
+                Some(server) => {
+                    return server;
+                }
+                None => {}
+            }
+            if self.settings.get_ref().have("server") {
+                let v = self.settings.get_ref().get("server").unwrap();
+                return SocketAddr::from_str(v.as_str().unwrap()).unwrap();
+            }
+            SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080)
+        }
     }
 
     /// Return whether to use description from Web API when description from APP API is empty.
