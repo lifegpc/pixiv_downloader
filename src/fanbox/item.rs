@@ -89,6 +89,11 @@ impl FanboxItem {
     }
 
     #[inline]
+    pub fn is_pinned(&self) -> Option<bool> {
+        self.data["isPinned"].as_bool()
+    }
+
+    #[inline]
     pub fn is_restricted(&self) -> Option<bool> {
         self.data["isRestricted"].as_bool()
     }
@@ -173,6 +178,7 @@ impl CheckUnknown for FanboxItem {
                 "iconUrl",
                 "userId"+user_id,
             ],
+            "isPinned",
         );
         Ok(())
     }
@@ -192,6 +198,7 @@ impl Debug for FanboxItem {
             .field("fee_required", &self.fee_required())
             .field("has_adult_content", &self.has_adult_content())
             .field("is_liked", &self.is_liked())
+            .field("is_pinned", &self.is_pinned())
             .field("is_restricted", &self.is_restricted())
             .field("like_count", &self.like_count())
             .field("published_datetime", &self.published_datetime())
