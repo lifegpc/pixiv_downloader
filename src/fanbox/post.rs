@@ -81,6 +81,11 @@ impl FanboxPostArticle {
     }
 
     #[inline]
+    pub fn is_pinned(&self) -> Option<bool> {
+        self.data["isPinned"].as_bool()
+    }
+
+    #[inline]
     pub fn is_restricted(&self) -> Option<bool> {
         self.data["isRestricted"].as_bool()
     }
@@ -185,6 +190,7 @@ impl CheckUnknown for FanboxPostArticle {
             "hasAdultContent"+,
             "imageForShare",
             "isLiked"+,
+            "isPinned"+,
             "isRestricted"+,
             "likeCount"+,
             "nextPost",
@@ -236,6 +242,7 @@ impl Debug for FanboxPostArticle {
             .field("has_adult_content", &self.has_adult_content())
             .field("image_for_share", &self.image_for_share())
             .field("is_liked", &self.is_liked())
+            .field("is_pinned", &self.is_pinned())
             .field("is_restricted", &self.is_restricted())
             .field("like_count", &self.like_count())
             .field("next_post", &self.next_post())

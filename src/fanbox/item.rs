@@ -167,6 +167,7 @@ impl CheckUnknown for FanboxItem {
             "feeRequired"+,
             "hasAdultContent"+,
             "isLiked"+,
+            "isPinned",
             "isRestricted"+,
             "likeCount"+,
             "publishedDatetime"+,
@@ -178,7 +179,6 @@ impl CheckUnknown for FanboxItem {
                 "iconUrl",
                 "userId"+user_id,
             ],
-            "isPinned",
         );
         Ok(())
     }
