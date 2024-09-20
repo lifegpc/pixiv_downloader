@@ -29,7 +29,6 @@ pub enum PixivDownloaderError {
     ParseIntError(std::num::ParseIntError),
     ReqwestError(reqwest::Error),
     PixivAppError(crate::pixivapp::error::PixivAppError),
-    #[cfg(feature = "serde_json")]
     SerdeJsonError(serde_json::Error),
     #[cfg(feature = "serde_urlencoded")]
     SerdeUrlencodedError(serde_urlencoded::ser::Error),

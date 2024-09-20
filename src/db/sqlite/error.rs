@@ -3,6 +3,5 @@ pub enum SqliteError {
     DbError(rusqlite::Error),
     DatabaseVersionTooNew,
     UserNameAlreadyExists,
-    #[cfg(feature = "serde_json")]
     SerdeError(serde_json::Error),
 }

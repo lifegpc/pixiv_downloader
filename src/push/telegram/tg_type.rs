@@ -1,0 +1,183 @@
+use derive_builder::Builder;
+use derive_more::From;
+use serde::{Deserialize, Serialize};
+use std::str::FromStr;
+
+#[derive(Clone, Debug, PartialEq, PartialOrd, From, Deserialize, Serialize)]
+#[serde(untagged)]
+/// Unique identifier for the target chat or username of the target channel
+pub enum ChatId {
+    /// Unique id for chat
+    Id(i64),
+    /// Username of the target channel, `@channelusername`
+    Username(String),
+}
+
+impl FromStr for ChatId {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.parse::<i64>() {
+            Ok(i) => Ok(ChatId::Id(i)),
+            Err(_) => {
+                if s.starts_with("@") {
+                    Ok(ChatId::Username(s.to_owned()))
+                } else {
+                    Err(String::from("Failed to parse chat id."))
+                }
+            }
+        }
+    }
+}
+
+impl ToString for ChatId {
+    fn to_string(&self) -> String {
+        match self {
+            ChatId::Id(i) => format!("{}", i),
+            ChatId::Username(s) => s.to_owned(),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Deserialize, Serialize)]
+/// Formatting options
+/// See https://core.telegram.org/bots/api#formatting-options
+pub enum ParseMode {
+    /// https://core.telegram.org/bots/api#markdownv2-style
+    MarkdownV2,
+    /// https://core.telegram.org/bots/api#html-style
+    HTML,
+    /// https://core.telegram.org/bots/api#markdown-style
+    Markdown,
+}
+
+impl AsRef<str> for ParseMode {
+    fn as_ref(&self) -> &str {
+        match self {
+            ParseMode::HTML => "HTML",
+            ParseMode::Markdown => "Markdown",
+            ParseMode::MarkdownV2 => "MarkdownV2",
+        }
+    }
+}
+
+#[derive(Builder, Clone, Debug, Default, PartialEq, PartialOrd, Deserialize, Serialize)]
+#[builder(setter(strip_option))]
+#[builder(default)]
+/// Describes the options used for link preview generation.
+/// See https://core.telegram.org/bots/api#linkpreviewoptions
+pub struct LinkPreviewOptions {
+    /// Optional. True, if the link preview is disabled
+    #[serde(skip_serializing_if = "Option::is_none")]
+    is_disabled: Option<bool>,
+    /// Optional. URL to use for the link preview.
+    /// If empty, then the first URL found in the message text will be used
+    #[serde(skip_serializing_if = "Option::is_none")]
+    url: Option<String>,
+    /// Optional. True, if the media in the link preview is supposed to be shrunk;
+    /// ignored if the URL isn't explicitly specified or media size change isn't supported for the preview
+    #[serde(skip_serializing_if = "Option::is_none")]
+    prefer_small_media: Option<bool>,
+    /// Optional. True, if the media in the link preview is supposed to be enlarged;
+    /// ignored if the URL isn't explicitly specified or media size change isn't supported for the preview
+    #[serde(skip_serializing_if = "Option::is_none")]
+    prefer_large_media: Option<bool>,
+    /// Optional. True, if the link preview must be shown above the message text;
+    /// otherwise, the link preview will be shown below the message text
+    #[serde(skip_serializing_if = "Option::is_none")]
+    show_above_text: Option<bool>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum BotApiResult<T>
+where
+    T: Clone + Serialize,
+{
+    Ok {
+        ok: bool,
+        result: T,
+    },
+    Failed {
+        ok: bool,
+        error_code: i64,
+        description: String,
+    },
+}
+
+impl<T> BotApiResult<T>
+where
+    T: Clone + Serialize,
+{
+    pub fn unwrap(self) -> T {
+        match self {
+            Self::Ok { result, .. } => result,
+            Self::Failed {
+                description,
+                error_code,
+                ..
+            } => panic!("{} ({})", description, error_code),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+/// This object represents a message.
+/// https://core.telegram.org/bots/api#message
+pub struct Message {
+    /// Unique message identifier inside this chat
+    pub message_id: i64,
+    /// Optional. Unique identifier of a message thread to which the message belongs;
+    /// for supergroups only
+    pub message_thread_id: Option<i64>,
+}
+
+#[derive(Builder, Clone, Debug, Deserialize, Serialize)]
+pub struct ReplyParameters {
+    /// Identifier of the message that will be replied to in the current chat,
+    /// or in the chat chat_id if it is specified
+    message_id: i64,
+    /// Optional. If the message to be replied to is from a different chat,
+    /// unique identifier for the chat or username of the channel (in the format `@channelusername`).
+    /// Not supported for messages sent on behalf of a business account.
+    #[builder(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    chat_id: Option<ChatId>,
+    /// Optional. Pass True if the message should be sent even if the specified message
+    /// to be replied to is not found. Always False for replies in another chat or forum topic.
+    /// Always True for messages sent on behalf of a business account.
+    #[builder(setter(strip_option))]
+    #[builder(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    allow_sending_without_reply: Option<bool>,
+    /// Optional. Quoted part of the message to be replied to; 0-1024 characters after entities parsing.
+    /// The quote must be an exact substring of the message to be replied to,
+    /// including bold, italic, underline, strikethrough, spoiler, and custom_emoji entities.
+    /// The message will fail to send if the quote isn't found in the original message.
+    #[builder(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    quote: Option<String>,
+    /// Optional. Mode for parsing entities in the quote. See formatting options for more details.
+    #[builder(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    quote_parse_mode: Option<ParseMode>,
+    /// Optional. Position of the quote in the original message in UTF-16 code units
+    #[builder(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    quote_position: Option<i64>,
+}
+
+#[test]
+fn test_chat_id() {
+    assert_eq!(
+        serde_json::from_str::<ChatId>("32").unwrap(),
+        ChatId::Id(32)
+    );
+}
+
+#[test]
+fn test_parse_mode() {
+    assert_eq!(
+        serde_json::from_str::<ParseMode>("\"MarkdownV2\"").unwrap(),
+        ParseMode::MarkdownV2
+    );
+}
