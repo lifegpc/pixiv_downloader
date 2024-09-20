@@ -1,4 +1,7 @@
 use super::tg_type::*;
+use crate::formdata::FormData;
+#[cfg(test)]
+use crate::formdata::FormDataPartBuilder;
 use crate::webclient::WebClient;
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
@@ -41,6 +44,100 @@ impl BotapiClient {
         Self {
             cfg: cfg.clone(),
             client: WebClient::default(),
+        }
+    }
+
+    pub async fn send_photo(
+        &self,
+        chat_id: &ChatId,
+        message_thread_id: Option<i64>,
+        photo: InputFile,
+        caption: Option<&str>,
+        parse_mode: Option<ParseMode>,
+        show_caption_above_media: Option<bool>,
+        has_spoiler: Option<bool>,
+        disable_notification: Option<bool>,
+        protect_content: Option<bool>,
+        message_effect_id: Option<&str>,
+        reply_parameters: Option<&ReplyParameters>,
+    ) -> Result<BotApiResult<Message>, BotapiClientError> {
+        let mut form = FormData::new();
+        form.data("chat_id", &chat_id.to_string());
+        match message_thread_id {
+            Some(m) => {
+                form.data("message_thread_id", &m.to_string());
+            }
+            None => {}
+        }
+        match photo {
+            InputFile::URL(u) => {
+                form.data("photo", &u);
+            }
+            InputFile::Content(c) => {
+                form.part("photo", c);
+            }
+        }
+        match caption {
+            Some(c) => {
+                form.data("caption", c);
+            }
+            None => {}
+        }
+        match parse_mode {
+            Some(p) => {
+                form.data("parse_mode", p.as_ref());
+            }
+            None => {}
+        }
+        match show_caption_above_media {
+            Some(p) => {
+                form.data("show_caption_above_media", &p.to_string());
+            }
+            None => {}
+        }
+        match has_spoiler {
+            Some(p) => {
+                form.data("has_spoiler", &p.to_string());
+            }
+            None => {}
+        }
+        match disable_notification {
+            Some(d) => {
+                form.data("disable_notification", &d.to_string());
+            }
+            None => {}
+        }
+        match protect_content {
+            Some(p) => {
+                form.data("protect_content", &p.to_string());
+            }
+            None => {}
+        }
+        match message_effect_id {
+            Some(m) => {
+                form.data("message_effect_id", m);
+            }
+            None => {}
+        }
+        match reply_parameters {
+            Some(r) => {
+                form.data("reply_parameters", serde_json::to_string(r)?.as_str());
+            }
+            None => {}
+        }
+        let re = self
+            .client
+            .post_multipart(
+                format!("{}/bot{}/sendPhoto", self.cfg.base, self.cfg.token),
+                None,
+                form,
+            )
+            .await
+            .ok_or("Failed to send message.")?;
+        let status = re.status();
+        match re.text().await {
+            Ok(t) => Ok(serde_json::from_str(t.as_str())?),
+            Err(e) => Err(format!("HTTP ERROR {}: {}", status, e))?,
         }
     }
 
@@ -160,6 +257,53 @@ async fn test_telegram_botapi_sendmessage() {
                         None,
                         None,
                         Some(&r),
+                    )
+                    .await
+                    .unwrap()
+                    .unwrap();
+            }
+            Err(_) => {
+                println!("No chat id specified, skip test.")
+            }
+        },
+        Err(_) => {
+            println!("No tg bot token specified, skip test.")
+        }
+    }
+}
+
+#[proc_macros::async_timeout_test(120s)]
+#[tokio::test(flavor = "multi_thread")]
+async fn test_telegram_botapi_sendphoto() {
+    match std::env::var("TGBOT_TOKEN") {
+        Ok(token) => match std::env::var("TGBOT_CHATID") {
+            Ok(c) => {
+                let cfg = BotapiClientConfigBuilder::default()
+                    .token(token)
+                    .build()
+                    .unwrap();
+                let client = BotapiClient::new(&cfg);
+                let cid = ChatId::try_from(c).unwrap();
+                let pb = std::path::PathBuf::from("./testdata/夏のチマメ隊🏖️_91055644_p0.jpg");
+                let c = FormDataPartBuilder::default()
+                    .body(pb)
+                    .filename("夏のチマメ隊🏖️_91055644_p0.jpg")
+                    .mime("image/jpeg")
+                    .build()
+                    .unwrap();
+                client
+                    .send_photo(
+                        &cid,
+                        None,
+                        InputFile::Content(c),
+                        Some("test.test.test"),
+                        None,
+                        None,
+                        Some(true),
+                        None,
+                        None,
+                        None,
+                        None,
                     )
                     .await
                     .unwrap()

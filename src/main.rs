@@ -32,6 +32,7 @@ mod exif;
 mod ext;
 mod fanbox;
 mod fanbox_api;
+mod formdata;
 mod i18n;
 mod list;
 mod log_cfg;

@@ -4,11 +4,13 @@ use crate::error::PixivDownloaderError;
 use crate::ext::atomic::AtomicQuick;
 use crate::ext::json::ToJson;
 use crate::ext::rw_lock::GetRwLock;
+use crate::formdata::FormData;
 use crate::gettext;
 use crate::list::NonTailList;
 use crate::opthelper::get_helper;
 use json::JsonValue;
 use proc_macros::print_error;
+use reqwest::multipart::Form;
 use reqwest::{Client, ClientBuilder, IntoUrl, Request, Response};
 use serde::ser::Serialize;
 use std::collections::HashMap;
@@ -420,6 +422,46 @@ impl WebClient {
         None
     }
 
+    pub async fn post_multipart<U: IntoUrl + Clone, H: ToHeaders + Clone>(
+        &self,
+        url: U,
+        headers: H,
+        form: FormData,
+    ) -> Option<Response> {
+        let mut count = 0i64;
+        let retry = self.get_retry();
+        while retry < 0 || count <= retry {
+            let f = print_error!(gettext("Failed to generate form:"), form.to_form().await);
+            let r = self
+                ._apost_multipart2(url.clone(), headers.clone(), f)
+                .await;
+            if r.is_some() {
+                return r;
+            }
+            count += 1;
+            if retry < 0 || count <= retry {
+                let t =
+                    self.get_retry_interval().as_ref().unwrap()[(count - 1).try_into().unwrap()];
+                if !t.is_zero() {
+                    log::info!(
+                        "{}",
+                        gettext("Retry after <num> seconds.")
+                            .replace("<num>", format!("{}", t.as_secs_f64()).as_str())
+                            .as_str()
+                    );
+                    tokio::time::sleep(t).await;
+                }
+            }
+            log::info!(
+                "{}",
+                gettext("Retry <count> times now.")
+                    .replace("<count>", format!("{}", count).as_str())
+                    .as_str()
+            );
+        }
+        None
+    }
+
     pub async fn _apost2<U: IntoUrl, H: ToHeaders, S: Serialize>(
         &self,
         url: U,
@@ -468,6 +510,51 @@ impl WebClient {
             }
             None => {}
         }
+        self.handle_req_middlewares(r.build()?)
+    }
+
+    pub async fn _apost_multipart2<U: IntoUrl, H: ToHeaders>(
+        &self,
+        url: U,
+        headers: H,
+        form: Form,
+    ) -> Option<Response> {
+        let r = print_error!(
+            gettext("Failed to generate request:"),
+            self._apost_multipart(url, headers, form)
+        );
+        let r = print_error!(gettext("Error when request:"), self.client.execute(r).await);
+        self.handle_set_cookie(&r);
+        log::debug!(target: "webclient","{}", r.status());
+        Some(r)
+    }
+
+    pub fn _apost_multipart<U: IntoUrl, H: ToHeaders>(
+        &self,
+        url: U,
+        headers: H,
+        form: Form,
+    ) -> Result<Request, PixivDownloaderError> {
+        let s = url.as_str();
+        log::debug!(target: "webclient", "POST {}", s);
+        let mut r = self.client.post(s);
+        for (k, v) in self.get_headers().iter() {
+            r = r.header(k, v);
+            log::debug!(target: "webclient", "{}: {}", k, v);
+        }
+        let headers = headers.to_headers();
+        if headers.is_some() {
+            let h = headers.unwrap();
+            for (k, v) in h.iter() {
+                r = r.header(k, v);
+                log::debug!(target: "webclient", "{}: {}", k, v);
+            }
+        }
+        let c = gen_cookie_header(&self, s);
+        if c.len() > 0 {
+            r = r.header("Cookie", c.as_str());
+        }
+        r = r.multipart(form);
         self.handle_req_middlewares(r.build()?)
     }
 }

@@ -1,3 +1,4 @@
+use crate::formdata::FormDataPart;
 use derive_builder::Builder;
 use derive_more::From;
 use serde::{Deserialize, Serialize};
@@ -139,7 +140,7 @@ pub struct ReplyParameters {
     /// Optional. If the message to be replied to is from a different chat,
     /// unique identifier for the chat or username of the channel (in the format `@channelusername`).
     /// Not supported for messages sent on behalf of a business account.
-    #[builder(default)]
+    #[builder(default, setter(into))]
     #[serde(skip_serializing_if = "Option::is_none")]
     chat_id: Option<ChatId>,
     /// Optional. Pass True if the message should be sent even if the specified message
@@ -153,7 +154,7 @@ pub struct ReplyParameters {
     /// The quote must be an exact substring of the message to be replied to,
     /// including bold, italic, underline, strikethrough, spoiler, and custom_emoji entities.
     /// The message will fail to send if the quote isn't found in the original message.
-    #[builder(default)]
+    #[builder(default, setter(into))]
     #[serde(skip_serializing_if = "Option::is_none")]
     quote: Option<String>,
     /// Optional. Mode for parsing entities in the quote. See formatting options for more details.
@@ -164,6 +165,15 @@ pub struct ReplyParameters {
     #[builder(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
     quote_position: Option<i64>,
+}
+
+#[derive(Debug, derive_more::From)]
+/// Represents the contents of a file
+pub enum InputFile {
+    /// URL
+    URL(String),
+    /// File data
+    Content(FormDataPart),
 }
 
 #[test]
