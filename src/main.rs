@@ -51,6 +51,8 @@ mod server;
 mod settings;
 mod settings_list;
 mod task_manager;
+#[cfg(feature = "server")]
+mod tmp_cache;
 #[cfg(feature = "ugoira")]
 mod ugoira;
 mod utils;

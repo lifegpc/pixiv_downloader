@@ -47,6 +47,10 @@ impl BotapiClient {
         }
     }
 
+    pub fn is_custom(&self) -> bool {
+        self.cfg.base != "https://api.telegram.org"
+    }
+
     pub async fn send_animation<T: AsRef<str> + ?Sized>(
         &self,
         chat_id: &ChatId,

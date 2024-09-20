@@ -119,6 +119,17 @@ where
             } => panic!("{} ({})", description, error_code),
         }
     }
+
+    pub fn to_result(self) -> Result<T, String> {
+        match self {
+            Self::Ok { result, .. } => Ok(result),
+            Self::Failed {
+                description,
+                error_code,
+                ..
+            } => Err(format!("{} ({})", description, error_code)),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

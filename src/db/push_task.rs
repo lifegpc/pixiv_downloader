@@ -1,5 +1,7 @@
 use crate::pixiv_app::PixivRestrictType;
 use crate::push::every_push::EveryPushTextType;
+use crate::push::telegram::botapi_client::BotapiClientConfig;
+use crate::push::telegram::tg_type::ChatId;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -118,6 +120,10 @@ fn default_true() -> bool {
     true
 }
 
+fn default_false() -> bool {
+    false
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EveryPushConfig {
@@ -206,9 +212,67 @@ pub struct PushDeerConfig {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
+pub enum TelegramBackend {
+    Botapi(BotapiClientConfig),
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TelegramPushConfig {
+    /// Backend
+    pub backend: TelegramBackend,
+    /// Unique identifier for the target chat or username of the target channel
+    /// (in the format `@channelusername`)
+    pub chat_id: ChatId,
+    /// Unique identifier for the target message thread (topic) of the forum;
+    /// for forum supergroups only
+    pub message_thread_id: Option<i64>,
+    /// Sends the message silently. Users will receive a notification with no sound.
+    #[serde(default = "default_false")]
+    pub disable_notification: bool,
+    /// Protects the contents of the sent message from forwarding and saving
+    #[serde(default = "default_false")]
+    pub protect_content: bool,
+    /// Pass True, if the caption must be shown above the message media
+    #[serde(default = "default_false")]
+    pub show_caption_above_media: bool,
+    /// Enable spoiler if image is R18 image
+    #[serde(default = "default_true")]
+    pub enable_spoiler: bool,
+    #[serde(default = "defualt_author_locations")]
+    /// Author locations
+    pub author_locations: Vec<AuthorLocation>,
+    #[serde(default = "default_true")]
+    /// Whether to filter author name
+    pub filter_author: bool,
+    #[serde(default = "default_true")]
+    /// Whether to add artwork link
+    pub add_link: bool,
+    #[serde(default = "default_true")]
+    /// Whether to add artwork link to title
+    pub add_link_to_title: bool,
+    #[serde(default = "default_true")]
+    /// Whether to add tags
+    pub add_tags: bool,
+    #[serde(default = "default_true")]
+    /// Whether to add AI tag
+    pub add_ai_tag: bool,
+    #[serde(default = "default_true")]
+    /// Whether to add translated tag
+    pub add_translated_tag: bool,
+    #[serde(default = "default_true")]
+    /// Whether to allow failed
+    pub allow_failed: bool,
+    /// Download media first and send media to telegram server directly.
+    pub download_media: Option<bool>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "camelCase")]
 pub enum PushConfig {
     EveryPush(EveryPushConfig),
     PushDeer(PushDeerConfig),
+    Telegram(TelegramPushConfig),
 }
 
 impl PushConfig {
@@ -217,6 +281,7 @@ impl PushConfig {
         match self {
             Self::EveryPush(config) => config.allow_failed,
             Self::PushDeer(config) => config.allow_failed,
+            Self::Telegram(config) => config.allow_failed,
         }
     }
 }

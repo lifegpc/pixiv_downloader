@@ -32,6 +32,7 @@ pub enum PixivDownloaderError {
     SerdeJsonError(serde_json::Error),
     #[cfg(feature = "serde_urlencoded")]
     SerdeUrlencodedError(serde_urlencoded::ser::Error),
+    BotApiError(crate::push::telegram::botapi_client::BotapiClientError),
 }
 
 impl std::error::Error for PixivDownloaderError {}

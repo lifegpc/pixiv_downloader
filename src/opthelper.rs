@@ -28,6 +28,7 @@ use std::net::Ipv4Addr;
 #[cfg(feature = "server")]
 use std::net::SocketAddr;
 use std::ops::Deref;
+use std::path::PathBuf;
 #[cfg(any(feature = "server", feature = "ugoira"))]
 use std::str::FromStr;
 use std::sync::Arc;
@@ -635,6 +636,13 @@ impl OptHelper {
     /// Whether to prevent to run push task.
     pub fn disable_push_task(&self) -> bool {
         self.opt.get_ref().disable_push_task
+    }
+
+    #[cfg(feature = "server")]
+    pub fn temp_dir(&self) -> PathBuf {
+        #[cfg(feature = "docker")]
+        return PathBuf::from("/app/temp");
+        std::env::temp_dir()
     }
 }
 

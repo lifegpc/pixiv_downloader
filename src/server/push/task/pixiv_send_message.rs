@@ -1,11 +1,18 @@
 use super::super::super::preclude::*;
-use crate::db::push_task::{AuthorLocation, EveryPushConfig, PushConfig, PushDeerConfig};
+use crate::db::push_task::{
+    AuthorLocation, EveryPushConfig, PushConfig, PushDeerConfig, TelegramBackend,
+    TelegramPushConfig,
+};
 use crate::error::PixivDownloaderError;
 use crate::opt::author_name_filter::AuthorFiler;
+use crate::parser::description::convert_description_to_tg_html;
 use crate::parser::description::DescriptionParser;
 use crate::pixivapp::illust::PixivAppIllust;
 use crate::push::every_push::{EveryPushClient, EveryPushTextType};
 use crate::push::pushdeer::PushdeerClient;
+use crate::push::telegram::botapi_client::{BotapiClient, BotapiClientConfig};
+use crate::push::telegram::text::{encode_data, TextSpliter};
+use crate::push::telegram::tg_type::{InputFile, ParseMode, ReplyParametersBuilder};
 use crate::utils::{get_file_name_from_url, parse_pixiv_id};
 use crate::{get_helper, gettext};
 use json::JsonValue;
@@ -114,6 +121,7 @@ impl RunContext {
         match self.cfg.as_ref() {
             PushConfig::EveryPush(e) => e.filter_author,
             PushConfig::PushDeer(e) => e.filter_author,
+            PushConfig::Telegram(e) => e.filter_author,
         }
     }
 
@@ -175,6 +183,25 @@ impl RunContext {
         match self._get_image_url(index) {
             Some(u) => Ok(Some(self.ctx.generate_pixiv_proxy_url(u).await?)),
             None => Ok(None),
+        }
+    }
+
+    pub async fn get_input_file(
+        &self,
+        index: u64,
+        download_media: bool,
+    ) -> Result<Option<InputFile>, PixivDownloaderError> {
+        if download_media {
+            match self._get_image_url(index) {
+                Some(u) => Ok(Some(InputFile::URL(u))),
+                None => Ok(None),
+            }
+        } else {
+            match self.get_image_url(index).await {
+                Ok(Some(u)) => Ok(Some(InputFile::URL(u))),
+                Ok(None) => Ok(None),
+                Err(e) => Err(e),
+            }
         }
     }
 
@@ -247,6 +274,7 @@ impl RunContext {
         match self.cfg.as_ref() {
             PushConfig::EveryPush(e) => e.add_ai_tag,
             PushConfig::PushDeer(e) => e.add_ai_tag,
+            PushConfig::Telegram(e) => e.add_ai_tag,
         }
     }
 
@@ -254,6 +282,7 @@ impl RunContext {
         match self.cfg.as_ref() {
             PushConfig::EveryPush(e) => e.add_translated_tag,
             PushConfig::PushDeer(e) => e.add_translated_tag,
+            PushConfig::Telegram(e) => e.add_translated_tag,
         }
     }
 
@@ -342,7 +371,7 @@ impl RunContext {
                     }
                 }
                 if let Some(desc) = self.desc() {
-                    let mut p = DescriptionParser::new(false);
+                    let mut p = DescriptionParser::new(false, false);
                     p.parse(desc)?;
                     text.push_str(&p.data);
                     text.push_str("\n");
@@ -399,7 +428,7 @@ impl RunContext {
                     }
                 }
                 if let Some(desc) = self.desc() {
-                    let mut p = DescriptionParser::new(true);
+                    let mut p = DescriptionParser::new(true, false);
                     p.parse(desc)?;
                     while !text.ends_with("\n\n") {
                         text.push_str("\n");
@@ -506,7 +535,9 @@ impl RunContext {
                     }
                 }
                 if let Some(desc) = self.desc() {
-                    let mut p = DescriptionParser::builder(true).ensure_link_ascii().build();
+                    let mut p = DescriptionParser::builder(true, false)
+                        .ensure_link_ascii()
+                        .build();
                     p.parse(desc)?;
                     while !text.ends_with("\n\n") {
                         text.push_str("\n");
@@ -563,7 +594,9 @@ impl RunContext {
                     }
                 }
                 if let Some(desc) = self.desc() {
-                    let mut p = DescriptionParser::builder(true).ensure_link_ascii().build();
+                    let mut p = DescriptionParser::builder(true, false)
+                        .ensure_link_ascii()
+                        .build();
                     p.parse(desc)?;
                     while !text.ends_with("\n\n") {
                         text.push_str("\n");
@@ -593,10 +626,149 @@ impl RunContext {
         Ok(())
     }
 
+    pub async fn send_telegram(
+        &self,
+        cfg: &TelegramPushConfig,
+    ) -> Result<(), PixivDownloaderError> {
+        match &cfg.backend {
+            TelegramBackend::Botapi(b) => self.send_telegram_botapi(cfg, b).await,
+        }
+    }
+
+    pub async fn send_telegram_botapi(
+        &self,
+        cfg: &TelegramPushConfig,
+        b: &BotapiClientConfig,
+    ) -> Result<(), PixivDownloaderError> {
+        let c = BotapiClient::new(b);
+        let mut text = String::new();
+        let mut title = self.title().unwrap_or("");
+        if title.is_empty() {
+            title = "Unknown title";
+        }
+        if cfg.add_link_to_title {
+            if let Some(id) = self.id() {
+                text += &format!(
+                    "<a href=\"https://www.pixiv.net/artworks/{}\">{}</a>",
+                    id,
+                    encode_data(title)
+                );
+            } else {
+                text += &encode_data(title);
+            }
+        } else {
+            text += &encode_data(title);
+        }
+        let author = self.author().map(|a| {
+            if let Some(uid) = self.user_id() {
+                format!(
+                    "<a href=\"https://www.pixiv.net/users/{}\">{}</a>",
+                    uid,
+                    encode_data(&a)
+                )
+            } else {
+                encode_data(&a)
+            }
+        });
+        if cfg.author_locations.contains(&AuthorLocation::Title) {
+            if let Some(author) = &author {
+                text += " - ";
+                text += author;
+            }
+        }
+        text += "\n";
+        if cfg.author_locations.contains(&AuthorLocation::Top) {
+            if let Some(a) = &author {
+                text += a;
+                text.push('\n');
+            }
+        }
+        if cfg.add_link {
+            if let Some(id) = self.id() {
+                text += &format!("https://www.pixiv.net/artworks/{}\n", id);
+            }
+        }
+        text += &convert_description_to_tg_html(self.desc().unwrap_or(""))?;
+        text.push('\n');
+        if cfg.author_locations.contains(&AuthorLocation::Bottom) {
+            if let Some(a) = &author {
+                text += a;
+                text.push('\n');
+            }
+        }
+        let mut ts = TextSpliter::builder().max_length(1024).build();
+        ts.parse(&text)?;
+        let len = self.len().unwrap_or(1);
+        let mut last_message_id: Option<i64> = None;
+        let download_media = cfg.download_media.unwrap_or(c.is_custom());
+        if len == 1 {
+            let f = self
+                .get_input_file(0, download_media)
+                .await?
+                .ok_or("Failed to get image.")?;
+            let r = match last_message_id {
+                Some(m) => Some(
+                    ReplyParametersBuilder::default()
+                        .message_id(m)
+                        .build()
+                        .map_err(|_| "Failed to gen.")?,
+                ),
+                None => None,
+            };
+            let text = ts.to_html(None);
+            let m = c
+                .send_photo(
+                    &cfg.chat_id,
+                    cfg.message_thread_id,
+                    f,
+                    Some(text.as_str()),
+                    Some(ParseMode::HTML),
+                    Some(cfg.show_caption_above_media),
+                    None,
+                    Some(cfg.disable_notification),
+                    Some(cfg.protect_content),
+                    None,
+                    r.as_ref(),
+                )
+                .await?
+                .to_result()?;
+            last_message_id = Some(m.message_id);
+        }
+        while !ts.is_empty() {
+            let r = match last_message_id {
+                Some(m) => Some(
+                    ReplyParametersBuilder::default()
+                        .message_id(m)
+                        .build()
+                        .map_err(|_| "Failed to gen.")?,
+                ),
+                None => None,
+            };
+            let text = ts.to_html(Some(4096));
+            let m = c
+                .send_message(
+                    &cfg.chat_id,
+                    cfg.message_thread_id,
+                    &text,
+                    Some(ParseMode::HTML),
+                    None,
+                    Some(cfg.disable_notification),
+                    Some(cfg.protect_content),
+                    None,
+                    r.as_ref(),
+                )
+                .await?
+                .to_result()?;
+            last_message_id = Some(m.message_id);
+        }
+        Ok(())
+    }
+
     pub async fn run(&self) -> Result<(), PixivDownloaderError> {
         match self.cfg.as_ref() {
             PushConfig::EveryPush(e) => self.send_every_push(e).await,
             PushConfig::PushDeer(e) => self.send_push_deer(e).await,
+            PushConfig::Telegram(e) => self.send_telegram(e).await,
         }
     }
 }

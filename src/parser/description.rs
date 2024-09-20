@@ -137,14 +137,17 @@ pub struct DescriptionParserBuilder {
     md_mode: bool,
     /// Ensure link is ASCII
     _ensure_link_ascii: bool,
+    /// Telegram HTML Mode
+    tg_html_mode: bool,
 }
 
 #[allow(dead_code)]
 impl DescriptionParserBuilder {
-    pub fn new(md_mode: bool) -> Self {
+    pub fn new(md_mode: bool, tg_html_mode: bool) -> Self {
         Self {
             md_mode,
             _ensure_link_ascii: false,
+            tg_html_mode,
         }
     }
 
@@ -170,11 +173,11 @@ pub struct DescriptionParser {
 }
 
 impl DescriptionParser {
-    pub fn new(md_mode: bool) -> Self {
+    pub fn new(md_mode: bool, tg_html_mode: bool) -> Self {
         Self {
             nodes: Vec::new(),
             data: String::from(""),
-            opts: DescriptionParserBuilder::new(md_mode),
+            opts: DescriptionParserBuilder::new(md_mode, tg_html_mode),
         }
     }
 
@@ -218,7 +221,24 @@ impl DescriptionParser {
                 }
                 let node = self.nodes.pop().unwrap();
                 let mut is_paragraph = false;
-                let s = if node.is_link(self.opts.md_mode) {
+                let s = if self.opts.tg_html_mode {
+                    if node.tag == "a" && node.is_link(true) {
+                        format!(
+                            "<a href=\"{}\">{}</a>",
+                            node.attrs.get("href").unwrap(),
+                            node.data
+                        )
+                    } else if node.tag.is_empty()
+                        || node.tag == "a"
+                        || node.tag == "html"
+                        || node.tag == "body"
+                        || node.tag == "head"
+                    {
+                        node.data
+                    } else {
+                        format!("<{}>{}</{}>", node.tag, node.data, node.tag)
+                    }
+                } else if node.is_link(self.opts.md_mode) {
                     node.to_link(self.opts._ensure_link_ascii)
                 } else if self.opts.md_mode && node.is_headline() {
                     node.to_headline()
@@ -277,8 +297,8 @@ impl DescriptionParser {
     }
 
     #[allow(dead_code)]
-    pub fn builder(md_mode: bool) -> DescriptionParserBuilder {
-        DescriptionParserBuilder::new(md_mode)
+    pub fn builder(md_mode: bool, tg_html_mode: bool) -> DescriptionParserBuilder {
+        DescriptionParserBuilder::new(md_mode, tg_html_mode)
     }
 }
 
@@ -293,7 +313,7 @@ impl From<DescriptionParserBuilder> for DescriptionParser {
 }
 
 pub fn parse_description<S: AsRef<str> + ?Sized>(desc: &S) -> Option<String> {
-    let mut p = DescriptionParser::new(false);
+    let mut p = DescriptionParser::new(false, false);
     match p.parse(desc) {
         Ok(_) => Some(p.data),
         Err(e) => {
@@ -306,7 +326,15 @@ pub fn parse_description<S: AsRef<str> + ?Sized>(desc: &S) -> Option<String> {
 pub fn convert_description_to_md<S: AsRef<str> + ?Sized>(
     desc: &S,
 ) -> Result<String, PixivDownloaderError> {
-    let mut p = DescriptionParser::new(true);
+    let mut p = DescriptionParser::new(true, false);
+    p.parse(desc)?;
+    Ok(p.data)
+}
+
+pub fn convert_description_to_tg_html<S: AsRef<str> + ?Sized>(
+    desc: &S,
+) -> Result<String, PixivDownloaderError> {
+    let mut p = DescriptionParser::new(false, true);
     p.parse(desc)?;
     Ok(p.data)
 }
@@ -356,11 +384,25 @@ fn test_convert_description_to_md() {
 
 #[test]
 fn test_ensure_link_ascii() {
-    let mut p = DescriptionParser::builder(true).ensure_link_ascii().build();
+    let mut p = DescriptionParser::builder(true, false)
+        .ensure_link_ascii()
+        .build();
     p.parse("<a href=\"https://test:pass@www.test.com/ad/测试?p=1&t=*\">测试<a>")
         .unwrap();
     assert_eq!(
         String::from("[测试](https://test:pass@www.test.com/ad/%E6%B5%8B%E8%AF%95?p=1&t=*)"),
         p.data
+    );
+}
+
+#[test]
+fn test_convert_description_to_tg_html() {
+    assert_eq!(
+        String::from("ご依頼・お仕事について：<a href=\"https://lit.link/en/hamiyamiko\">https://lit.link/en/hamiyamiko</a>\nVGen：<a href=\"https://vgen.co/hamiyamiko\">https://vgen.co/hamiyamiko</a>\nFanbox：<a href=\"https://hamiya.fanbox.cc/\">https://hamiya.fanbox.cc/</a>\nX（Twitter）：<strong><a href=\"https://twitter.com/hamiyamiko\">twitter/hamiyamiko</a></strong>"),
+        convert_description_to_tg_html("ご依頼・お仕事について：<a href=\"https://lit.link/en/hamiyamiko\" target='_blank' rel='noopener noreferrer'>https://lit.link/en/hamiyamiko</a><br />VGen：<a href=\"https://vgen.co/hamiyamiko\" target='_blank' rel='noopener noreferrer'>https://vgen.co/hamiyamiko</a><br />Fanbox：<a href=\"https://hamiya.fanbox.cc/\" target=\"_blank\">https://hamiya.fanbox.cc/</a><br />X（Twitter）：<strong><a href=\"https://twitter.com/hamiyamiko\" target=\"_blank\">twitter/hamiyamiko</a></strong>").unwrap(),
+    );
+    assert_eq!(
+        String::from("ロリっくorロリっ娘! 様の音声作品にイラスト描かせていただきました！\n<a href=\"https://www.dlsite.com/maniax/work/=/product_id/RJ01233310.html\">https://www.dlsite.com/maniax/work/=/product_id/RJ01233310.html</a>"),
+        convert_description_to_tg_html("ロリっくorロリっ娘! 様の音声作品にイラスト描かせていただきました！<br /><a href=\"/jump.php?https%3A%2F%2Fwww.dlsite.com%2Fmaniax%2Fwork%2F%3D%2Fproduct_id%2FRJ01233310.html\" target='_blank' rel='noopener noreferrer'>https://www.dlsite.com/maniax/work/=/product_id/RJ01233310.html</a>").unwrap(),
     );
 }

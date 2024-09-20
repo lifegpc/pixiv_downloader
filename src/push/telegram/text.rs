@@ -5,7 +5,7 @@ use html5ever::{parse_document, ParseOpts, QualName};
 use markup5ever_rcdom::{Node, NodeData, RcDom};
 use std::collections::BTreeMap;
 
-fn encode_data<S: AsRef<str> + ?Sized>(data: &S) -> String {
+pub fn encode_data<S: AsRef<str> + ?Sized>(data: &S) -> String {
     data.as_ref()
         .replace("&", "&amp;")
         .replace("<", "&lt;")
@@ -309,6 +309,10 @@ impl TextSpliter {
             }
         }
         false
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.text.is_empty()
     }
 
     fn is_in_entities(&self, pos: usize) -> bool {
