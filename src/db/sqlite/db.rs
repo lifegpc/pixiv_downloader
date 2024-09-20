@@ -9,6 +9,8 @@ use super::super::{PushConfig, PushTask, PushTaskConfig};
 #[cfg(feature = "server")]
 use super::super::{Token, User};
 use super::SqliteError;
+#[cfg(feature = "server")]
+use crate::tmp_cache::TmpCacheEntry;
 use bytes::BytesMut;
 use chrono::{DateTime, Utc};
 use flagset::FlagSet;
@@ -76,6 +78,12 @@ id INT,
 lang TEXT,
 translated TEXT
 );";
+const TMP_CACHE_TABLE: &'static str = "CREATE TABLE tmp_cache (
+url TEXT,
+path TEXT,
+last_used DATETIME,
+PRIMARY KEY (url)
+);";
 const TOKEN_TABLE: &'static str = "CREATE TABLE token (
 id INTEGER PRIMARY KEY AUTOINCREMENT,
 user_id INT,
@@ -98,7 +106,7 @@ v3 INT,
 v4 INT,
 PRIMARY KEY (id)
 );";
-const VERSION: [u8; 4] = [1, 0, 0, 8];
+const VERSION: [u8; 4] = [1, 0, 0, 9];
 
 pub struct PixivDownloaderSqlite {
     db: Mutex<Connection>,
@@ -260,6 +268,9 @@ impl PixivDownloaderSqlite {
                 if db_version < [1, 0, 0, 8] {
                     tx.execute(PUSH_TASK_DATA_TABLE, [])?;
                 }
+                if db_version < [1, 0, 0, 9] {
+                    tx.execute(TMP_CACHE_TABLE, [])?;
+                }
                 self._write_version(&tx)?;
                 tx.commit()?;
             }
@@ -313,7 +324,16 @@ impl PixivDownloaderSqlite {
         if !tables.contains_key("push_task_data") {
             t.execute(PUSH_TASK_DATA_TABLE, [])?;
         }
+        if !tables.contains_key("tmp_cache") {
+            t.execute("TMP_CACHE_TABLE", [])?;
+        }
         t.commit()?;
+        Ok(())
+    }
+
+    #[cfg(feature = "server")]
+    fn _delete_tmp_cache(tx: &Transaction, url: &str) -> Result<(), SqliteError> {
+        tx.execute("DELETE FROM tmp_cache WHERE url = ?;", [url])?;
         Ok(())
     }
 
@@ -451,6 +471,44 @@ impl PixivDownloaderSqlite {
     }
 
     #[cfg(feature = "server")]
+    async fn get_tmp_cache(
+        &self,
+        url: &str,
+    ) -> Result<Option<TmpCacheEntry>, PixivDownloaderDbError> {
+        let con = self.db.lock().await;
+        Ok(con
+            .query_row("SELECT * FROM tmp_cache WHERE url = ?;", [url], |row| {
+                Ok(TmpCacheEntry {
+                    url: row.get(0)?,
+                    path: row.get(1)?,
+                    last_used: row.get(2)?,
+                })
+            })
+            .optional()?)
+    }
+
+    #[cfg(feature = "server")]
+    async fn get_tmp_caches(&self, ttl: i64) -> Result<Vec<TmpCacheEntry>, PixivDownloaderDbError> {
+        let t = Utc::now()
+            .checked_sub_signed(chrono::TimeDelta::seconds(ttl))
+            .ok_or(PixivDownloaderDbError::Str(String::from(
+                "Failed to calculate expired time by ttl.",
+            )))?;
+        let con = self.db.lock().await;
+        let mut stmt = con.prepare("SELECT * FROM tmp_cache WHERE last_used < ?;")?;
+        let mut rows = stmt.query([t])?;
+        let mut entries = Vec::new();
+        while let Some(row) = rows.next()? {
+            entries.push(TmpCacheEntry {
+                url: row.get(0)?,
+                path: row.get(1)?,
+                last_used: row.get(2)?,
+            });
+        }
+        Ok(entries)
+    }
+
+    #[cfg(feature = "server")]
     async fn get_token(&self, id: u64) -> Result<Option<Token>, SqliteError> {
         let con = self.db.lock().await;
         Ok(con
@@ -571,6 +629,16 @@ impl PixivDownloaderSqlite {
         } else {
             Ok(None)
         }
+    }
+
+    #[cfg(feature = "server")]
+    fn _put_tmp_cache(ts: &Transaction, url: &str, path: &str) -> Result<(), SqliteError> {
+        let t = Utc::now();
+        ts.execute(
+            "INSERT INTO tmp_cache (url, path, last_used) VALUES (?, ?, ?);",
+            (url, path, t),
+        )?;
+        Ok(())
     }
 
     #[cfg(feature = "server")]
@@ -721,6 +789,16 @@ impl PixivDownloaderSqlite {
         tx.execute(
             "UPDATE push_task SET last_updated = ? WHERE id = ?;",
             (last_updated, id),
+        )?;
+        Ok(())
+    }
+
+    #[cfg(feature = "server")]
+    fn _update_tmp_cache(tx: &Transaction, url: &str) -> Result<(), PixivDownloaderDbError> {
+        let now = Utc::now();
+        tx.execute(
+            "UPDATE tmp_cache SET last_used = ? WHERE url = ?;",
+            (now, url),
         )?;
         Ok(())
     }
@@ -924,6 +1002,15 @@ impl PixivDownloaderDb for PixivDownloaderSqlite {
     }
 
     #[cfg(feature = "server")]
+    async fn delete_tmp_cache(&self, url: &str) -> Result<(), PixivDownloaderDbError> {
+        let mut db = self.db.lock().await;
+        let mut tx = db.transaction()?;
+        Self::_delete_tmp_cache(&mut tx, url)?;
+        tx.commit()?;
+        Ok(())
+    }
+
+    #[cfg(feature = "server")]
     async fn delete_token(&self, id: u64) -> Result<(), PixivDownloaderDbError> {
         let mut db = self.db.lock().await;
         let mut tx = db.transaction()?;
@@ -1007,6 +1094,19 @@ impl PixivDownloaderDb for PixivDownloaderSqlite {
     }
 
     #[cfg(feature = "server")]
+    async fn get_tmp_cache(
+        &self,
+        url: &str,
+    ) -> Result<Option<TmpCacheEntry>, PixivDownloaderDbError> {
+        Ok(self.get_tmp_cache(url).await?)
+    }
+
+    #[cfg(feature = "server")]
+    async fn get_tmp_caches(&self, ttl: i64) -> Result<Vec<TmpCacheEntry>, PixivDownloaderDbError> {
+        Ok(self.get_tmp_caches(ttl).await?)
+    }
+
+    #[cfg(feature = "server")]
     async fn get_token(&self, id: u64) -> Result<Option<Token>, PixivDownloaderDbError> {
         Ok(self.get_token(id).await?)
     }
@@ -1047,6 +1147,15 @@ impl PixivDownloaderDb for PixivDownloaderSqlite {
         count: u64,
     ) -> Result<Vec<u64>, PixivDownloaderDbError> {
         Ok(self._list_users_id(offset, count).await?)
+    }
+
+    #[cfg(feature = "server")]
+    async fn put_tmp_cache(&self, url: &str, path: &str) -> Result<(), PixivDownloaderDbError> {
+        let mut db = self.db.lock().await;
+        let mut tx = db.transaction()?;
+        let size = Self::_put_tmp_cache(&mut tx, url, path)?;
+        tx.commit()?;
+        Ok(size)
     }
 
     #[cfg(feature = "server")]
@@ -1121,6 +1230,15 @@ impl PixivDownloaderDb for PixivDownloaderSqlite {
             tx.commit()?;
         }
         Ok(())
+    }
+
+    #[cfg(feature = "server")]
+    async fn update_tmp_cache(&self, url: &str) -> Result<(), PixivDownloaderDbError> {
+        let mut db = self.db.lock().await;
+        let mut tx = db.transaction()?;
+        let size = Self::_update_tmp_cache(&mut tx, url)?;
+        tx.commit()?;
+        Ok(size)
     }
 
     #[cfg(feature = "server")]

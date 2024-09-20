@@ -1,8 +1,13 @@
 use super::auth::*;
 use super::context::ServerContext;
+use crate::error::PixivDownloaderError;
 use crate::task_manager::{MaxCount, TaskManager};
 use std::sync::Arc;
 use tokio::time::{interval_at, Duration, Instant};
+
+pub async fn remove_tmp_cache(ctx: Arc<ServerContext>) -> Result<(), PixivDownloaderError> {
+    ctx.tmp_cache.remove_expired_cache().await
+}
 
 pub async fn start_timer(ctx: Arc<ServerContext>) {
     let mut interval = interval_at(Instant::now(), Duration::from_secs(60));
@@ -18,6 +23,7 @@ pub async fn start_timer(ctx: Arc<ServerContext>) {
                 Ok(())
             })
             .await;
+        tasks.add_task(remove_tmp_cache(ctx.clone())).await;
         tasks.join().await;
         for task in tasks.take_finished_tasks() {
             let re = task.await;

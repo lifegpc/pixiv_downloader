@@ -5,6 +5,8 @@ use super::{PixivArtwork, PixivArtworkLock};
 use super::{PushConfig, PushTask, PushTaskConfig};
 #[cfg(feature = "server")]
 use super::{Token, User};
+#[cfg(feature = "server")]
+use crate::tmp_cache::TmpCacheEntry;
 use chrono::{DateTime, Utc};
 use flagset::FlagSet;
 
@@ -90,6 +92,10 @@ pub trait PixivDownloaderDb {
         is_admin: bool,
     ) -> Result<User, PixivDownloaderDbError>;
     #[cfg(feature = "server")]
+    /// Delete tmp cache entry
+    /// * `url` - URL
+    async fn delete_tmp_cache(&self, url: &str) -> Result<(), PixivDownloaderDbError>;
+    #[cfg(feature = "server")]
     /// Delete a token
     /// * `id` - The token ID
     async fn delete_token(&self, id: u64) -> Result<(), PixivDownloaderDbError>;
@@ -150,6 +156,17 @@ pub trait PixivDownloaderDb {
     /// * `id` - The task's ID
     async fn get_push_task_data(&self, id: u64) -> Result<Option<String>, PixivDownloaderDbError>;
     #[cfg(feature = "server")]
+    /// Get tmp cache entry via url
+    /// * `url` - URL
+    async fn get_tmp_cache(
+        &self,
+        url: &str,
+    ) -> Result<Option<TmpCacheEntry>, PixivDownloaderDbError>;
+    #[cfg(feature = "server")]
+    /// Get tmp cache entries should deleted
+    /// * `ttl` - Time to live in seconds
+    async fn get_tmp_caches(&self, ttl: i64) -> Result<Vec<TmpCacheEntry>, PixivDownloaderDbError>;
+    #[cfg(feature = "server")]
     /// Get token by ID
     /// * `id` - The token ID
     async fn get_token(&self, id: u64) -> Result<Option<Token>, PixivDownloaderDbError>;
@@ -184,6 +201,11 @@ pub trait PixivDownloaderDb {
         offset: u64,
         count: u64,
     ) -> Result<Vec<u64>, PixivDownloaderDbError>;
+    #[cfg(feature = "server")]
+    /// Put new tmp cache
+    /// * `url` - URL
+    /// * `path` - Path
+    async fn put_tmp_cache(&self, url: &str, path: &str) -> Result<(), PixivDownloaderDbError>;
     #[cfg(feature = "server")]
     /// Remove all expired tokens
     /// Return the number of removed tokens
@@ -237,6 +259,10 @@ pub trait PixivDownloaderDb {
         id: u64,
         last_updated: &DateTime<Utc>,
     ) -> Result<(), PixivDownloaderDbError>;
+    #[cfg(feature = "server")]
+    /// Update tmp cache last used time
+    /// * `url` - URL
+    async fn update_tmp_cache(&self, url: &str) -> Result<(), PixivDownloaderDbError>;
     #[cfg(feature = "server")]
     /// Update a user's information
     /// * `id`: The user's ID

@@ -4,4 +4,11 @@ pub enum SqliteError {
     DatabaseVersionTooNew,
     UserNameAlreadyExists,
     SerdeError(serde_json::Error),
+    Str(String),
+}
+
+impl From<&str> for SqliteError {
+    fn from(value: &str) -> Self {
+        Self::Str(String::from(value))
+    }
 }

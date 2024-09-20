@@ -7,6 +7,7 @@ use super::preclude::HttpBodyType;
 use super::route::ServerRoutes;
 use crate::db::{open_and_init_database, PixivDownloaderDbConfig};
 use crate::error::PixivDownloaderError;
+use crate::tmp_cache::TmpCache;
 use futures_util::lock::Mutex;
 use hyper::{Body, Request, Response};
 use json::JsonValue;
@@ -25,21 +26,23 @@ pub struct UnitTestContext {
 
 impl UnitTestContext {
     pub async fn new() -> Self {
+        let db = Arc::new(
+            open_and_init_database(
+                PixivDownloaderDbConfig::new(&json::object! {
+                    "type": "sqlite",
+                    "path": "test/server.db",
+                })
+                .unwrap(),
+            )
+            .await
+            .unwrap(),
+        );
         Self {
             ctx: Arc::new(ServerContext {
                 cors: CorsContext::new(true, vec![], vec![]),
-                db: Arc::new(
-                    open_and_init_database(
-                        PixivDownloaderDbConfig::new(&json::object! {
-                            "type": "sqlite",
-                            "path": "test/server.db",
-                        })
-                        .unwrap(),
-                    )
-                    .await
-                    .unwrap(),
-                ),
+                db: db.clone(),
                 rsa_key: Mutex::new(None),
+                tmp_cache: Arc::new(TmpCache::new(db.clone())),
                 _pixiv_app_client: Mutex::new(None),
                 _pixiv_web_client: Mutex::new(None),
             }),

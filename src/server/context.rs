@@ -11,6 +11,7 @@ use crate::get_helper;
 use crate::gettext;
 use crate::pixiv_app::PixivAppClient;
 use crate::pixiv_web::PixivWebClient;
+use crate::tmp_cache::TmpCache;
 use crate::utils::get_file_name_from_url;
 use futures_util::lock::Mutex;
 use hyper::{http::response::Builder, Body, Request, Response};
@@ -24,19 +25,22 @@ pub struct ServerContext {
     pub cors: CorsContext,
     pub db: Arc<Box<dyn PixivDownloaderDb + Send + Sync>>,
     pub rsa_key: Mutex<Option<RSAKey>>,
+    pub tmp_cache: Arc<TmpCache>,
     pub _pixiv_app_client: Mutex<Option<PixivAppClient>>,
     pub _pixiv_web_client: Mutex<Option<Arc<PixivWebClient>>>,
 }
 
 impl ServerContext {
     pub async fn default() -> Self {
+        let db = match open_and_init_database(get_helper().db()).await {
+            Ok(db) => Arc::new(db),
+            Err(e) => panic!("{} {}", gettext("Failed to open database:"), e),
+        };
         Self {
             cors: CorsContext::default(),
-            db: match open_and_init_database(get_helper().db()).await {
-                Ok(db) => Arc::new(db),
-                Err(e) => panic!("{} {}", gettext("Failed to open database:"), e),
-            },
+            db: db.clone(),
             rsa_key: Mutex::new(None),
+            tmp_cache: Arc::new(TmpCache::new(db)),
             _pixiv_app_client: Mutex::new(None),
             _pixiv_web_client: Mutex::new(None),
         }

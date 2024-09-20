@@ -4,6 +4,7 @@ use crate::db::push_task::{
     TelegramPushConfig,
 };
 use crate::error::PixivDownloaderError;
+use crate::formdata::FormDataPartBuilder;
 use crate::opt::author_name_filter::AuthorFiler;
 use crate::parser::description::convert_description_to_tg_html;
 use crate::parser::description::DescriptionParser;
@@ -193,7 +194,27 @@ impl RunContext {
     ) -> Result<Option<InputFile>, PixivDownloaderError> {
         if download_media {
             match self._get_image_url(index) {
-                Some(u) => Ok(Some(InputFile::URL(u))),
+                Some(u) => match self
+                    .ctx
+                    .tmp_cache
+                    .get_cache(&u, json::object! { "referer": "https://www.pixiv.net/" })
+                    .await
+                {
+                    Ok(p) => {
+                        let name = p
+                            .file_name()
+                            .map(|a| a.to_str().unwrap_or(""))
+                            .unwrap_or("")
+                            .to_owned();
+                        let f = FormDataPartBuilder::default()
+                            .body(p)
+                            .filename(name)
+                            .build()
+                            .map_err(|_| "Failed to create FormDataPart.")?;
+                        Ok(Some(InputFile::Content(f)))
+                    }
+                    Err(e) => Err(e),
+                },
                 None => Ok(None),
             }
         } else {
@@ -679,6 +700,7 @@ impl RunContext {
         text += "\n";
         if cfg.author_locations.contains(&AuthorLocation::Top) {
             if let Some(a) = &author {
+                text.push_str(gettext("by "));
                 text += a;
                 text.push('\n');
             }
@@ -692,6 +714,7 @@ impl RunContext {
         text.push('\n');
         if cfg.author_locations.contains(&AuthorLocation::Bottom) {
             if let Some(a) = &author {
+                text.push_str(gettext("by "));
                 text += a;
                 text.push('\n');
             }

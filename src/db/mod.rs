@@ -30,6 +30,7 @@ pub enum PixivDownloaderDbError {
     AnyHow(anyhow::Error),
     #[cfg(feature = "db_sqlite")]
     Sqlite(SqliteError),
+    Str(String),
 }
 
 impl PixivDownloaderDbError {
