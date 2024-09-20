@@ -47,6 +47,232 @@ impl BotapiClient {
         }
     }
 
+    pub async fn send_animation<T: AsRef<str> + ?Sized>(
+        &self,
+        chat_id: &ChatId,
+        message_thread_id: Option<i64>,
+        animation: InputFile,
+        duration: Option<i64>,
+        width: Option<i64>,
+        height: Option<i64>,
+        thumbnail: Option<InputFile>,
+        caption: Option<&str>,
+        parse_mode: Option<ParseMode>,
+        show_caption_above_media: Option<bool>,
+        has_spoiler: Option<bool>,
+        disable_notification: Option<bool>,
+        protect_content: Option<bool>,
+        message_effect_id: Option<&str>,
+        reply_parameters: Option<&ReplyParameters>,
+    ) -> Result<BotApiResult<Message>, BotapiClientError> {
+        let mut form = FormData::new();
+        form.data("chat_id", &chat_id.to_string());
+        match message_thread_id {
+            Some(m) => {
+                form.data("message_thread_id", &m.to_string());
+            }
+            None => {}
+        }
+        match animation {
+            InputFile::URL(u) => {
+                form.data("animation", &u);
+            }
+            InputFile::Content(c) => {
+                form.part("animation", c);
+            }
+        }
+        match duration {
+            Some(d) => {
+                form.data("duration", &d.to_string());
+            }
+            None => {}
+        }
+        match width {
+            Some(d) => {
+                form.data("width", &d.to_string());
+            }
+            None => {}
+        }
+        match height {
+            Some(d) => {
+                form.data("height", &d.to_string());
+            }
+            None => {}
+        }
+        match thumbnail {
+            Some(m) => match m {
+                InputFile::URL(u) => {
+                    form.data("thumbnail", &u);
+                }
+                InputFile::Content(c) => {
+                    form.part("thumbnail", c);
+                }
+            },
+            None => {}
+        }
+        match caption {
+            Some(c) => {
+                form.data("caption", c);
+            }
+            None => {}
+        }
+        match parse_mode {
+            Some(p) => {
+                form.data("parse_mode", p.as_ref());
+            }
+            None => {}
+        }
+        match show_caption_above_media {
+            Some(p) => {
+                form.data("show_caption_above_media", &p.to_string());
+            }
+            None => {}
+        }
+        match has_spoiler {
+            Some(p) => {
+                form.data("has_spoiler", &p.to_string());
+            }
+            None => {}
+        }
+        match disable_notification {
+            Some(d) => {
+                form.data("disable_notification", &d.to_string());
+            }
+            None => {}
+        }
+        match protect_content {
+            Some(p) => {
+                form.data("protect_content", &p.to_string());
+            }
+            None => {}
+        }
+        match message_effect_id {
+            Some(m) => {
+                form.data("message_effect_id", m);
+            }
+            None => {}
+        }
+        match reply_parameters {
+            Some(r) => {
+                form.data("reply_parameters", serde_json::to_string(r)?.as_str());
+            }
+            None => {}
+        }
+        let re = self
+            .client
+            .post_multipart(
+                format!("{}/bot{}/sendAnimation", self.cfg.base, self.cfg.token),
+                None,
+                form,
+            )
+            .await
+            .ok_or("Failed to send animation.")?;
+        let status = re.status();
+        match re.text().await {
+            Ok(t) => Ok(serde_json::from_str(t.as_str())?),
+            Err(e) => Err(format!("HTTP ERROR {}: {}", status, e))?,
+        }
+    }
+
+    pub async fn send_document(
+        &self,
+        chat_id: &ChatId,
+        message_thread_id: Option<i64>,
+        document: InputFile,
+        thumbnail: Option<InputFile>,
+        caption: Option<&str>,
+        parse_mode: Option<ParseMode>,
+        disable_content_type_detection: Option<bool>,
+        disable_notification: Option<bool>,
+        protect_content: Option<bool>,
+        message_effect_id: Option<&str>,
+        reply_parameters: Option<&ReplyParameters>,
+    ) -> Result<BotApiResult<Message>, BotapiClientError> {
+        let mut form = FormData::new();
+        form.data("chat_id", &chat_id.to_string());
+        match message_thread_id {
+            Some(m) => {
+                form.data("message_thread_id", &m.to_string());
+            }
+            None => {}
+        }
+        match document {
+            InputFile::URL(u) => {
+                form.data("document", &u);
+            }
+            InputFile::Content(c) => {
+                form.part("document", c);
+            }
+        }
+        match thumbnail {
+            Some(m) => match m {
+                InputFile::URL(u) => {
+                    form.data("thumbnail", &u);
+                }
+                InputFile::Content(c) => {
+                    form.part("thumbnail", c);
+                }
+            },
+            None => {}
+        }
+        match caption {
+            Some(c) => {
+                form.data("caption", c);
+            }
+            None => {}
+        }
+        match parse_mode {
+            Some(p) => {
+                form.data("parse_mode", p.as_ref());
+            }
+            None => {}
+        }
+        match disable_content_type_detection {
+            Some(d) => {
+                form.data("disable_content_type_detection", &d.to_string());
+            }
+            None => {}
+        }
+        match disable_notification {
+            Some(d) => {
+                form.data("disable_notification", &d.to_string());
+            }
+            None => {}
+        }
+        match protect_content {
+            Some(p) => {
+                form.data("protect_content", &p.to_string());
+            }
+            None => {}
+        }
+        match message_effect_id {
+            Some(m) => {
+                form.data("message_effect_id", m);
+            }
+            None => {}
+        }
+        match reply_parameters {
+            Some(r) => {
+                form.data("reply_parameters", serde_json::to_string(r)?.as_str());
+            }
+            None => {}
+        }
+        let re = self
+            .client
+            .post_multipart(
+                format!("{}/bot{}/sendDocument", self.cfg.base, self.cfg.token),
+                None,
+                form,
+            )
+            .await
+            .ok_or("Failed to send document.")?;
+        let status = re.status();
+        match re.text().await {
+            Ok(t) => Ok(serde_json::from_str(t.as_str())?),
+            Err(e) => Err(format!("HTTP ERROR {}: {}", status, e))?,
+        }
+    }
+
     pub async fn send_photo(
         &self,
         chat_id: &ChatId,
@@ -133,7 +359,7 @@ impl BotapiClient {
                 form,
             )
             .await
-            .ok_or("Failed to send message.")?;
+            .ok_or("Failed to send photo.")?;
         let status = re.status();
         match re.text().await {
             Ok(t) => Ok(serde_json::from_str(t.as_str())?),
@@ -207,6 +433,140 @@ impl BotapiClient {
             )
             .await
             .ok_or("Failed to send message.")?;
+        let status = re.status();
+        match re.text().await {
+            Ok(t) => Ok(serde_json::from_str(t.as_str())?),
+            Err(e) => Err(format!("HTTP ERROR {}: {}", status, e))?,
+        }
+    }
+
+    pub async fn send_video<T: AsRef<str> + ?Sized>(
+        &self,
+        chat_id: &ChatId,
+        message_thread_id: Option<i64>,
+        video: InputFile,
+        duration: Option<i64>,
+        width: Option<i64>,
+        height: Option<i64>,
+        thumbnail: Option<InputFile>,
+        caption: Option<&str>,
+        parse_mode: Option<ParseMode>,
+        show_caption_above_media: Option<bool>,
+        has_spoiler: Option<bool>,
+        supports_streaming: Option<bool>,
+        disable_notification: Option<bool>,
+        protect_content: Option<bool>,
+        message_effect_id: Option<&str>,
+        reply_parameters: Option<&ReplyParameters>,
+    ) -> Result<BotApiResult<Message>, BotapiClientError> {
+        let mut form = FormData::new();
+        form.data("chat_id", &chat_id.to_string());
+        match message_thread_id {
+            Some(m) => {
+                form.data("message_thread_id", &m.to_string());
+            }
+            None => {}
+        }
+        match video {
+            InputFile::URL(u) => {
+                form.data("video", &u);
+            }
+            InputFile::Content(c) => {
+                form.part("video", c);
+            }
+        }
+        match duration {
+            Some(d) => {
+                form.data("duration", &d.to_string());
+            }
+            None => {}
+        }
+        match width {
+            Some(d) => {
+                form.data("width", &d.to_string());
+            }
+            None => {}
+        }
+        match height {
+            Some(d) => {
+                form.data("height", &d.to_string());
+            }
+            None => {}
+        }
+        match thumbnail {
+            Some(m) => match m {
+                InputFile::URL(u) => {
+                    form.data("thumbnail", &u);
+                }
+                InputFile::Content(c) => {
+                    form.part("thumbnail", c);
+                }
+            },
+            None => {}
+        }
+        match caption {
+            Some(c) => {
+                form.data("caption", c);
+            }
+            None => {}
+        }
+        match parse_mode {
+            Some(p) => {
+                form.data("parse_mode", p.as_ref());
+            }
+            None => {}
+        }
+        match show_caption_above_media {
+            Some(p) => {
+                form.data("show_caption_above_media", &p.to_string());
+            }
+            None => {}
+        }
+        match has_spoiler {
+            Some(p) => {
+                form.data("has_spoiler", &p.to_string());
+            }
+            None => {}
+        }
+        match supports_streaming {
+            Some(s) => {
+                form.data("supports_streaming", &s.to_string());
+            }
+            None => {}
+        }
+        match disable_notification {
+            Some(d) => {
+                form.data("disable_notification", &d.to_string());
+            }
+            None => {}
+        }
+        match protect_content {
+            Some(p) => {
+                form.data("protect_content", &p.to_string());
+            }
+            None => {}
+        }
+        match message_effect_id {
+            Some(m) => {
+                form.data("message_effect_id", m);
+            }
+            None => {}
+        }
+        match reply_parameters {
+            Some(r) => {
+                form.data("reply_parameters", serde_json::to_string(r)?.as_str());
+            }
+            None => {}
+        }
+        let re = self
+            .client
+            .post_multipart(
+                format!("{}/bot{}/sendVideo", self.cfg.base, self.cfg.token),
+                None,
+                form,
+            )
+            .await
+            .ok_or("Failed to send video.")?;
         let status = re.status();
         match re.text().await {
             Ok(t) => Ok(serde_json::from_str(t.as_str())?),
