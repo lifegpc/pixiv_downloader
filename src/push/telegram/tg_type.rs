@@ -176,6 +176,169 @@ pub enum InputFile {
     Content(FormDataPart),
 }
 
+#[derive(Builder, Clone, Debug, Deserialize, Serialize)]
+#[builder(setter(into))]
+/// Represents an audio file to be treated as music to be sent.
+pub struct InputMediaAudio {
+    /// File to send. Pass a file_id to send a file that exists on the Telegram servers (recommended),
+    /// pass an HTTP URL for Telegram to get a file from the Internet,
+    /// or pass “attach://<file_attach_name>” to upload a new one using
+    /// multipart/form-data under <file_attach_name> name.
+    media: String,
+    /// Optional. Thumbnail of the file sent; can be ignored if thumbnail generation for the file
+    /// is supported server-side. The thumbnail should be in JPEG format and less than 200 kB in size.
+    /// A thumbnail's width and height should not exceed 320. Ignored if the file is not uploaded
+    /// using multipart/form-data. Thumbnails can't be reused and can be only uploaded as a new file,
+    /// so you can pass “attach://<file_attach_name>” if the thumbnail was uploaded using
+    /// multipart/form-data under <file_attach_name>.
+    #[builder(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    thumbnail: Option<String>,
+    /// Optional. Caption of the audio to be sent, 0-1024 characters after entities parsing
+    #[builder(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    caption: Option<String>,
+    /// Optional. Mode for parsing entities in the audio caption. See formatting options for more details.
+    #[builder(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    parse_mode: Option<ParseMode>,
+    /// Optional. Duration of the audio in seconds
+    #[builder(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    duration: Option<i64>,
+    /// Optional. Performer of the audio
+    #[builder(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    performer: Option<String>,
+    /// Optional. Title of the audio
+    #[builder(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    title: Option<String>,
+}
+
+#[derive(Builder, Clone, Debug, Deserialize, Serialize)]
+#[builder(setter(into))]
+/// Represents a general file to be sent.
+pub struct InputMediaDocument {
+    /// File to send. Pass a file_id to send a file that exists on the Telegram servers (recommended),
+    /// pass an HTTP URL for Telegram to get a file from the Internet,
+    /// or pass “attach://<file_attach_name>” to upload a new one using
+    /// multipart/form-data under <file_attach_name> name.
+    media: String,
+    /// Optional. Thumbnail of the file sent; can be ignored if thumbnail generation for the file
+    /// is supported server-side. The thumbnail should be in JPEG format and less than 200 kB in size.
+    /// A thumbnail's width and height should not exceed 320. Ignored if the file is not uploaded
+    /// using multipart/form-data. Thumbnails can't be reused and can be only uploaded as a new file,
+    /// so you can pass “attach://<file_attach_name>” if the thumbnail was uploaded using
+    /// multipart/form-data under <file_attach_name>.
+    #[builder(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    thumbnail: Option<String>,
+    /// Optional. Caption of the document to be sent, 0-1024 characters after entities parsing
+    #[builder(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    caption: Option<String>,
+    /// Optional. Mode for parsing entities in the document caption.
+    /// See formatting options for more details.
+    #[builder(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    parse_mode: Option<ParseMode>,
+    /// Optional. Disables automatic server-side content type detection for files uploaded
+    /// using multipart/form-data. Always True, if the document is sent as part of an album.
+    #[builder(default, setter(strip_option))]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    disable_content_type_detection: Option<bool>,
+}
+
+#[derive(Builder, Clone, Debug, Deserialize, Serialize)]
+#[builder(setter(into))]
+/// Represents a photo to be sent.
+pub struct InputMediaPhoto {
+    /// File to send. Pass a file_id to send a file that exists on the Telegram servers (recommended),
+    /// pass an HTTP URL for Telegram to get a file from the Internet, or pass
+    /// “attach://<file_attach_name>” to upload a new one using multipart/form-data
+    /// under <file_attach_name> name.
+    media: String,
+    /// Optional. Caption of the photo to be sent, 0-1024 characters after entities parsing
+    #[builder(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    caption: Option<String>,
+    /// Optional. Mode for parsing entities in the photo caption. See formatting options for more details.
+    #[builder(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    parse_mode: Option<ParseMode>,
+    /// Optional. Pass True, if the caption must be shown above the message media
+    #[builder(default, setter(strip_option))]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    show_caption_above_media: Option<bool>,
+    /// Optional. Pass True if the photo needs to be covered with a spoiler animations
+    #[builder(default, setter(strip_option))]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    has_spoiler: Option<bool>,
+}
+
+#[derive(Builder, Clone, Debug, Deserialize, Serialize)]
+#[builder(setter(into))]
+/// Represents a video to be sent.
+pub struct InputMediaVideo {
+    /// File to send. Pass a file_id to send a file that exists on the Telegram servers (recommended),
+    /// pass an HTTP URL for Telegram to get a file from the Internet, or pass
+    /// “attach://<file_attach_name>” to upload a new one using multipart/form-data under
+    /// <file_attach_name> name.
+    media: String,
+    /// Optional. Thumbnail of the file sent; can be ignored if thumbnail generation for the file
+    /// is supported server-side. The thumbnail should be in JPEG format and less than 200 kB in size.
+    /// A thumbnail's width and height should not exceed 320. Ignored if the file is not uploaded
+    /// using multipart/form-data. Thumbnails can't be reused and can be only uploaded as a new file,
+    /// so you can pass “attach://<file_attach_name>” if the thumbnail was uploaded using
+    /// multipart/form-data under <file_attach_name>.
+    #[builder(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    thumbnail: Option<String>,
+    /// Optional. Caption of the video to be sent, 0-1024 characters after entities parsing
+    #[builder(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    caption: Option<String>,
+    /// Optional. Mode for parsing entities in the video caption. See formatting options for more details.
+    #[builder(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    parse_mode: Option<ParseMode>,
+    /// Optional. Pass True, if the caption must be shown above the message media
+    #[builder(default, setter(strip_option))]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    show_caption_above_media: Option<bool>,
+    /// Optional. Video width
+    #[builder(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    width: Option<i64>,
+    /// Optional. Video height
+    #[builder(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    height: Option<i64>,
+    /// Optional. Video duration in seconds
+    #[builder(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    duration: Option<i64>,
+    /// Optional. Pass True if the uploaded video is suitable for streaming
+    #[builder(default, setter(strip_option))]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    supports_streaming: Option<bool>,
+    /// Optional. Pass True if the video needs to be covered with a spoiler animation
+    #[builder(default, setter(strip_option))]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    has_spoiler: Option<bool>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, derive_more::From)]
+#[serde(rename_all = "camelCase", tag = "type")]
+/// This object represents the content of a media message to be sent.
+pub enum InputMedia {
+    Audio(InputMediaAudio),
+    Document(InputMediaDocument),
+    Photo(InputMediaPhoto),
+    Video(InputMediaVideo),
+}
+
 #[test]
 fn test_chat_id() {
     assert_eq!(

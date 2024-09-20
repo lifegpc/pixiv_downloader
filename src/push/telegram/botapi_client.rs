@@ -1,7 +1,7 @@
 use super::tg_type::*;
-use crate::formdata::FormData;
 #[cfg(test)]
 use crate::formdata::FormDataPartBuilder;
+use crate::formdata::{FormData, FormDataPart};
 use crate::webclient::WebClient;
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
@@ -360,6 +360,69 @@ impl BotapiClient {
             )
             .await
             .ok_or("Failed to send photo.")?;
+        let status = re.status();
+        match re.text().await {
+            Ok(t) => Ok(serde_json::from_str(t.as_str())?),
+            Err(e) => Err(format!("HTTP ERROR {}: {}", status, e))?,
+        }
+    }
+
+    pub async fn send_media_group(
+        &self,
+        chat_id: &ChatId,
+        message_thread_id: Option<i64>,
+        media: Vec<InputMedia>,
+        files: Vec<(String, FormDataPart)>,
+        disable_notification: Option<bool>,
+        protect_content: Option<bool>,
+        message_effect_id: Option<&str>,
+        reply_parameters: Option<&ReplyParameters>,
+    ) -> Result<BotApiResult<Message>, BotapiClientError> {
+        let mut form = FormData::new();
+        form.data("chat_id", &chat_id.to_string());
+        match message_thread_id {
+            Some(m) => {
+                form.data("message_thread_id", &m.to_string());
+            }
+            None => {}
+        }
+        form.data("media", serde_json::to_string(&media)?.as_bytes());
+        for (key, part) in files {
+            form.part(&key, part);
+        }
+        match disable_notification {
+            Some(d) => {
+                form.data("disable_notification", &d.to_string());
+            }
+            None => {}
+        }
+        match protect_content {
+            Some(p) => {
+                form.data("protect_content", &p.to_string());
+            }
+            None => {}
+        }
+        match message_effect_id {
+            Some(m) => {
+                form.data("message_effect_id", m);
+            }
+            None => {}
+        }
+        match reply_parameters {
+            Some(r) => {
+                form.data("reply_parameters", serde_json::to_string(r)?.as_str());
+            }
+            None => {}
+        }
+        let re = self
+            .client
+            .post_multipart(
+                format!("{}/bot{}/sendMediaGroup", self.cfg.base, self.cfg.token),
+                None,
+                form,
+            )
+            .await
+            .ok_or("Failed to send media group.")?;
         let status = re.status();
         match re.text().await {
             Ok(t) => Ok(serde_json::from_str(t.as_str())?),
