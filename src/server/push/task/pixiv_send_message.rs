@@ -13,7 +13,9 @@ use crate::push::every_push::{EveryPushClient, EveryPushTextType};
 use crate::push::pushdeer::PushdeerClient;
 use crate::push::telegram::botapi_client::{BotapiClient, BotapiClientConfig};
 use crate::push::telegram::text::{encode_data, TextSpliter};
-use crate::push::telegram::tg_type::{InputFile, ParseMode, ReplyParametersBuilder};
+use crate::push::telegram::tg_type::{
+    InputFile, InputMedia, InputMediaPhotoBuilder, ParseMode, ReplyParametersBuilder,
+};
 use crate::utils::{get_file_name_from_url, parse_pixiv_id};
 use crate::{get_helper, gettext};
 use json::JsonValue;
@@ -756,6 +758,59 @@ impl RunContext {
                 .await?
                 .to_result()?;
             last_message_id = Some(m.message_id);
+        } else {
+            let mut i = 0u64;
+            let mut photos = Vec::new();
+            let mut photo_files = Vec::new();
+            while i < len {
+                let f = self
+                    .get_input_file(i, download_media)
+                    .await?
+                    .ok_or("Failed to get image.")?;
+                let u = match f {
+                    InputFile::URL(u) => u,
+                    InputFile::Content(c) => {
+                        photo_files.push((format!("img{}", i), c));
+                        format!("attach://img{}", i)
+                    }
+                };
+                let mut img = InputMediaPhotoBuilder::default();
+                img.media(u);
+                if photos.is_empty() {
+                    let text = ts.to_html(None);
+                    img.caption(Some(text)).parse_mode(Some(ParseMode::HTML));
+                }
+                let img = img.build().map_err(|_| "Failed to gen.")?;
+                photos.push(InputMedia::from(img));
+                i += 1;
+                if i == len || photos.len() == 10 {
+                    let r = match last_message_id {
+                        Some(m) => Some(
+                            ReplyParametersBuilder::default()
+                                .message_id(m)
+                                .build()
+                                .map_err(|_| "Failed to gen.")?,
+                        ),
+                        None => None,
+                    };
+                    let m = c
+                        .send_media_group(
+                            &cfg.chat_id,
+                            cfg.message_thread_id,
+                            photos,
+                            photo_files,
+                            Some(cfg.disable_notification),
+                            Some(cfg.protect_content),
+                            None,
+                            r.as_ref(),
+                        )
+                        .await?
+                        .to_result()?;
+                    last_message_id = m.first().map(|m| m.message_id);
+                    photos = Vec::new();
+                    photo_files = Vec::new();
+                }
+            }
         }
         while !ts.is_empty() {
             let r = match last_message_id {

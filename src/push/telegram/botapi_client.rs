@@ -381,7 +381,7 @@ impl BotapiClient {
         protect_content: Option<bool>,
         message_effect_id: Option<&str>,
         reply_parameters: Option<&ReplyParameters>,
-    ) -> Result<BotApiResult<Message>, BotapiClientError> {
+    ) -> Result<BotApiResult<Vec<Message>>, BotapiClientError> {
         let mut form = FormData::new();
         form.data("chat_id", &chat_id.to_string());
         match message_thread_id {
