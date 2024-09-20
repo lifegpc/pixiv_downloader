@@ -325,7 +325,7 @@ impl PixivDownloaderSqlite {
             t.execute(PUSH_TASK_DATA_TABLE, [])?;
         }
         if !tables.contains_key("tmp_cache") {
-            t.execute("TMP_CACHE_TABLE", [])?;
+            t.execute(TMP_CACHE_TABLE, [])?;
         }
         t.commit()?;
         Ok(())
