@@ -108,17 +108,17 @@ pub async fn run_checking(ctx: Arc<ServerContext>) {
         for (id, task) in tasks {
             let re = task.await;
             if let Ok(Err(e)) = re {
-                log::warn!("Push task error (task id: {}): {}", id, e);
+                log::warn!(target: "push_task", "Push task error (task id: {}): {}", id, e);
             } else if let Err(e) = re {
-                log::error!("Join error: {}", e);
+                log::error!(target: "push_task", "Join error: {}", e);
             } else if let Ok(Ok(())) = re {
-                log::debug!("Push task finished: {}", id);
+                log::debug!(target: "push_task", "Push task finished: {}", id);
             }
         }
         let all_tasks = match ctx.db.get_all_push_tasks().await {
             Ok(t) => t,
             Err(e) => {
-                log::error!("Get all push tasks error: {}", e);
+                log::error!(target: "push_task", "Get all push tasks error: {}", e);
                 break;
             }
         };

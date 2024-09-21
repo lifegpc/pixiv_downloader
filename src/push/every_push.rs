@@ -76,6 +76,7 @@ impl EveryPushClient {
             Some(t) => params.insert("type", t.as_ref()),
             None => None,
         };
+        log::debug!(target: "every_push", "Push message params: {:?}", params);
         let re = self
             .client
             .post(format!("{}/message/push", self.server), None, Some(params))
@@ -86,16 +87,19 @@ impl EveryPushClient {
             Ok(())
         } else {
             match re.text().await {
-                Ok(t) => match json::parse(t.as_str()) {
-                    Ok(v) => {
-                        let msg = v["message"].as_str();
-                        match msg {
-                            Some(m) => Err(m.to_owned()),
-                            None => Err(format!("HTTP ERROR {}", status)),
+                Ok(t) => {
+                    log::debug!(target: "every_push", "Error message: {}", t);
+                    match json::parse(t.as_str()) {
+                        Ok(v) => {
+                            let msg = v["message"].as_str();
+                            match msg {
+                                Some(m) => Err(m.to_owned()),
+                                None => Err(format!("HTTP ERROR {}", status)),
+                            }
                         }
+                        Err(e) => Err(format!("HTTP ERROR {}: {}", status, e)),
                     }
-                    Err(e) => Err(format!("HTTP ERROR {}: {}", status, e)),
-                },
+                }
                 Err(e) => Err(format!("HTTP ERROR {}: {}", status, e)),
             }
         }

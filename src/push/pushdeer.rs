@@ -17,13 +17,12 @@ impl PushdeerClient {
     }
 
     async fn handle_result(re: reqwest::Response) -> Result<(), String> {
-        let obj = json::parse(
-            re.text()
-                .await
-                .try_err4("Failed to read text from response: ")?
-                .as_str(),
-        )
-        .try_err4("Failed to parse JSON: ")?;
+        let text = re
+            .text()
+            .await
+            .try_err4("Failed to read text from response: ")?;
+        log::debug!(target: "pushdeer", "Pushdeer server response: {}", text);
+        let obj = json::parse(text.as_str()).try_err4("Failed to parse JSON: ")?;
         let code = obj["code"].as_i64().ok_or("Failed to get code.")?;
         if code == 0 {
             Ok(())
@@ -46,6 +45,7 @@ impl PushdeerClient {
         let mut params = HashMap::new();
         params.insert("pushkey", pushkey.as_ref());
         params.insert("text", text.as_ref());
+        log::debug!(target: "pushdeer", "Push text message params: {:?}", params);
         let re = self
             .client
             .post(format!("{}/message/push", self.server), None, Some(params))
@@ -66,6 +66,7 @@ impl PushdeerClient {
         params.insert("pushkey", pushkey.as_ref());
         params.insert("text", image.as_ref());
         params.insert("type", "image");
+        log::debug!(target: "pushdeer", "Push image message params: {:?}", params);
         let re = self
             .client
             .post(format!("{}/message/push", self.server), None, Some(params))
@@ -93,6 +94,7 @@ impl PushdeerClient {
         params.insert("text", title.as_ref());
         params.insert("desp", text.as_ref());
         params.insert("type", "markdown");
+        log::debug!(target: "pushdeer", "Push markdown message params: {:?}", params);
         let re = self
             .client
             .post(format!("{}/message/push", self.server), None, Some(params))
