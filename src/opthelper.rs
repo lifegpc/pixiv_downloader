@@ -384,6 +384,13 @@ impl OptHelper {
     pub fn init_log(&self) {
         if self.opt.get_ref().verbose {
             crate::log_cfg::init_with_level(log::LevelFilter::Debug);
+        } else {
+            match self.log_cfg() {
+                Some(cfg) => {
+                    crate::log_cfg::init_with_file(cfg);
+                }
+                None => {}
+            }
         }
     }
 
@@ -643,6 +650,11 @@ impl OptHelper {
         #[cfg(feature = "docker")]
         return PathBuf::from("/app/temp");
         std::env::temp_dir()
+    }
+
+    /// The path to config file of [log4rs]
+    pub fn log_cfg(&self) -> Option<String> {
+        return self.settings.get_ref().get_str("log-cfg");
     }
 }
 

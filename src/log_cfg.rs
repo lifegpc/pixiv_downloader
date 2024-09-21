@@ -32,6 +32,17 @@ pub fn init_with_level(level: LevelFilter) {
     }
 }
 
+pub fn init_with_file(path: String) {
+    let config = log4rs::config::load_config_file(path, Default::default()).unwrap();
+    let mut h = HANDLE.get_mut();
+    if let Some(h) = h.as_ref() {
+        h.set_config(config);
+    } else {
+        let handle = init_config(config).unwrap();
+        h.replace(handle);
+    }
+}
+
 pub fn init_default() {
     init_with_level(LevelFilter::Info);
 }

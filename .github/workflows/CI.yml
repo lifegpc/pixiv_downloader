@@ -9,6 +9,7 @@ on:
       - 'doc/**'
       - Dockerfile
       - docker-compose.yml
+      - log-cfg.yml
       - README.md
   pull_request:
     branches: [ master ]

@@ -8,6 +8,7 @@ on:
       - '.github/workflows/github-pages.yaml'
       - 'doc/**'
       - docker-compose.yml
+      - log-cfg.yml
       - README.md
   workflow_dispatch:
 
