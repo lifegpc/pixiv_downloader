@@ -1,29 +1,45 @@
 use derive_builder::Builder;
+use derive_getters::Getters;
 use derive_setters::Setters;
 use reqwest::header::HeaderMap;
 use reqwest::multipart::{Form, Part};
 use std::path::{Path, PathBuf};
 
-#[derive(Debug, derive_more::From)]
+#[derive(derive_more::From)]
 pub enum FormDataBody {
     Data(Vec<u8>),
     File(PathBuf),
 }
 
-#[derive(Builder, Debug, Setters)]
+impl std::fmt::Debug for FormDataBody {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Data(d) => match std::str::from_utf8(d) {
+                Ok(d) => f.debug_tuple("Data").field(&d).finish(),
+                Err(_) => f.debug_tuple("Data").field(d).finish(),
+            },
+            Self::File(p) => f.debug_tuple("File").field(p).finish(),
+        }
+    }
+}
+
+#[derive(Builder, Getters, Setters)]
 #[builder(pattern = "owned", setter(strip_option))]
 #[setters(borrow_self, into)]
 /// Part of form
 pub struct FormDataPart {
     #[builder(default, setter(into))]
+    #[getter(rename = "get_mime")]
     #[setters(strip_option)]
     /// Mime type
     mime: Option<String>,
     #[builder(default, setter(into))]
+    #[getter(rename = "get_filename")]
     #[setters(strip_option)]
     /// File name
     filename: Option<String>,
     #[builder(default)]
+    #[getter(skip)]
     #[setters(skip)]
     /// HTTP headers
     pub headers: HeaderMap,
@@ -33,9 +49,42 @@ pub struct FormDataPart {
     body: FormDataBody,
 }
 
+impl std::fmt::Debug for FormDataPart {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.mime.is_none() && self.filename.is_none() && self.headers.is_empty() {
+            std::fmt::Debug::fmt(&self.body, f)
+        } else {
+            let mut p = f.debug_struct("FormDataPart");
+            match &self.mime {
+                Some(m) => {
+                    p.field("mime", &m.as_str());
+                }
+                None => {}
+            }
+            match &self.filename {
+                Some(f) => {
+                    p.field("filename", &f.as_str());
+                }
+                None => {}
+            }
+            if !self.headers.is_empty() {
+                p.field("headers", &self.headers);
+            }
+            p.field("body", &self.body);
+            p.finish()
+        }
+    }
+}
+
 /// Form
 pub struct FormData {
     fields: Vec<(String, FormDataPart)>,
+}
+
+impl std::fmt::Debug for FormData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("FormData").field(&self.fields).finish()
+    }
 }
 
 /// Error when convert [FormData] to [Form]

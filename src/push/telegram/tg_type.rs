@@ -1,4 +1,4 @@
-use crate::formdata::FormDataPart;
+use crate::formdata::{FormDataBody, FormDataPart};
 use derive_builder::Builder;
 use derive_more::From;
 use serde::{Deserialize, Serialize};
@@ -185,6 +185,21 @@ pub enum InputFile {
     URL(String),
     /// File data
     Content(FormDataPart),
+}
+
+impl InputFile {
+    pub async fn get_size(&self) -> Result<Option<u64>, std::io::Error> {
+        match self {
+            Self::URL(_) => Ok(None),
+            Self::Content(c) => match c.body() {
+                FormDataBody::Data(d) => Ok(Some(d.len() as u64)),
+                FormDataBody::File(f) => {
+                    let m = tokio::fs::metadata(f).await?;
+                    Ok(Some(m.len()))
+                }
+            },
+        }
+    }
 }
 
 #[derive(Builder, Clone, Debug, Deserialize, Serialize)]

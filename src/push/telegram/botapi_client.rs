@@ -162,6 +162,7 @@ impl BotapiClient {
             }
             None => {}
         }
+        log::debug!(target: "botapi_client", "Request Form: {:?}", form);
         let re = self
             .client
             .post_multipart(
@@ -173,7 +174,10 @@ impl BotapiClient {
             .ok_or("Failed to send animation.")?;
         let status = re.status();
         match re.text().await {
-            Ok(t) => Ok(serde_json::from_str(t.as_str())?),
+            Ok(t) => {
+                log::debug!(target: "botapi_client", "Response: {}", t);
+                Ok(serde_json::from_str(t.as_str())?)
+            }
             Err(e) => Err(format!("HTTP ERROR {}: {}", status, e))?,
         }
     }
@@ -261,6 +265,7 @@ impl BotapiClient {
             }
             None => {}
         }
+        log::debug!(target: "botapi_client", "Request Form: {:?}", form);
         let re = self
             .client
             .post_multipart(
@@ -272,7 +277,10 @@ impl BotapiClient {
             .ok_or("Failed to send document.")?;
         let status = re.status();
         match re.text().await {
-            Ok(t) => Ok(serde_json::from_str(t.as_str())?),
+            Ok(t) => {
+                log::debug!(target: "botapi_client", "Response: {}", t);
+                Ok(serde_json::from_str(t.as_str())?)
+            }
             Err(e) => Err(format!("HTTP ERROR {}: {}", status, e))?,
         }
     }
@@ -355,6 +363,7 @@ impl BotapiClient {
             }
             None => {}
         }
+        log::debug!(target: "botapi_client", "Request Form: {:?}", form);
         let re = self
             .client
             .post_multipart(
@@ -366,7 +375,10 @@ impl BotapiClient {
             .ok_or("Failed to send photo.")?;
         let status = re.status();
         match re.text().await {
-            Ok(t) => Ok(serde_json::from_str(t.as_str())?),
+            Ok(t) => {
+                log::debug!(target: "botapi_client", "Response: {}", t);
+                Ok(serde_json::from_str(t.as_str())?)
+            }
             Err(e) => Err(format!("HTTP ERROR {}: {}", status, e))?,
         }
     }
@@ -418,6 +430,7 @@ impl BotapiClient {
             }
             None => {}
         }
+        log::debug!(target: "botapi_client", "Request Form: {:?}", form);
         let re = self
             .client
             .post_multipart(
@@ -429,7 +442,10 @@ impl BotapiClient {
             .ok_or("Failed to send media group.")?;
         let status = re.status();
         match re.text().await {
-            Ok(t) => Ok(serde_json::from_str(t.as_str())?),
+            Ok(t) => {
+                log::debug!(target: "botapi_client", "Response: {}", t);
+                Ok(serde_json::from_str(t.as_str())?)
+            }
             Err(e) => Err(format!("HTTP ERROR {}: {}", status, e))?,
         }
     }
@@ -491,6 +507,7 @@ impl BotapiClient {
             }
             None => {}
         }
+        log::debug!(target: "botapi_client", "Request params: {:?}", params);
         let re = self
             .client
             .post(
@@ -502,7 +519,10 @@ impl BotapiClient {
             .ok_or("Failed to send message.")?;
         let status = re.status();
         match re.text().await {
-            Ok(t) => Ok(serde_json::from_str(t.as_str())?),
+            Ok(t) => {
+                log::debug!(target: "botapi_client", "Response: {}", t);
+                Ok(serde_json::from_str(t.as_str())?)
+            }
             Err(e) => Err(format!("HTTP ERROR {}: {}", status, e))?,
         }
     }
@@ -625,6 +645,7 @@ impl BotapiClient {
             }
             None => {}
         }
+        log::debug!(target: "botapi_client", "Request Form: {:?}", form);
         let re = self
             .client
             .post_multipart(
@@ -636,7 +657,10 @@ impl BotapiClient {
             .ok_or("Failed to send video.")?;
         let status = re.status();
         match re.text().await {
-            Ok(t) => Ok(serde_json::from_str(t.as_str())?),
+            Ok(t) => {
+                log::debug!(target: "botapi_client", "Response: {}", t);
+                Ok(serde_json::from_str(t.as_str())?)
+            }
             Err(e) => Err(format!("HTTP ERROR {}: {}", status, e))?,
         }
     }
