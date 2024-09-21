@@ -43,6 +43,12 @@ impl TmpCache {
         match self.db.get_tmp_cache(url).await? {
             Some(ent) => {
                 if tokio::fs::try_exists(&ent.path).await.unwrap_or(false) {
+                    match self.db.update_tmp_cache(url).await {
+                        Ok(_) => {}
+                        Err(e) => {
+                            log::warn!(target: "tmp_cache", "Failed to update tmp cache entry {} in database: {}", url, e);
+                        }
+                    }
                     return Ok(PathBuf::from(&ent.path));
                 }
             }
