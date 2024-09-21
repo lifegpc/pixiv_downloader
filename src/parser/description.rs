@@ -1,12 +1,18 @@
 use crate::error::PixivDownloaderError;
 use crate::gettext;
 use crate::pixiv_link::remove_track;
+use fancy_regex::Regex;
 use html5ever::tendril::TendrilSink;
 use html5ever::{parse_document, ParseOpts};
 use markup5ever_rcdom::{Node, NodeData, RcDom};
 use percent_encoding::{percent_encode, AsciiSet, NON_ALPHANUMERIC};
 use std::collections::HashMap;
 use std::default::Default;
+
+lazy_static! {
+    #[doc(hidden)]
+    static ref RE: Regex = Regex::new("：(?=[^ ])").unwrap();
+}
 
 const URLENCODE: &AsciiSet = &NON_ALPHANUMERIC
     .remove(b':')
@@ -139,6 +145,8 @@ pub struct DescriptionParserBuilder {
     _ensure_link_ascii: bool,
     /// Telegram HTML Mode
     tg_html_mode: bool,
+    /// Add space after `：`
+    _add_space_after_fullwidth_colon: bool,
 }
 
 #[allow(dead_code)]
@@ -148,7 +156,14 @@ impl DescriptionParserBuilder {
             md_mode,
             _ensure_link_ascii: false,
             tg_html_mode,
+            _add_space_after_fullwidth_colon: false,
         }
+    }
+
+    /// Add space after `：`
+    pub fn add_space_after_fullwidth_colon(mut self) -> Self {
+        self._add_space_after_fullwidth_colon = true;
+        self
     }
 
     /// Ensure link is ASCII
@@ -222,11 +237,16 @@ impl DescriptionParser {
                 let node = self.nodes.pop().unwrap();
                 let mut is_paragraph = false;
                 let s = if self.opts.tg_html_mode {
+                    let data = if self.opts._add_space_after_fullwidth_colon {
+                        RE.replace_all(&node.data, "： ").into_owned()
+                    } else {
+                        node.data.clone()
+                    };
                     if node.tag == "a" && node.is_link(true) {
                         format!(
                             "<a href=\"{}\">{}</a>",
                             node.attrs.get("href").unwrap(),
-                            node.data
+                            data
                         )
                     } else if node.tag.is_empty()
                         || node.tag == "a"
@@ -234,9 +254,9 @@ impl DescriptionParser {
                         || node.tag == "body"
                         || node.tag == "head"
                     {
-                        node.data
+                        data
                     } else {
-                        format!("<{}>{}</{}>", node.tag, node.data, node.tag)
+                        format!("<{}>{}</{}>", node.tag, data, node.tag)
                     }
                 } else if node.is_link(self.opts.md_mode) {
                     node.to_link(self.opts._ensure_link_ascii)
@@ -334,7 +354,9 @@ pub fn convert_description_to_md<S: AsRef<str> + ?Sized>(
 pub fn convert_description_to_tg_html<S: AsRef<str> + ?Sized>(
     desc: &S,
 ) -> Result<String, PixivDownloaderError> {
-    let mut p = DescriptionParser::new(false, true);
+    let mut p = DescriptionParser::builder(false, true)
+        .add_space_after_fullwidth_colon()
+        .build();
     p.parse(desc)?;
     Ok(p.data)
 }
@@ -398,7 +420,7 @@ fn test_ensure_link_ascii() {
 #[test]
 fn test_convert_description_to_tg_html() {
     assert_eq!(
-        String::from("ご依頼・お仕事について：<a href=\"https://lit.link/en/hamiyamiko\">https://lit.link/en/hamiyamiko</a>\nVGen：<a href=\"https://vgen.co/hamiyamiko\">https://vgen.co/hamiyamiko</a>\nFanbox：<a href=\"https://hamiya.fanbox.cc/\">https://hamiya.fanbox.cc/</a>\nX（Twitter）：<strong><a href=\"https://twitter.com/hamiyamiko\">twitter/hamiyamiko</a></strong>"),
+        String::from("ご依頼・お仕事について： <a href=\"https://lit.link/en/hamiyamiko\">https://lit.link/en/hamiyamiko</a>\nVGen： <a href=\"https://vgen.co/hamiyamiko\">https://vgen.co/hamiyamiko</a>\nFanbox： <a href=\"https://hamiya.fanbox.cc/\">https://hamiya.fanbox.cc/</a>\nX（Twitter）： <strong><a href=\"https://twitter.com/hamiyamiko\">twitter/hamiyamiko</a></strong>"),
         convert_description_to_tg_html("ご依頼・お仕事について：<a href=\"https://lit.link/en/hamiyamiko\" target='_blank' rel='noopener noreferrer'>https://lit.link/en/hamiyamiko</a><br />VGen：<a href=\"https://vgen.co/hamiyamiko\" target='_blank' rel='noopener noreferrer'>https://vgen.co/hamiyamiko</a><br />Fanbox：<a href=\"https://hamiya.fanbox.cc/\" target=\"_blank\">https://hamiya.fanbox.cc/</a><br />X（Twitter）：<strong><a href=\"https://twitter.com/hamiyamiko\" target=\"_blank\">twitter/hamiyamiko</a></strong>").unwrap(),
     );
     assert_eq!(
