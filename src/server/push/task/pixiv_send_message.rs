@@ -293,6 +293,28 @@ impl RunContext {
         false
     }
 
+    pub fn is_r18(&self) -> bool {
+        if let Some(i) = self.illust.as_ref() {
+            for tag in i.tags() {
+                if let Some(name) = tag.name() {
+                    if name == "R-18" {
+                        return true;
+                    }
+                }
+            }
+        }
+        if let Some(d) = self.data.as_ref() {
+            for tag in d["tags"]["tags"].members() {
+                if let Some(name) = &tag["tag"].as_str() {
+                    if *name == "R-18" {
+                        return true;
+                    }
+                }
+            }
+        }
+        false
+    }
+
     pub fn add_ai_tag(&self) -> bool {
         match self.cfg.as_ref() {
             PushConfig::EveryPush(e) => e.add_ai_tag,
@@ -664,6 +686,7 @@ impl RunContext {
         b: &BotapiClientConfig,
     ) -> Result<(), PixivDownloaderError> {
         let c = BotapiClient::new(b);
+        let is_r18 = self.is_r18();
         let mut text = String::new();
         let mut title = self.title().unwrap_or("");
         if title.is_empty() {
@@ -749,7 +772,7 @@ impl RunContext {
                     Some(text.as_str()),
                     Some(ParseMode::HTML),
                     Some(cfg.show_caption_above_media),
-                    None,
+                    Some(is_r18),
                     Some(cfg.disable_notification),
                     Some(cfg.protect_content),
                     None,
@@ -775,7 +798,7 @@ impl RunContext {
                     }
                 };
                 let mut img = InputMediaPhotoBuilder::default();
-                img.media(u);
+                img.media(u).has_spoiler(is_r18);
                 if photos.is_empty() {
                     let text = ts.to_html(None);
                     img.caption(Some(text)).parse_mode(Some(ParseMode::HTML));
