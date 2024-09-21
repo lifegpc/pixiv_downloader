@@ -7,7 +7,7 @@ appenders:
     kind: rolling_file
     path: "log/requests.log"
     encoder:
-      pattern: "{d} - {m}{n}"
+      pattern: "{d(%Y-%m-%d %H:%M:%S)} - {m}{n}"
     policy:
       kind: compound
       trigger:
@@ -17,7 +17,7 @@ appenders:
         kind: fixed_window
         base: 1
         count: 5
-        pattern: "logs/requests.{}.log"
+        pattern: "log/requests.{}.log.gz"
 root:
   level: info
   appenders:
