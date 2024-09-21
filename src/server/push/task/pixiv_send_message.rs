@@ -20,6 +20,12 @@ use crate::utils::{get_file_name_from_url, parse_pixiv_id};
 use crate::{get_helper, gettext};
 use json::JsonValue;
 use percent_encoding::{percent_encode, NON_ALPHANUMERIC};
+use regex::Regex;
+
+lazy_static! {
+    #[doc(hidden)]
+    static ref RE: Regex = Regex::new("[,\\./\\\\;'\\[\\]\\{\\}!@#\\$%\\^&\\*\\(\\)\\-= \\+<>\\?\\:\"]").unwrap();
+}
 
 struct RunContext {
     ctx: Arc<ServerContext>,
@@ -405,7 +411,7 @@ impl RunContext {
                         ));
                     } else {
                         text.push('#');
-                        text.push_str(&name.replace(' ', "_"));
+                        text.push_str(&RE.replace_all(name, "_").into_owned());
                         text.push(' ');
                     }
                     if cfg.add_translated_tag {
@@ -417,7 +423,7 @@ impl RunContext {
                                 ));
                             } else {
                                 text.push('#');
-                                text.push_str(&t.replace(' ', "_"));
+                                text.push_str(&RE.replace_all(t, "_").into_owned());
                                 text.push(' ');
                             }
                         }
@@ -437,7 +443,7 @@ impl RunContext {
                         ));
                     } else {
                         text.push('#');
-                        text.push_str(&name.replace(' ', "_"));
+                        text.push_str(&RE.replace_all(name, "_").into_owned());
                         text.push(' ');
                     }
                     if self.add_translated_tag() {
@@ -449,7 +455,7 @@ impl RunContext {
                                 ));
                             } else {
                                 text.push('#');
-                                text.push_str(&t.replace(' ', "_"));
+                                text.push_str(&RE.replace_all(t, "_").into_owned());
                                 text.push(' ');
                             }
                         }
