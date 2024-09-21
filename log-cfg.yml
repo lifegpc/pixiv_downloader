@@ -2,7 +2,7 @@ appenders:
   stdout:
     kind: console
     encoder:
-      pattern: "{m}{n}"
+      pattern: "[{l}] {M}:L{L} - {m}{n}"
   requests:
     kind: rolling_file
     path: "log/requests.log"
