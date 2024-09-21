@@ -389,6 +389,78 @@ impl RunContext {
         }
     }
 
+    pub fn add_tags_tg(&self, text: &mut String, cfg: &TelegramPushConfig) {
+        if cfg.add_ai_tag && self.is_ai() {
+            text.push_str("#");
+            text.push_str(&gettext("AI generated").replace(' ', "_"));
+            text.push_str(" ");
+        }
+        if let Some(i) = self.illust.as_ref() {
+            for tag in i.tags() {
+                if let Some(name) = tag.name() {
+                    if cfg.add_link_to_tag {
+                        text.push_str(&format!(
+                            "<a href=\"https://www.pixiv.net/tags/{}\">#{}</a> ",
+                            name, name
+                        ));
+                    } else {
+                        text.push('#');
+                        text.push_str(&name.replace(' ', "_"));
+                        text.push(' ');
+                    }
+                    if cfg.add_translated_tag {
+                        if let Some(t) = tag.translated_name() {
+                            if cfg.add_link_to_tag {
+                                text.push_str(&format!(
+                                    "<a href=\"https://www.pixiv.net/tags/{}\">#{}</a> ",
+                                    name, t
+                                ));
+                            } else {
+                                text.push('#');
+                                text.push_str(&t.replace(' ', "_"));
+                                text.push(' ');
+                            }
+                        }
+                    }
+                }
+            }
+            text.push_str("\n");
+            return;
+        }
+        if let Some(d) = self.data.as_ref() {
+            for tag in d["tags"]["tags"].members() {
+                if let Some(name) = &tag["tag"].as_str() {
+                    if cfg.add_link_to_tag {
+                        text.push_str(&format!(
+                            "<a href=\"https://www.pixiv.net/tags/{}\">#{}</a> ",
+                            name, name
+                        ));
+                    } else {
+                        text.push('#');
+                        text.push_str(&name.replace(' ', "_"));
+                        text.push(' ');
+                    }
+                    if self.add_translated_tag() {
+                        if let Some(t) = &tag["translation"]["en"].as_str() {
+                            if cfg.add_link_to_tag {
+                                text.push_str(&format!(
+                                    "<a href=\"https://www.pixiv.net/tags/{}\">#{}</a> ",
+                                    name, t
+                                ));
+                            } else {
+                                text.push('#');
+                                text.push_str(&t.replace(' ', "_"));
+                                text.push(' ');
+                            }
+                        }
+                    }
+                }
+            }
+            text.push_str("\n");
+            return;
+        }
+    }
+
     pub async fn send_every_push(&self, cfg: &EveryPushConfig) -> Result<(), PixivDownloaderError> {
         let client = EveryPushClient::new(&cfg.push_server);
         match cfg.typ {
@@ -737,6 +809,9 @@ impl RunContext {
         }
         text += &convert_description_to_tg_html(self.desc().unwrap_or(""))?;
         text.push('\n');
+        if cfg.add_tags {
+            self.add_tags_tg(&mut text, cfg);
+        }
         if cfg.author_locations.contains(&AuthorLocation::Bottom) {
             if let Some(a) = &author {
                 text.push_str(gettext("by "));

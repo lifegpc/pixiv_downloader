@@ -265,6 +265,9 @@ pub struct TelegramPushConfig {
     pub allow_failed: bool,
     /// Download media first and send media to telegram server directly.
     pub download_media: Option<bool>,
+    /// Add pixiv tag link to tag
+    #[serde(default = "default_false")]
+    pub add_link_to_tag: bool,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
