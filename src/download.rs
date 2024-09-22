@@ -350,6 +350,7 @@ pub async fn download_artwork_ugoira(
                     .replace("<dest>", output_file_name.to_str().unwrap_or("(null)"))
                     .as_str()
             );
+            return Ok(());
         }
     }
     #[cfg(feature = "ugoira")]
