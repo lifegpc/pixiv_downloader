@@ -267,6 +267,9 @@ int main(int argc, char* argv[]) {
     UgoiraFrame* top = nullptr, *tail = nullptr;
     auto arr = d.GetArray();
     for (auto i = arr.Begin(); i != arr.End(); i++) {
+#ifdef GetObject
+#undef GetObject
+#endif
         auto obj = i->GetObject();
         auto file = obj["file"].GetString();
         auto delay = obj["delay"].GetFloat();
