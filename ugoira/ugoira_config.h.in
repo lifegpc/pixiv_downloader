@@ -1,4 +1,5 @@
 #ifndef _UGOIRA_CONFIG_H
 #define _UGOIRA_CONFIG_H
 #cmakedefine HAVE_SSCANF_S @HAVE_SSCANF_S@
+#cmakedefine HAVE_PRINTF_S @HAVE_PRINTF_S@
 #endif

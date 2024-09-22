@@ -74,7 +74,7 @@ jobs:
       id: cache_key
       run: |
         cd scripts
-        python3 get_cache_key.py libzip x264 ffmpeg || exit 1
+        python3 get_cache_key.py libzip x264 ffmpeg rapidjson || exit 1
     - name: Cache
       id: cache
       uses: actions/cache@v4
@@ -92,6 +92,7 @@ jobs:
         ./build_libzip.sh || exit 1
         ./build_x264.sh || exit 1
         ./build_ffmpeg.sh || exit 1
+        ./build_rapidjson.sh || exit 1
     - name: Build
       run: |
         export PKG_CONFIG_PATH=`pwd`/clib/lib/pkgconfig
@@ -136,7 +137,7 @@ jobs:
       id: cache_key
       run: |
         cd scripts
-        python3 get_cache_key.py exiv2 libzip x264 ffmpeg || exit 1
+        python3 get_cache_key.py exiv2 libzip x264 ffmpeg rapidjson || exit 1
     - name: Cache
       id: cache
       uses: actions/cache@v4
@@ -155,6 +156,7 @@ jobs:
         ./build_libzip.sh || exit 1
         ./build_x264.sh || exit 1
         ./build_ffmpeg.sh || exit 1
+        ./build_rapidjson.sh || exit 1
     - name: Build
       run: |
         export PKG_CONFIG_PATH=`pwd`/clib/lib/pkgconfig
@@ -184,7 +186,7 @@ jobs:
       id: cache_key
       run: |
         cd scripts
-        python get_cache_key.py --prefix=win zlib pkgconf expat exiv2 openssl libzip x264 ffmpeg || exit 1
+        python get_cache_key.py --prefix=win zlib pkgconf expat exiv2 openssl libzip x264 ffmpeg rapidjson || exit 1
     - name: Cache
       id: cache
       uses: actions/cache@v4
@@ -257,6 +259,11 @@ jobs:
       run: |
         cp scripts/build_win_ffmpeg.sh -v ./ || exit 1
         ./build_win_ffmpeg.sh || exit 1
+    - name: Build rapidjson
+      if: steps.cache.outputs.cache-hit != 'true'
+      run: |
+        COPY /Y scripts\build_win_rapidjson.bat || exit 1
+        CALL build_win_rapidjson.bat || exit 1
     - name: Download certs
       run: |
         COPY /Y scripts\download_certs.bat || exit 1
@@ -279,8 +286,8 @@ jobs:
       run: |
         SET PATH=%CD%\clib\bin;%PATH%
         COPY /Y clib\ssl\cert.pem cert.pem
-        python scripts\pack_prog.py -o pixiv_downloader.7z -a cert.pem %CD%/target/release-with-debug/pixiv_downloader.exe || exit 1
-        python scripts\pack_prog.py -o pixiv_downloader.pdb.7z -p %CD%/target/release-with-debug/pixiv_downloader.exe || exit 1
+        python scripts\pack_prog.py -o pixiv_downloader.7z -a cert.pem %CD%/target/release-with-debug/pixiv_downloader.exe %CD%/target/release-with-debug/ugoira.exe || exit 1
+        python scripts\pack_prog.py -o pixiv_downloader.pdb.7z -p %CD%/target/release-with-debug/pixiv_downloader.exe %CD%/target/release-with-debug/ugoira.exe || exit 1
     - name: Upload files
       continue-on-error: true
       uses: actions/upload-artifact@v4

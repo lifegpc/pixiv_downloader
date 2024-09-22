@@ -173,11 +173,13 @@ fn main() {
         if !ugoira_build_path.exists() {
             create_dir(&ugoira_build_path).unwrap();
         }
+        let install_bin_dir = out_path.join("../../../");
         let mut config = cmake::Config::new("ugoira");
         config
             .define("CMAKE_INSTALL_PREFIX", out_path.to_str().unwrap())
             .out_dir(ugoira_build_path)
-            .define("UTILS_LIBRARY", utils_build_path.to_str().unwrap());
+            .define("UTILS_LIBRARY", utils_build_path.to_str().unwrap())
+            .define("CMAKE_INSTALL_BINDIR", install_bin_dir.to_str().unwrap());
         #[cfg(all(windows, target_env = "msvc"))]
         config
             .define("CMAKE_BUILD_TYPE", "Release")

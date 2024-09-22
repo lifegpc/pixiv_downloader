@@ -65,6 +65,12 @@ RUN cd ~ && \
     -DCURL_USE_LIBSSH2=OFF -DCMAKE_INSTALL_PREFIX=/clib -DBUILD_TESTING=OFF ../ && \
     make -j$(grep -c ^processor /proc/cpuinfo) && make install && \
     cd ~ && rm -rf curl-8.8.0 curl-8.8.0.tar.gz
+RUN cd ~ && git clone --depth 1 'https://github.com/Tencent/rapidjson' && cd rapidjson \
+    && mkdir -p build && cd build \
+    && cmake -DCMAKE_BUILD_TYPE=Release .. "-DCMAKE_INSTALL_PREFIX=/clib" -DRAPIDJSON_BUILD_DOC=OFF \
+    -DRAPIDJSON_BUILD_EXAMPLES=OFF -DRAPIDJSON_BUILD_TESTS=OFF \
+    && make -j$(grep -c ^processor /proc/cpuinfo) && make install \
+    && cd ~ && rm -rf rapidjson
 WORKDIR /app
 COPY . /app
 RUN export PKG_CONFIG_PATH=/clib/lib/pkgconfig \
@@ -86,10 +92,11 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /app/target/release/pixiv_downloader /app/pixiv_downloader
 COPY --from=builder /clib/lib /app/lib
 COPY --from=builder /app/i18n-output /app
 COPY --from=builder /clib/bin /app/bin
+COPY --from=builder /app/target/release/pixiv_downloader /app/pixiv_downloader
+COPY --from=builder /app/target/release/ugoira /app/ugoira
 ENV LD_LIBRARY_PATH=/app/lib
 ENV PATH=/app/bin:$PATH
 ENV LC_ALL=C.utf8

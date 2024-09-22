@@ -37,6 +37,12 @@ RUN cd ~ && git clone --depth 1 'https://git.ffmpeg.org/ffmpeg.git' && cd ffmpeg
     && ./configure --enable-shared --disable-static --enable-gpl --enable-version3 --enable-libx264 --prefix=/usr \
     && make -j$(grep -c ^processor /proc/cpuinfo) && make install \
     && cd ~ && rm -rf ffmpeg
+RUN cd ~ && git clone --depth 1 'https://github.com/Tencent/rapidjson' && cd rapidjson \
+    && mkdir -p build && cd build \
+    && cmake -DCMAKE_BUILD_TYPE=Release .. "-DCMAKE_INSTALL_PREFIX=/usr" -DRAPIDJSON_BUILD_DOC=OFF \
+    -DRAPIDJSON_BUILD_EXAMPLES=OFF -DRAPIDJSON_BUILD_TESTS=OFF \
+    && make -j$(grep -c ^processor /proc/cpuinfo) && make install \
+    && cd ~ && rm -rf rapidjson
 RUN curl https://sh.rustup.rs -sSf | \
     sh -s -- --default-toolchain nightly -y
 ENV PATH=/root/.cargo/bin:$PATH

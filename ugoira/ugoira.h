@@ -13,6 +13,7 @@
 #define UGOIRA_NO_AVAILABLE_ENCODER 10
 #define UGOIRA_OPEN_FILE 11
 #define UGOIRA_UNABLE_SCALE 12
+#define UGOIRA_JSON_ERROR 13
 typedef struct UgoiraFrame {
     char* file;
     float delay;
