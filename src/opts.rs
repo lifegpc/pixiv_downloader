@@ -3,7 +3,6 @@ use crate::gettext;
 use crate::list::NonTailList;
 use crate::pixiv_link::PixivID;
 use crate::retry_interval::parse_retry_interval_from_str;
-#[cfg(feature = "ugoira")]
 use crate::ugoira::X264Profile;
 use crate::utils::check_file_exists;
 use crate::utils::get_exe_path_else_current;
@@ -12,7 +11,6 @@ use getopts::Options;
 use std::env;
 #[cfg(feature = "server")]
 use std::net::SocketAddr;
-#[cfg(feature = "ugoira")]
 use std::num::ParseFloatError;
 use std::num::ParseIntError;
 use std::num::TryFromIntError;
@@ -105,10 +103,8 @@ pub struct CommandOpts {
     pub download_multiple_posts: Option<bool>,
     /// The maximum number of tasks to download posts/artworks at the same time.
     pub max_download_post_tasks: Option<usize>,
-    #[cfg(feature = "ugoira")]
     /// Whether to force yuv420p as output pixel format when converting ugoira(GIF) to video.
     pub force_yuv420p: Option<bool>,
-    #[cfg(feature = "ugoira")]
     /// The x264 profile when converting ugoira(GIF) to video.
     pub x264_profile: Option<X264Profile>,
     /// The base directory to save downloaded files.
@@ -116,10 +112,8 @@ pub struct CommandOpts {
     pub user_agent: Option<String>,
     /// Urls want to download
     pub urls: Option<Vec<String>>,
-    #[cfg(feature = "ugoira")]
     /// The Constant Rate Factor when converting ugoira(GIF) to video.
     pub x264_crf: Option<f32>,
-    #[cfg(feature = "ugoira")]
     pub ugoira_max_fps: Option<f32>,
     pub fanbox_page_number: Option<bool>,
     /// Pixiv's refresh token. Used to login.
@@ -139,6 +133,11 @@ pub struct CommandOpts {
     #[cfg(feature = "server")]
     /// Whether to prevent to run push task.
     pub disable_push_task: bool,
+    /// The path to ugoira cli executable.
+    pub ugoira: Option<String>,
+    #[cfg(feature = "ugoira")]
+    /// Whether to use ugoira cli.
+    pub ugoira_cli: Option<bool>,
 }
 
 impl CommandOpts {
@@ -170,16 +169,12 @@ impl CommandOpts {
             max_download_tasks: None,
             download_multiple_posts: None,
             max_download_post_tasks: None,
-            #[cfg(feature = "ugoira")]
             force_yuv420p: None,
-            #[cfg(feature = "ugoira")]
             x264_profile: None,
             download_base: None,
             user_agent: None,
             urls: None,
-            #[cfg(feature = "ugoira")]
             x264_crf: None,
-            #[cfg(feature = "ugoira")]
             ugoira_max_fps: None,
             fanbox_page_number: None,
             refresh_token: None,
@@ -192,6 +187,9 @@ impl CommandOpts {
             push_task_max_push_count: None,
             #[cfg(feature = "server")]
             disable_push_task: false,
+            ugoira: None,
+            #[cfg(feature = "ugoira")]
+            ugoira_cli: None,
         }
     }
 
@@ -308,7 +306,6 @@ pub fn parse_bool<T: AsRef<str>>(s: Option<T>) -> Result<Option<bool>, String> {
     }
 }
 
-#[cfg(feature = "ugoira")]
 /// Parse [f32] from string
 pub fn parse_f32<T: AsRef<str>>(s: Option<T>) -> Result<Option<f32>, ParseFloatError> {
     match s {
@@ -371,7 +368,6 @@ pub fn parse_nonempty_usize<T: AsRef<str>>(s: Option<T>) -> Result<Option<usize>
     }
 }
 
-#[cfg(feature = "ugoira")]
 pub fn parse_x264_profile<S: AsRef<str>>(
     s: Option<S>,
 ) -> Result<Option<X264Profile>, &'static str> {
@@ -558,7 +554,6 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         HasArg::Maybe,
         getopts::Occur::Optional,
     );
-    #[cfg(feature = "ugoira")]
     opts.opt(
         "",
         "force-yuv420p",
@@ -573,7 +568,6 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         HasArg::Maybe,
         getopts::Occur::Optional,
     );
-    #[cfg(feature = "ugoira")]
     opts.opt(
         "",
         "x264-profile",
@@ -595,7 +589,6 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         "DIR",
     );
     opts.optopt("", "user-agent", gettext("The User-Agent header."), "UA");
-    #[cfg(feature = "ugoira")]
     opts.opt(
         "",
         "x264-crf",
@@ -604,7 +597,6 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         HasArg::Maybe,
         getopts::Occur::Optional,
     );
-    #[cfg(feature = "ugoira")]
     opts.opt(
         "",
         "ugoira-max-fps",
@@ -696,6 +688,26 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         "",
         "disable-push-task",
         gettext("Prevent to run push task."),
+    );
+    opts.optopt(
+        "",
+        "ugoira",
+        gettext("The path to ugoira cli executable."),
+        "PATH",
+    );
+    #[cfg(feature = "ugoira")]
+    opts.opt(
+        "",
+        "ugoira-cli",
+        &format!(
+            "{} ({} {})",
+            gettext("Whether to use ugoira cli."),
+            gettext("Default:"),
+            "yes"
+        ),
+        "yes/no",
+        HasArg::Maybe,
+        getopts::Occur::Optional,
     );
     let result = match opts.parse(&argv[1..]) {
         Ok(m) => m,
@@ -959,7 +971,6 @@ pub fn parse_cmd() -> Option<CommandOpts> {
             return None;
         }
     }
-    #[cfg(feature = "ugoira")]
     match parse_optional_opt(&result, "force-yuv420p", true, parse_bool) {
         Ok(b) => re.as_mut().unwrap().force_yuv420p = b,
         Err(e) => {
@@ -973,7 +984,6 @@ pub fn parse_cmd() -> Option<CommandOpts> {
             return None;
         }
     }
-    #[cfg(feature = "ugoira")]
     match parse_optional_opt(
         &result,
         "x264-profile",
@@ -994,7 +1004,6 @@ pub fn parse_cmd() -> Option<CommandOpts> {
     }
     re.as_mut().unwrap().download_base = result.opt_str("download-base");
     re.as_mut().unwrap().user_agent = result.opt_str("user-agent");
-    #[cfg(feature = "ugoira")]
     match parse_optional_opt(&result, "x264-crf", -1f32, parse_f32) {
         Ok(r) => match r {
             Some(crf) => {
@@ -1018,7 +1027,6 @@ pub fn parse_cmd() -> Option<CommandOpts> {
             return None;
         }
     }
-    #[cfg(feature = "ugoira")]
     match parse_optional_opt(&result, "ugoira-max-fps", 60f32, parse_f32) {
         Ok(r) => match r {
             Some(crf) => {
@@ -1129,6 +1137,21 @@ pub fn parse_cmd() -> Option<CommandOpts> {
     #[cfg(feature = "server")]
     {
         re.as_mut().unwrap().disable_push_task = result.opt_present("disable-push-task");
+    }
+    re.as_mut().unwrap().ugoira = result.opt_str("ugoira");
+    #[cfg(feature = "ugoira")]
+    match parse_optional_opt(&result, "ugoira-cli", true, parse_bool) {
+        Ok(b) => re.as_mut().unwrap().ugoira_cli = b,
+        Err(e) => {
+            log::error!(
+                "{} {}",
+                gettext("Failed to parse <opt>:")
+                    .replace("<opt>", "ugoira-cli")
+                    .as_str(),
+                e
+            );
+            return None;
+        }
     }
     re
 }

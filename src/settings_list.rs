@@ -7,19 +7,16 @@ use crate::retry_interval::check_retry_interval;
 use crate::settings::SettingDes;
 use crate::settings::JsonValueType;
 use crate::opt::author_name_filter::check_author_name_filters;
-#[cfg(feature = "ugoira")]
 use crate::opt::crf::check_crf;
 use crate::opt::header_map::check_header_map;
 use crate::opt::proxy::check_proxy;
 use crate::opt::size::parse_u32_size;
 #[cfg(feature = "server")]
 use crate::server::cors::parse_cors_entries;
-#[cfg(feature = "ugoira")]
 use crate::ugoira::X264Profile;
 use json::JsonValue;
 #[cfg(feature = "server")]
 use std::net::SocketAddr;
-#[cfg(any(feature = "server", feature = "ugoira"))]
 use std::str::FromStr;
 
 pub fn get_settings_list() -> Vec<SettingDes> {
@@ -50,17 +47,13 @@ pub fn get_settings_list() -> Vec<SettingDes> {
         SettingDes::new("max-download-tasks", gettext("The maximum number of tasks to download files at the same time."), JsonValueType::Number, Some(check_nozero_usize)).unwrap(),
         SettingDes::new("download-multiple-posts", gettext("Download multiple posts/artworks at the same time."), JsonValueType::Boolean, None).unwrap(),
         SettingDes::new("max-download-post-tasks", gettext("The maximum number of tasks to download posts/artworks at the same time."), JsonValueType::Number, Some(check_nozero_usize)).unwrap(),
-        #[cfg(feature = "ugoira")]
         SettingDes::new("force-yuv420p", gettext("Force yuv420p as output pixel format when converting ugoira(GIF) to video."), JsonValueType::Boolean, None).unwrap(),
-        #[cfg(feature = "ugoira")]
         SettingDes::new("x264-profile", gettext("The x264 profile when converting ugoira(GIF) to video."), JsonValueType::Str, Some(check_x264_profile)).unwrap(),
         #[cfg(feature = "db")]
         SettingDes::new("db", gettext("Database settings."), JsonValueType::Object, Some(check_db_config)).unwrap(),
         SettingDes::new("download-base", gettext("The base directory to save downloaded files."), JsonValueType::Str, None).unwrap(),
         SettingDes::new("user-agent", gettext("The User-Agent header."), JsonValueType::Str, None).unwrap(),
-        #[cfg(feature = "ugoira")]
         SettingDes::new("x264-crf", gettext("The Constant Rate Factor when converting ugoira(GIF) to video."), JsonValueType::Number, Some(check_crf)).unwrap(),
-        #[cfg(feature = "ugoira")]
         SettingDes::new("ugoira-max-fps", gettext("The max fps when converting ugoira(GIF) to video."), JsonValueType::Number, Some(check_ugoira_max_fps)).unwrap(),
         SettingDes::new("fanbox-page-number", gettext("Use page number for pictures' file name in fanbox."), JsonValueType::Boolean, None).unwrap(),
         #[cfg(feature = "server")]
@@ -78,6 +71,9 @@ pub fn get_settings_list() -> Vec<SettingDes> {
         SettingDes::new("log-cfg", gettext("The path to the config file of log4rs."), JsonValueType::Str, None).unwrap(),
         #[cfg(feature = "server")]
         SettingDes::new("ffprobe", gettext("The path to ffprobe executable."), JsonValueType::Str, None).unwrap(),
+        SettingDes::new("ugoira", gettext("The path to ugoira cli executable."), JsonValueType::Str, None).unwrap(),
+        #[cfg(feature = "ugoira")]
+        SettingDes::new("ugoira-cli", gettext("Whether to use ugoira cli."), JsonValueType::Boolean, None).unwrap(),
     ]
 }
 
@@ -133,7 +129,6 @@ fn check_user_or_not(obj: &JsonValue) -> bool {
     r.is_ok()
 }
 
-#[cfg(feature = "ugoira")]
 fn check_x264_profile(obj: &JsonValue) -> bool {
     match obj.as_str() {
         Some(profile) => X264Profile::from_str(profile).is_ok(),
@@ -141,7 +136,6 @@ fn check_x264_profile(obj: &JsonValue) -> bool {
     }
 }
 
-#[cfg(feature = "ugoira")]
 fn check_ugoira_max_fps(obj: &JsonValue) -> bool {
     match obj.as_f32() {
         Some(fps) => fps > 0f32 && fps <= 1000f32,

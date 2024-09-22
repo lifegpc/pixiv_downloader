@@ -1,21 +1,27 @@
+#[cfg(feature = "ugoira")]
 use crate::_ugoira;
+#[cfg(feature = "avdict")]
 use crate::avdict::AVDict;
+#[cfg(feature = "avdict")]
 use crate::avdict::AVDictCodeError;
 use crate::ext::cstr::ToCStr;
 use crate::ext::cstr::ToCStrError;
 use crate::ext::json::ToJson;
+#[cfg(feature = "ugoira")]
 use crate::ext::rawhandle::ToRawHandle;
+use crate::ext::subprocess::PopenAsyncExt;
 use crate::ext::try_err::TryErr;
 use crate::gettext;
+use std::collections::HashMap;
 use std::convert::AsRef;
 use std::default::Default;
 use std::ffi::CStr;
 use std::ffi::OsStr;
+use std::ffi::OsString;
 use std::fmt::Debug;
 use std::fmt::Display;
 #[cfg(test)]
 use std::fs::{create_dir, File};
-#[cfg(test)]
 use std::io::Read;
 use std::ops::Drop;
 use std::os::raw::c_int;
@@ -24,30 +30,39 @@ use std::os::raw::c_void;
 use std::path::Path;
 use std::str::FromStr;
 use std::str::Utf8Error;
+use subprocess::ExitStatus;
+use subprocess::Popen;
+use subprocess::PopenConfig;
+use subprocess::Redirection;
 
-const UGOIRA_OK: c_int = _ugoira::UGOIRA_OK as c_int;
-const UGOIRA_NULL_POINTER: c_int = _ugoira::UGOIRA_NULL_POINTER as c_int;
-const UGOIRA_ZIP: c_int = _ugoira::UGOIRA_ZIP as c_int;
-const UGOIRA_INVALID_MAX_FPS: c_int = _ugoira::UGOIRA_INVALID_MAX_FPS as c_int;
-const UGOIRA_INVALID_FRAMES: c_int = _ugoira::UGOIRA_INVALID_FRAMES as c_int;
-const UGOIRA_INVALID_CRF: c_int = _ugoira::UGOIRA_INVALID_CRF as c_int;
-const UGOIRA_REMOVE_OUTPUT_FILE_FAILED: c_int = _ugoira::UGOIRA_REMOVE_OUTPUT_FILE_FAILED as c_int;
-const UGOIRA_OOM: c_int = _ugoira::UGOIRA_OOM as c_int;
-const UGOIRA_NO_VIDEO_STREAM: c_int = _ugoira::UGOIRA_NO_VIDEO_STREAM as c_int;
-const UGOIRA_NO_AVAILABLE_DECODER: c_int = _ugoira::UGOIRA_NO_AVAILABLE_DECODER as c_int;
-const UGOIRA_NO_AVAILABLE_ENCODER: c_int = _ugoira::UGOIRA_NO_AVAILABLE_ENCODER as c_int;
-const UGOIRA_OPEN_FILE: c_int = _ugoira::UGOIRA_OPEN_FILE as c_int;
-const UGOIRA_UNABLE_SCALE: c_int = _ugoira::UGOIRA_UNABLE_SCALE as c_int;
+const UGOIRA_OK: c_int = 0;
+const UGOIRA_NULL_POINTER: c_int = 1;
+const UGOIRA_ZIP: c_int = 2;
+const UGOIRA_INVALID_MAX_FPS: c_int = 3;
+const UGOIRA_INVALID_FRAMES: c_int = 4;
+const UGOIRA_INVALID_CRF: c_int = 5;
+const UGOIRA_REMOVE_OUTPUT_FILE_FAILED: c_int = 6;
+const UGOIRA_OOM: c_int = 7;
+const UGOIRA_NO_VIDEO_STREAM: c_int = 8;
+const UGOIRA_NO_AVAILABLE_DECODER: c_int = 9;
+const UGOIRA_NO_AVAILABLE_ENCODER: c_int = 10;
+const UGOIRA_OPEN_FILE: c_int = 11;
+const UGOIRA_UNABLE_SCALE: c_int = 12;
+const UGOIRA_JSON_ERROR: c_int = 13;
 
-#[derive(Debug, derive_more::From, PartialEq)]
+#[derive(Debug, derive_more::From)]
 pub enum UgoiraError {
     String(String),
     Utf8(Utf8Error),
     ToCStr(ToCStrError),
+    #[cfg(feature = "avdict")]
     FfmpegError(AVDictCodeError),
     CodeError(UgoiraCodeError),
+    #[cfg(feature = "ugoira")]
     ZipError(UgoiraZipError),
+    #[cfg(feature = "ugoira")]
     ZipError2(UgoiraZipError2),
+    Popen(subprocess::PopenError),
 }
 
 impl Display for UgoiraError {
@@ -60,10 +75,14 @@ impl Display for UgoiraError {
                 s
             )),
             Self::ToCStr(s) => f.write_fmt(format_args!("{}", s)),
+            #[cfg(feature = "avdict")]
             Self::FfmpegError(s) => f.write_fmt(format_args!("{}", s)),
             Self::CodeError(s) => f.write_fmt(format_args!("{}", s)),
+            #[cfg(feature = "ugoira")]
             Self::ZipError(s) => f.write_fmt(format_args!("{}", s)),
+            #[cfg(feature = "ugoira")]
             Self::ZipError2(s) => f.write_fmt(format_args!("{}", s)),
+            Self::Popen(p) => f.write_fmt(format_args!("{}", p)),
         }
     }
 }
@@ -77,13 +96,17 @@ impl From<&str> for UgoiraError {
 impl From<c_int> for UgoiraError {
     fn from(v: c_int) -> Self {
         if v < 0 {
-            Self::FfmpegError(AVDictCodeError::from(v))
+            #[cfg(feature = "avdict")]
+            return Self::FfmpegError(AVDictCodeError::from(v));
+            #[cfg(not(feature = "avdict"))]
+            Self::String(format!("Error code from ffmpeg: {}", v))
         } else {
             Self::CodeError(UgoiraCodeError::from(v))
         }
     }
 }
 
+#[cfg(feature = "ugoira")]
 impl From<_ugoira::UgoiraError> for UgoiraError {
     fn from(v: _ugoira::UgoiraError) -> Self {
         if v.code < 0 {
@@ -110,6 +133,7 @@ impl UgoiraCodeError {
         match self.code {
             UGOIRA_OK => "OK",
             UGOIRA_NULL_POINTER => gettext("Arguments have null pointers."),
+            UGOIRA_ZIP => "Libzip error",
             UGOIRA_INVALID_MAX_FPS => gettext("Invalid max fps."),
             UGOIRA_INVALID_FRAMES => gettext("Invalid frames."),
             UGOIRA_INVALID_CRF => gettext("Invalid crf."),
@@ -120,6 +144,7 @@ impl UgoiraCodeError {
             UGOIRA_NO_AVAILABLE_ENCODER => gettext("No available encoder."),
             UGOIRA_OPEN_FILE => gettext("Failed to open output file."),
             UGOIRA_UNABLE_SCALE => gettext("Unable to scale image."),
+            UGOIRA_JSON_ERROR => gettext("Failed to parse JSON file."),
             _ => gettext("Unknown error."),
         }
     }
@@ -143,11 +168,13 @@ impl From<c_int> for UgoiraCodeError {
     }
 }
 
+#[cfg(feature = "ugoira")]
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct UgoiraZipError {
     code: c_int,
 }
 
+#[cfg(feature = "ugoira")]
 impl UgoiraZipError {
     pub fn to_str(&self) -> Result<String, UgoiraError> {
         let s = unsafe { _ugoira::ugoira_get_zip_err_msg(self.code) };
@@ -162,6 +189,7 @@ impl UgoiraZipError {
     }
 }
 
+#[cfg(feature = "ugoira")]
 impl Display for UgoiraZipError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(
@@ -176,16 +204,19 @@ impl Display for UgoiraZipError {
     }
 }
 
+#[cfg(feature = "ugoira")]
 impl From<c_int> for UgoiraZipError {
     fn from(v: c_int) -> Self {
         Self { code: v }
     }
 }
 
+#[cfg(feature = "ugoira")]
 pub struct UgoiraZipError2 {
     err: *mut _ugoira::zip_error_t,
 }
 
+#[cfg(feature = "ugoira")]
 impl UgoiraZipError2 {
     pub fn to_str(&self) -> Result<String, UgoiraError> {
         if self.err.is_null() {
@@ -203,6 +234,7 @@ impl UgoiraZipError2 {
     }
 }
 
+#[cfg(feature = "ugoira")]
 impl Debug for UgoiraZipError2 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if self.err.is_null() {
@@ -217,6 +249,7 @@ impl Debug for UgoiraZipError2 {
     }
 }
 
+#[cfg(feature = "ugoira")]
 impl Display for UgoiraZipError2 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(
@@ -232,6 +265,7 @@ impl Display for UgoiraZipError2 {
     }
 }
 
+#[cfg(feature = "ugoira")]
 impl Drop for UgoiraZipError2 {
     fn drop(&mut self) {
         if !self.err.is_null() {
@@ -241,12 +275,14 @@ impl Drop for UgoiraZipError2 {
     }
 }
 
+#[cfg(feature = "ugoira")]
 impl From<*mut _ugoira::zip_error_t> for UgoiraZipError2 {
     fn from(err: *mut _ugoira::zip_error_t) -> Self {
         Self { err }
     }
 }
 
+#[cfg(feature = "ugoira")]
 impl PartialEq for UgoiraZipError2 {
     fn eq(&self, other: &Self) -> bool {
         if self.err.is_null() && other.err.is_null() {
@@ -265,20 +301,25 @@ impl PartialEq for UgoiraZipError2 {
     }
 }
 
+#[cfg(feature = "ugoira")]
 unsafe impl Send for UgoiraZipError2 {}
+#[cfg(feature = "ugoira")]
 unsafe impl Sync for UgoiraZipError2 {}
 
+#[cfg(feature = "ugoira")]
 impl ToRawHandle<_ugoira::zip_error_t> for UgoiraZipError2 {
     unsafe fn to_raw_handle(&self) -> *mut _ugoira::zip_error_t {
         self.err
     }
 }
 
+#[cfg(feature = "ugoira")]
 pub struct UgoiraFrames {
     head: *mut _ugoira::UgoiraFrame,
     tail: *mut _ugoira::UgoiraFrame,
 }
 
+#[cfg(feature = "ugoira")]
 #[allow(dead_code)]
 impl UgoiraFrames {
     pub fn new() -> Self {
@@ -339,18 +380,21 @@ impl UgoiraFrames {
     }
 }
 
+#[cfg(feature = "ugoira")]
 impl AsRef<Self> for UgoiraFrames {
     fn as_ref(&self) -> &Self {
         self
     }
 }
 
+#[cfg(feature = "ugoira")]
 impl Default for UgoiraFrames {
     fn default() -> Self {
         Self::new()
     }
 }
 
+#[cfg(feature = "ugoira")]
 impl Drop for UgoiraFrames {
     fn drop(&mut self) {
         if !self.head.is_null() {
@@ -361,12 +405,14 @@ impl Drop for UgoiraFrames {
     }
 }
 
+#[cfg(feature = "ugoira")]
 impl ToRawHandle<_ugoira::UgoiraFrame> for UgoiraFrames {
     unsafe fn to_raw_handle(&self) -> *mut _ugoira::UgoiraFrame {
         self.head
     }
 }
 
+#[cfg(feature = "ugoira")]
 impl ToRawHandle<_ugoira::AVDictionary> for AVDict {
     unsafe fn to_raw_handle(&self) -> *mut _ugoira::AVDictionary {
         self.m as *mut _ugoira::AVDictionary
@@ -447,6 +493,7 @@ impl TryFrom<&str> for X264Profile {
     }
 }
 
+#[cfg(feature = "ugoira")]
 pub fn convert_ugoira_to_mp4<
     S: AsRef<OsStr> + ?Sized,
     D: AsRef<OsStr> + ?Sized,
@@ -490,7 +537,94 @@ pub fn convert_ugoira_to_mp4<
     Ok(())
 }
 
-#[cfg(test)]
+pub async fn convert_ugoira_to_mp4_subprocess<
+    B: AsRef<OsStr> + ?Sized,
+    S: AsRef<OsStr> + ?Sized,
+    D: AsRef<OsStr> + ?Sized,
+    J: AsRef<OsStr> + ?Sized,
+>(
+    base: &B,
+    src: &S,
+    dest: &D,
+    json: &J,
+    max_fps: f32,
+    metadata: HashMap<String, String>,
+    force_yuv420p: bool,
+    crf: Option<f32>,
+    profile: Option<X264Profile>,
+) -> Result<(), UgoiraError> {
+    let mut argv: Vec<OsString> = Vec::with_capacity(5);
+    argv.push(base.as_ref().to_owned());
+    argv.push(src.as_ref().to_owned());
+    argv.push(dest.as_ref().to_owned());
+    argv.push(json.as_ref().to_owned());
+    argv.push(format!("-M{}", max_fps).into());
+    for (k, v) in metadata {
+        argv.push("-m".into());
+        argv.push(format!("{}={}", k, v).into());
+    }
+    if force_yuv420p {
+        argv.push("-f".into());
+    }
+    match crf {
+        Some(crf) => {
+            argv.push("--crf".into());
+            argv.push(crf.to_string().into());
+        }
+        None => {}
+    }
+    match profile {
+        Some(p) => {
+            if !p.is_auto() {
+                argv.push(format!("-P{}", p.as_str()).into());
+            }
+        }
+        None => {}
+    }
+    log::debug!(target: "ugoira_cli", "Command line: {:?}", argv);
+    let mut p = Popen::create(
+        &argv,
+        PopenConfig {
+            stdin: Redirection::None,
+            stdout: Redirection::Pipe,
+            stderr: Redirection::Merge,
+            ..Default::default()
+        },
+    )?;
+    let e = p.async_wait().await;
+    let is_ok = match &e {
+        ExitStatus::Exited(e) => *e == 0,
+        _ => false,
+    };
+    match &mut p.stdout {
+        Some(f) => {
+            let mut s = String::new();
+            match f.read_to_string(&mut s) {
+                Ok(_) => {
+                    if is_ok {
+                        log::debug!(target: "ugoira_cli", "Output:\n{}", s);
+                    } else {
+                        log::info!(target: "ugoira_cli", "Output:\n{}", s);
+                    }
+                }
+                Err(_) => {}
+            }
+        }
+        None => {}
+    }
+    if !is_ok {
+        match e {
+            ExitStatus::Exited(e) => {
+                return Err(UgoiraError::from(UgoiraCodeError::from(e as c_int)));
+            }
+            _ => {}
+        }
+        return Err(UgoiraError::from(format!("Unknown exit status: {:?}", e)));
+    }
+    Ok(())
+}
+
+#[cfg(all(feature = "ugoira", test))]
 async fn get_ugoira_zip_error2() -> UgoiraZipError2 {
     let ugo = unsafe { _ugoira::new_ugoira_error() };
     if ugo.is_null() {
@@ -499,6 +633,7 @@ async fn get_ugoira_zip_error2() -> UgoiraZipError2 {
     UgoiraZipError2 { err: ugo }
 }
 
+#[cfg(feature = "ugoira")]
 #[tokio::test]
 async fn test_ugoira_zip_error2() {
     let task = tokio::spawn(get_ugoira_zip_error2());
@@ -506,6 +641,7 @@ async fn test_ugoira_zip_error2() {
     assert!(re.to_str().is_ok())
 }
 
+#[cfg(feature = "ugoira")]
 #[test]
 fn test_ugoira_frames() {
     let mut f = UgoiraFrames::new();
@@ -520,12 +656,14 @@ fn test_ugoira_frames() {
     assert_eq!(1, f2.len());
 }
 
+#[cfg(feature = "ugoira")]
 #[test]
 fn test_ugoira_zip_error() {
     let e = UgoiraZipError::from(3);
     assert!(e.to_str().is_ok())
 }
 
+#[cfg(feature = "ugoira")]
 #[test]
 fn test_convert_ugoira_to_mp4() -> Result<(), UgoiraError> {
     let frames_path = Path::new("./testdata/74841737_frames.json");
@@ -556,4 +694,42 @@ fn test_convert_ugoira_to_mp4() -> Result<(), UgoiraError> {
         &options,
         &metadata,
     )
+}
+
+#[proc_macros::async_timeout_test(120s)]
+#[tokio::test(flavor = "multi_thread")]
+async fn test_convert_ugoira_to_mp4_subprocess() -> Result<(), UgoiraError> {
+    #[cfg(feature = "ugoira")]
+    let base = crate::utils::get_exe_path_else_current()
+        .join("../ugoira")
+        .to_str()
+        .unwrap()
+        .to_owned();
+    #[cfg(not(feature = "ugoira"))]
+    let base = match std::env::var("UGOIRA") {
+        Ok(b) => b,
+        Err(_) => {
+            println!("No ugoira location specified, skip test.");
+            return Ok(());
+        }
+    };
+    let p = Path::new("./test");
+    if !p.exists() {
+        let re = create_dir("./test");
+        assert!(re.is_ok() || p.exists());
+    }
+    let mut m = HashMap::new();
+    m.insert(String::from("title"), String::from("動く nachoneko :3"));
+    convert_ugoira_to_mp4_subprocess(
+        &base,
+        "./testdata/74841737_ugoira600x600.zip",
+        "./test/74841737_sub.mp4",
+        "./testdata/74841737_frames.json",
+        60.0,
+        m,
+        false,
+        None,
+        None,
+    )
+    .await
 }

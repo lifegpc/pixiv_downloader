@@ -18,7 +18,6 @@ use crate::server::cors::parse_cors_entries;
 #[cfg(feature = "server")]
 use crate::server::cors::CorsEntry;
 use crate::settings::SettingStore;
-#[cfg(feature = "ugoira")]
 use crate::ugoira::X264Profile;
 use is_terminal::IsTerminal;
 #[cfg(feature = "server")]
@@ -29,7 +28,6 @@ use std::net::Ipv4Addr;
 use std::net::SocketAddr;
 use std::ops::Deref;
 use std::path::PathBuf;
-#[cfg(any(feature = "server", feature = "ugoira"))]
 use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::RwLock;
@@ -205,7 +203,6 @@ impl OptHelper {
         self._fanbox_http_headers.get_ref().clone()
     }
 
-    #[cfg(feature = "ugoira")]
     /// Return whether to force yuv420p as output pixel format when converting ugoira(GIF) to video.
     pub fn force_yuv420p(&self) -> bool {
         match self.opt.get_ref().force_yuv420p {
@@ -531,7 +528,6 @@ impl OptHelper {
         false
     }
 
-    #[cfg(feature = "ugoira")]
     /// The max fps when converting ugoira(GIF) to video.
     pub fn ugoira_max_fps(&self) -> f32 {
         match self.opt.get_ref().ugoira_max_fps {
@@ -547,7 +543,6 @@ impl OptHelper {
         60f32
     }
 
-    #[cfg(feature = "ugoira")]
     /// The Constant Rate Factor when converting ugoira(GIF) to video.
     pub fn x264_crf(&self) -> Option<f32> {
         match self.opt.get_ref().x264_crf {
@@ -563,7 +558,6 @@ impl OptHelper {
         None
     }
 
-    #[cfg(feature = "ugoira")]
     /// Return the x264 profile when converting ugoira(GIF) to video.
     pub fn x264_profile(&self) -> X264Profile {
         match self.opt.get_ref().x264_profile {
@@ -655,6 +649,47 @@ impl OptHelper {
     /// The path to config file of [log4rs]
     pub fn log_cfg(&self) -> Option<String> {
         return self.settings.get_ref().get_str("log-cfg");
+    }
+
+    /// The path to ugoira cli executable.
+    pub fn ugoira(&self) -> Option<String> {
+        match self.opt.get_ref().ugoira.as_ref() {
+            Some(d) => {
+                return Some(d.clone());
+            }
+            None => {}
+        }
+        match self.settings.get_ref().get_str("ugoira") {
+            Some(s) => Some(s),
+            None => {
+                #[cfg(all(feature = "ugoira", any(feature = "docker", windows)))]
+                return Some(String::from("ugoira"));
+                #[cfg(all(feature = "ugoira", not(any(feature = "docker", windows))))]
+                return Some(
+                    crate::utils::get_exe_path_else_current()
+                        .join("ugoira")
+                        .to_string_lossy()
+                        .into_owned(),
+                );
+                #[cfg(not(feature = "ugoira"))]
+                return None;
+            }
+        }
+    }
+
+    #[cfg(feature = "ugoira")]
+    /// Whether to use ugoira cli.
+    pub fn ugoira_cli(&self) -> bool {
+        match self.opt.get_ref().ugoira_cli.as_ref() {
+            Some(d) => {
+                return d.clone();
+            }
+            None => {}
+        }
+        match self.settings.get_ref().get_bool("ugoira-cli") {
+            Some(d) => d,
+            None => false,
+        }
     }
 }
 

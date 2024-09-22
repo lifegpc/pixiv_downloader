@@ -8,6 +8,7 @@ use crate::data::fanbox::FanboxData;
 use crate::data::json::JSONDataFile;
 #[cfg(feature = "ugoira")]
 use crate::data::video::get_video_metadata;
+use crate::data::video::get_video_metas;
 #[cfg(feature = "db")]
 use crate::db::open_and_init_database;
 use crate::downloader::Downloader;
@@ -32,6 +33,7 @@ use crate::pixiv_link::PixivID;
 use crate::pixiv_web::PixivWebClient;
 use crate::task_manager::get_progress_bar;
 use crate::task_manager::TaskManager;
+use crate::ugoira::convert_ugoira_to_mp4_subprocess;
 #[cfg(feature = "ugoira")]
 use crate::ugoira::{convert_ugoira_to_mp4, UgoiraFrames};
 use crate::utils::get_file_name_from_url;
@@ -309,6 +311,47 @@ pub async fn download_artwork_ugoira(
     let mut tasks = tasks.take_finished_tasks();
     let task = tasks.get_mut(0).try_err(gettext("No finished task."))?;
     task.await??;
+    #[cfg(feature = "ugoira")]
+    let use_cli = helper.ugoira_cli();
+    #[cfg(not(feature = "ugoira"))]
+    let use_cli = true;
+    if use_cli {
+        if let Some(ubase) = helper.ugoira() {
+            let file_name = get_file_name_from_url(src).try_err(format!(
+                "{} {}",
+                gettext("Failed to get file name from url:"),
+                src
+            ))?;
+            let file_name = base.join(file_name);
+            let metadata = get_video_metas(&datas.clone());
+            let frames_file_name = base.join(format!("{}_frames.json", id));
+            std::fs::write(
+                &frames_file_name,
+                json::stringify((&ugoira_data["frames"]).clone()),
+            )
+            .try_err4(gettext("Failed to write frames info to file:"))?;
+            let output_file_name = base.join(format!("{}.mp4", id));
+            convert_ugoira_to_mp4_subprocess(
+                &ubase,
+                &file_name,
+                &output_file_name,
+                &frames_file_name,
+                helper.ugoira_max_fps(),
+                metadata,
+                helper.force_yuv420p(),
+                helper.x264_crf(),
+                Some(helper.x264_profile()),
+            )
+            .await?;
+            log::info!(
+                "{}",
+                gettext("Converted <src> -> <dest>")
+                    .replace("<src>", file_name.to_str().unwrap_or("(null)"))
+                    .replace("<dest>", output_file_name.to_str().unwrap_or("(null)"))
+                    .as_str()
+            );
+        }
+    }
     #[cfg(feature = "ugoira")]
     {
         let file_name = get_file_name_from_url(src).try_err(format!(

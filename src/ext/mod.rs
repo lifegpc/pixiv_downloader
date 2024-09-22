@@ -8,5 +8,6 @@ pub mod json;
 pub mod rawhandle;
 pub mod replace;
 pub mod rw_lock;
+pub mod subprocess;
 pub mod try_err;
 pub mod use_or_not;

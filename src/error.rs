@@ -1,5 +1,4 @@
 use crate::downloader::DownloaderError;
-#[cfg(feature = "ugoira")]
 use crate::ugoira::UgoiraError;
 use tokio::task::JoinError;
 
@@ -8,7 +7,6 @@ pub enum PixivDownloaderError {
     DownloaderError(DownloaderError),
     String(String),
     JoinError(JoinError),
-    #[cfg(feature = "ugoira")]
     UgoiraError(UgoiraError),
     #[cfg(feature = "server")]
     Hyper(hyper::Error),
