@@ -16,6 +16,7 @@ use crate::downloader::DownloaderResult;
 use crate::downloader::LocalFile;
 use crate::error::PixivDownloaderError;
 use crate::ext::try_err::TryErr;
+use crate::ext::try_err::TryErr4;
 use crate::fanbox::article::block::FanboxArticleBlock;
 use crate::fanbox::article::url_embed::FanboxArticleUrlEmbed;
 use crate::fanbox::check::CheckUnknown;
@@ -341,6 +342,12 @@ pub async fn download_artwork_ugoira(
             }
             None => {}
         }
+        let frames_file_name = base.join(format!("{}_frames.json", id));
+        std::fs::write(
+            &frames_file_name,
+            json::stringify((&ugoira_data["frames"]).clone()),
+        )
+        .try_err4(gettext("Failed to write frames info to file:"))?;
         let frames = UgoiraFrames::from_json(&ugoira_data["frames"])?;
         let output_file_name = base.join(format!("{}.mp4", id));
         convert_ugoira_to_mp4(
