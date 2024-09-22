@@ -254,6 +254,7 @@ int main(int argc, char* argv[]) {
         return UGOIRA_OPEN_FILE;
     }
     fileop::fclose(f);
+    buf[size] = 0;
     rapidjson::Document d;
     d.Parse(buf);
     free(buf);
