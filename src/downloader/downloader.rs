@@ -524,6 +524,39 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + SetLen> Dow
     }
 }
 
+/// Async join support for file downloader
+pub struct DownloaderJoinHandle<
+    T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + SetLen,
+> {
+    /// internal type
+    downloader: Arc<DownloaderInternal<T>>,
+}
+
+impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + SetLen>
+    From<Arc<DownloaderInternal<T>>> for DownloaderJoinHandle<T>
+{
+    fn from(value: Arc<DownloaderInternal<T>>) -> Self {
+        Self { downloader: value }
+    }
+}
+
+impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + SetLen> std::future::Future
+    for DownloaderJoinHandle<T>
+{
+    type Output = Result<(), DownloaderError>;
+    fn poll(
+        self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Self::Output> {
+        if self.downloader.is_downloading() {
+            cx.waker().wake_by_ref();
+            std::task::Poll::Pending
+        } else {
+            std::task::Poll::Ready(Ok(()))
+        }
+    }
+}
+
 /// A file downloader
 ///
 /// When dropping downloader, the downloader need some times to let all threads exited.
@@ -618,14 +651,8 @@ impl<T: Write + Seek + Send + Sync + ClearFile + GetTargetFileName + SetLen + 's
     }
 
     /// Wait the downloader.
-    pub async fn join(&self) -> Result<(), DownloaderError> {
-        loop {
-            if !self.is_downloading() {
-                break;
-            }
-            tokio::time::sleep(Duration::new(0, 1_000_000)).await;
-        }
-        Ok(())
+    pub fn join(&self) -> DownloaderJoinHandle<T> {
+        DownloaderJoinHandle::from(self.downloader.clone())
     }
 
     #[inline]
