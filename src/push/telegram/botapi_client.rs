@@ -6,9 +6,14 @@ use crate::webclient::WebClient;
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::time::Duration;
 
 fn default_base() -> String {
     String::from("https://api.telegram.org")
+}
+
+fn default_timeout() -> Option<u64> {
+    Some(120_000)
 }
 
 #[derive(Builder, Clone, Debug, Deserialize, Serialize)]
@@ -20,6 +25,10 @@ pub struct BotapiClientConfig {
     pub base: String,
     /// Auth token
     pub token: String,
+    #[serde(default = "default_timeout")]
+    #[builder(default = "Some(120_000)")]
+    /// Requests timeout in milliseconds. Default: 120s. [None] will use global settings
+    pub timeout: Option<u64>,
 }
 
 pub struct BotapiClient {
@@ -41,9 +50,16 @@ impl From<&str> for BotapiClientError {
 
 impl BotapiClient {
     pub fn new(cfg: &BotapiClientConfig) -> Self {
+        let client = WebClient::default();
+        match &cfg.timeout {
+            Some(t) => {
+                client.set_timeout(Some(Duration::from_millis(t.clone())));
+            }
+            None => {}
+        }
         Self {
             cfg: cfg.clone(),
-            client: WebClient::default(),
+            client,
         }
     }
 
