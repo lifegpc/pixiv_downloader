@@ -172,6 +172,10 @@ impl WebClient {
         self.retry_interval.get_ref()
     }
 
+    pub fn get_timeout<'a>(&'a self) -> RwLockReadGuard<'a, Option<Duration>> {
+        self.timeout.get_ref()
+    }
+
     /// Used to handle Set-Cookie header in an [Response]
     /// * `r` - reference to an [Response]
     pub fn handle_set_cookie(&self, r: &Response) {
@@ -398,6 +402,12 @@ impl WebClient {
         if c.len() > 0 {
             r = r.header("Cookie", c.as_str());
         }
+        match self.get_timeout().as_ref() {
+            Some(t) => {
+                r = r.timeout(t.clone());
+            }
+            None => {}
+        }
         self.handle_req_middlewares(r.build()?)
     }
 
@@ -528,6 +538,12 @@ impl WebClient {
             }
             None => {}
         }
+        match self.get_timeout().as_ref() {
+            Some(t) => {
+                r = r.timeout(t.clone());
+            }
+            None => {}
+        }
         self.handle_req_middlewares(r.build()?)
     }
 
@@ -573,6 +589,12 @@ impl WebClient {
             r = r.header("Cookie", c.as_str());
         }
         r = r.multipart(form);
+        match self.get_timeout().as_ref() {
+            Some(t) => {
+                r = r.timeout(t.clone());
+            }
+            None => {}
+        }
         self.handle_req_middlewares(r.build()?)
     }
 }
