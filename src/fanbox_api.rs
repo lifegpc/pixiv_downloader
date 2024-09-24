@@ -1,3 +1,4 @@
+use crate::error::PixivDownloaderError;
 use crate::ext::atomic::AtomicQuick;
 use crate::ext::replace::ReplaceWith2;
 use crate::ext::rw_lock::GetRwLock;
@@ -9,14 +10,39 @@ use crate::fanbox::post::FanboxPost;
 use crate::gettext;
 use crate::opthelper::get_helper;
 use crate::parser::metadata::MetaDataParser;
-use crate::webclient::WebClient;
+use crate::webclient::{ReqMiddleware, WebClient};
 use json::JsonValue;
 use proc_macros::fanbox_api_quick_test;
-use reqwest::IntoUrl;
+use reqwest::{Client, IntoUrl, Request, RequestBuilder};
 use std::ops::Deref;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::sync::RwLock;
+use std::time::Duration;
+
+pub struct FanboxDownloadDetectMiddleware {
+    _unused: [u8; 0],
+}
+
+impl Default for FanboxDownloadDetectMiddleware {
+    fn default() -> Self {
+        Self { _unused: [] }
+    }
+}
+
+impl ReqMiddleware for FanboxDownloadDetectMiddleware {
+    fn handle(&self, r: Request, c: Client) -> Result<Request, PixivDownloaderError> {
+        let is_downloads_url = r.url().host_str().unwrap_or("") == "downloads.fanbox.cc";
+        Ok(if is_downloads_url {
+            log::debug!(target: "fanbox_api", "Disable request timeout for {}", r.url());
+            RequestBuilder::from_parts(c, r)
+                .timeout(Duration::MAX)
+                .build()?
+        } else {
+            r
+        })
+    }
+}
 
 /// Fanbox API client
 pub struct FanboxClientInternal {
@@ -90,6 +116,8 @@ impl FanboxClientInternal {
         for (k, v) in headers.iter() {
             self.client.set_header(k, v);
         }
+        self.client
+            .add_req_middleware(Box::new(FanboxDownloadDetectMiddleware::default()));
         self.inited.qstore(true);
         true
     }

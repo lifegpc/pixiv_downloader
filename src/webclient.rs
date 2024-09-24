@@ -3,6 +3,7 @@ use crate::cookies::ManagedCookieJar;
 use crate::error::PixivDownloaderError;
 use crate::ext::atomic::AtomicQuick;
 use crate::ext::json::ToJson;
+use crate::ext::replace::ReplaceWith2;
 use crate::ext::rw_lock::GetRwLock;
 use crate::formdata::FormData;
 use crate::gettext;
@@ -107,6 +108,9 @@ pub struct WebClient {
     retry_interval: RwLock<Option<NonTailList<Duration>>>,
     /// Request middlewares
     req_middlewares: RwLock<Vec<Box<dyn ReqMiddleware + Send + Sync>>>,
+    /// Set request timeout. The timeout is applied from when the request starts connecting until
+    /// the response body has finished.
+    timeout: RwLock<Option<Duration>>,
 }
 
 impl WebClient {
@@ -121,6 +125,7 @@ impl WebClient {
             retry: Arc::new(AtomicI64::new(3)),
             retry_interval: RwLock::new(None),
             req_middlewares: RwLock::new(Vec::new()),
+            timeout: RwLock::new(None),
         }
     }
 
@@ -222,6 +227,19 @@ impl WebClient {
     /// Set retry times, 0 means disable
     pub fn set_retry(&self, retry: i64) {
         self.retry.qstore(retry)
+    }
+
+    /// Set request timeout. The timeout is applied from when the request starts connecting until
+    /// the response body has finished.
+    pub fn set_timeout(&self, timeout: Option<Duration>) {
+        self.timeout.replace_with2(timeout);
+    }
+
+    /// Create a client with no timeout set.
+    pub fn with_no_timeout() -> Self {
+        let c = Self::default();
+        c.set_timeout(None);
+        c
     }
 
     /// Send GET requests with parameters
@@ -567,6 +585,7 @@ impl Default for WebClient {
         if !chain.is_empty() {
             c = c.proxy(reqwest::Proxy::custom(move |url| chain.r#match(url)));
         }
+        c = c.connect_timeout(opt.connect_timeout());
         let c = c.build().unwrap();
         let c = Self::new(c);
         match opt.retry() {
@@ -574,6 +593,7 @@ impl Default for WebClient {
             None => {}
         }
         c.get_retry_interval_as_mut().replace(opt.retry_interval());
+        c.set_timeout(Some(opt.client_timeout()));
         c
     }
 }

@@ -312,6 +312,13 @@ impl SettingStore {
         }
     }
 
+    pub fn get_u64(&self, key: &str) -> Option<u64> {
+        match self.data.get(key) {
+            Some(obj) => obj.as_u64(),
+            None => None,
+        }
+    }
+
     pub fn have(&self, key: &str) -> bool {
         self.data.have(key)
     }

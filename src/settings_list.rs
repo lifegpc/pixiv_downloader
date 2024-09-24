@@ -74,6 +74,8 @@ pub fn get_settings_list() -> Vec<SettingDes> {
         SettingDes::new("ugoira", gettext("The path to ugoira cli executable."), JsonValueType::Str, None).unwrap(),
         #[cfg(feature = "ugoira")]
         SettingDes::new("ugoira-cli", gettext("Whether to use ugoira cli."), JsonValueType::Boolean, None).unwrap(),
+        SettingDes::new("connect-timeout", gettext("Set a timeout in milliseconds for only the connect phase of a client."), JsonValueType::Number, Some(check_nonzero_u64)).unwrap(),
+        SettingDes::new("client-timeout", gettext("Set request timeout in milliseconds. The timeout is applied from when the request starts connecting until the response body has finished. Not used for downloader."), JsonValueType::Number, Some(check_nonzero_u64)).unwrap(),
     ]
 }
 
@@ -112,6 +114,14 @@ fn check_nozero_usize(obj: &JsonValue) -> bool {
 fn check_u64(obj: &JsonValue) -> bool {
     let r = obj.as_u64();
     r.is_some()
+}
+
+fn check_nonzero_u64(obj: &JsonValue) -> bool {
+    let r = obj.as_u64();
+    match r {
+        Some(u) => u > 0,
+        None => false,
+    }
 }
 
 #[inline]

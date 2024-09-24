@@ -138,6 +138,12 @@ pub struct CommandOpts {
     #[cfg(feature = "ugoira")]
     /// Whether to use ugoira cli.
     pub ugoira_cli: Option<bool>,
+    /// Set a timeout in milliseconds for only the connect phase of a client.
+    pub connect_timeout: Option<u64>,
+    /// Set request timeout in milliseconds.
+    /// The timeout is applied from when the request starts connecting until the response body
+    /// has finished. Not used for downloader.
+    pub client_timeout: Option<u64>,
 }
 
 impl CommandOpts {
@@ -190,6 +196,8 @@ impl CommandOpts {
             ugoira: None,
             #[cfg(feature = "ugoira")]
             ugoira_cli: None,
+            connect_timeout: None,
+            client_timeout: None,
         }
     }
 
@@ -351,6 +359,19 @@ pub fn parse_u64<T: AsRef<str>>(s: Option<T>) -> Result<Option<u64>, ParseIntErr
             let s = s.trim();
             let c = s.parse::<u64>()?;
             Ok(Some(c))
+        }
+        None => Ok(None),
+    }
+}
+
+/// Prase Non Zero [u64] from string
+pub fn parse_non_zero_u64<T: AsRef<str>>(s: Option<T>) -> Result<Option<u64>, ParseIntError> {
+    match s {
+        Some(s) => {
+            let s = s.as_ref();
+            let s = s.trim();
+            let c = s.parse::<std::num::NonZeroU64>()?;
+            Ok(Some(c.get()))
         }
         None => Ok(None),
     }
@@ -709,6 +730,13 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         HasArg::Maybe,
         getopts::Occur::Optional,
     );
+    opts.optopt(
+        "",
+        "connect-timeout",
+        gettext("Set a timeout in milliseconds for only the connect phase of a client."),
+        "TIME",
+    );
+    opts.optopt("", "client-timeout", gettext("Set request timeout in milliseconds. The timeout is applied from when the request starts connecting until the response body has finished. Not used for downloader."), "TIME");
     let result = match opts.parse(&argv[1..]) {
         Ok(m) => m,
         Err(err) => {
@@ -1147,6 +1175,32 @@ pub fn parse_cmd() -> Option<CommandOpts> {
                 "{} {}",
                 gettext("Failed to parse <opt>:")
                     .replace("<opt>", "ugoira-cli")
+                    .as_str(),
+                e
+            );
+            return None;
+        }
+    }
+    match parse_non_zero_u64(result.opt_str("connect-timeout")) {
+        Ok(r) => re.as_mut().unwrap().connect_timeout = r,
+        Err(e) => {
+            log::error!(
+                "{} {}",
+                gettext("Failed to parse <opt>:")
+                    .replace("<opt>", "connect-timeout")
+                    .as_str(),
+                e
+            );
+            return None;
+        }
+    }
+    match parse_non_zero_u64(result.opt_str("client-timeout")) {
+        Ok(r) => re.as_mut().unwrap().client_timeout = r,
+        Err(e) => {
+            log::error!(
+                "{} {}",
+                gettext("Failed to parse <opt>:")
+                    .replace("<opt>", "client-timeout")
                     .as_str(),
                 e
             );

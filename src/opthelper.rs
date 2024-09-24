@@ -691,6 +691,30 @@ impl OptHelper {
             None => false,
         }
     }
+
+    /// Set a timeout for only the connect phase of a client.
+    pub fn connect_timeout(&self) -> Duration {
+        let t = self
+            .opt
+            .get_ref()
+            .connect_timeout
+            .or_else(|| self.settings.get_ref().get_u64("connect-timeout"))
+            .unwrap_or(10_000);
+        Duration::from_millis(t)
+    }
+
+    /// Set request timeout in milliseconds.
+    /// The timeout is applied from when the request starts connecting until the response body
+    /// has finished. Not used for downloader.
+    pub fn client_timeout(&self) -> Duration {
+        Duration::from_millis(
+            self.opt
+                .get_ref()
+                .client_timeout
+                .or_else(|| self.settings.get_ref().get_u64("client-timeout"))
+                .unwrap_or(30_000),
+        )
+    }
 }
 
 impl Default for OptHelper {

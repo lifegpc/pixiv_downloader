@@ -580,7 +580,7 @@ impl Downloader<LocalFile> {
         overwrite: Option<bool>,
     ) -> Result<DownloaderResult<Self>, DownloaderError> {
         Self::new2(
-            Arc::new(WebClient::default()),
+            Arc::new(WebClient::with_no_timeout()),
             url,
             headers,
             path,
@@ -833,7 +833,7 @@ async fn test_failed_downloader() {
     }
     let url = "https://a.com/ssdassaodasdas";
     let pb = p.join("addd");
-    let client = Arc::new(WebClient::default());
+    let client = Arc::new(WebClient::with_no_timeout());
     let mut retry_interval = NonTailList::<Duration>::default();
     retry_interval += Duration::new(0, 0);
     client
@@ -966,7 +966,7 @@ async fn test_failed_multi_downloader() {
     }
     let url = "https://a.com/ssdassaodasdas";
     let pb = p.join("addds");
-    let client = Arc::new(WebClient::default());
+    let client = Arc::new(WebClient::with_no_timeout());
     let mut retry_interval = NonTailList::<Duration>::default();
     retry_interval += Duration::new(0, 0);
     client
