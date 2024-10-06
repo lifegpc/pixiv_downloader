@@ -146,6 +146,8 @@ pub struct CommandOpts {
     pub client_timeout: Option<u64>,
     /// The path to ffprobe executable.
     pub ffprobe: Option<String>,
+    /// The path to ffmpeg executable.
+    pub ffmpeg: Option<String>,
 }
 
 impl CommandOpts {
@@ -201,6 +203,7 @@ impl CommandOpts {
             connect_timeout: None,
             client_timeout: None,
             ffprobe: None,
+            ffmpeg: None,
         }
     }
 
@@ -746,6 +749,12 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         gettext("The path to ffprobe executable."),
         "PATH",
     );
+    opts.optopt(
+        "",
+        "ffmpeg",
+        gettext("The path to ffmpeg executable."),
+        "PATH",
+    );
     let result = match opts.parse(&argv[1..]) {
         Ok(m) => m,
         Err(err) => {
@@ -1217,6 +1226,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         }
     }
     re.as_mut().unwrap().ffprobe = result.opt_str("ffprobe");
+    re.as_mut().unwrap().ffmpeg = result.opt_str("ffmpeg");
     re
 }
 

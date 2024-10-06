@@ -75,6 +75,7 @@ pub fn get_settings_list() -> Vec<SettingDes> {
         SettingDes::new("ugoira-cli", gettext("Whether to use ugoira cli."), JsonValueType::Boolean, None).unwrap(),
         SettingDes::new("connect-timeout", gettext("Set a timeout in milliseconds for only the connect phase of a client."), JsonValueType::Number, Some(check_nonzero_u64)).unwrap(),
         SettingDes::new("client-timeout", gettext("Set request timeout in milliseconds. The timeout is applied from when the request starts connecting until the response body has finished. Not used for downloader."), JsonValueType::Number, Some(check_nonzero_u64)).unwrap(),
+        SettingDes::new("ffmpeg", gettext("The path to ffmpeg executable."), JsonValueType::Str, None).unwrap(),
     ]
 }
 

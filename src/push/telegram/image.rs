@@ -2,29 +2,10 @@ use crate::error::PixivDownloaderError;
 use crate::ext::subprocess::PopenAsyncExt;
 use crate::ext::try_err::TryErr4;
 use crate::get_helper;
-use std::{ffi::OsStr, io::Read};
-use subprocess::{ExitStatus, Popen, PopenConfig, Redirection};
+use std::{ffi::OsStr, io::Read, path::PathBuf};
+use subprocess::{Popen, PopenConfig, Redirection};
 
 pub const MAX_PHOTO_SIZE: u64 = 10485760;
-
-pub async fn check_ffprobe<S: AsRef<str> + ?Sized>(path: &S) -> Result<bool, PixivDownloaderError> {
-    let mut p = Popen::create(
-        &[path.as_ref(), "-h"],
-        PopenConfig {
-            stdin: Redirection::None,
-            stdout: Redirection::Pipe,
-            stderr: Redirection::Pipe,
-            ..PopenConfig::default()
-        },
-    )
-    .try_err4("Failed to create popen: ")?;
-    p.communicate(None)?;
-    let re = p.async_wait().await;
-    Ok(match re {
-        ExitStatus::Exited(o) => o == 0,
-        _ => false,
-    })
-}
 
 pub struct SupportedImage {
     pub supported: bool,
@@ -61,7 +42,7 @@ pub async fn get_image_size<S: AsRef<OsStr> + ?Sized, P: AsRef<OsStr> + ?Sized>(
         PopenConfig {
             stdin: Redirection::None,
             stdout: Redirection::Pipe,
-            stderr: Redirection::None,
+            stderr: Redirection::Pipe,
             ..PopenConfig::default()
         },
     )
@@ -99,15 +80,95 @@ pub async fn get_image_size<S: AsRef<OsStr> + ?Sized, P: AsRef<OsStr> + ?Sized>(
     Ok((s[0].parse()?, s[1].parse()?))
 }
 
+pub async fn generate_image<S: AsRef<OsStr> + ?Sized, D: AsRef<OsStr> + ?Sized>(
+    src: &S,
+    dest: &D,
+    max_side: i64,
+    quality: i8,
+) -> Result<(), PixivDownloaderError> {
+    let helper = get_helper();
+    let ffprobe = helper.ffprobe().unwrap_or(String::from("ffprobe"));
+    let (width, height) = get_image_size(&ffprobe, src).await?;
+    let ffmpeg = helper.ffmpeg().unwrap_or(String::from("ffmpeg"));
+    let (w, h) = if width > height {
+        (max_side, max_side * height / width)
+    } else {
+        (max_side * width / height, max_side)
+    };
+    let argv = [
+        ffmpeg.into(),
+        "-n".into(),
+        "-i".into(),
+        src.as_ref().to_owned(),
+        "-vf".into(),
+        format!("scale={}x{}", w, h).into(),
+        "-qmin".into(),
+        format!("{}", quality).into(),
+        "-qmax".into(),
+        format!("{}", quality).into(),
+        dest.as_ref().to_owned(),
+    ];
+    let mut p = Popen::create(
+        &argv,
+        PopenConfig {
+            stdin: Redirection::None,
+            stdout: Redirection::Pipe,
+            stderr: Redirection::Pipe,
+            ..PopenConfig::default()
+        },
+    )
+    .try_err4("Failed to create popen: ")?;
+    let re = p.async_wait().await;
+    if !re.success() {
+        log::error!(target: "telegram_image", "Failed to generate thumbnail for {}: {:?}.", src.as_ref().to_string_lossy(), re);
+        match &mut p.stdout {
+            Some(f) => {
+                let mut buf = Vec::new();
+                f.read_to_end(&mut buf)?;
+                let s = String::from_utf8_lossy(&buf);
+                log::info!(target: "telegram_image", "ffmpeg output: {}", s);
+            }
+            None => {}
+        }
+        return Err(PixivDownloaderError::from("Failed to generate thumbnail."));
+    }
+    let s = match &mut p.stdout {
+        Some(f) => {
+            let mut buf = Vec::new();
+            f.read_to_end(&mut buf)?;
+            String::from_utf8_lossy(&buf).into_owned()
+        }
+        None => String::new(),
+    };
+    log::debug!(target: "telegram_image", "Ffmpeg output: {}", s);
+    Ok(())
+}
+
+pub fn get_thumbnail_filename(
+    ori: &PathBuf,
+    max_side: i64,
+    quality: i8,
+) -> Result<PathBuf, PixivDownloaderError> {
+    let mut o = ori.to_path_buf();
+    let filename = o
+        .as_path()
+        .file_stem()
+        .ok_or("No filename in path.")?
+        .to_owned();
+    o.set_file_name(format!(
+        "{}-{}-q{}.jpg",
+        filename.to_string_lossy(),
+        max_side,
+        quality
+    ));
+    Ok(o)
+}
+
 pub async fn is_supported_image<S: AsRef<OsStr> + ?Sized>(
     path: &S,
 ) -> Result<SupportedImage, PixivDownloaderError> {
     let helper = get_helper();
     let ffprobe = helper.ffprobe().unwrap_or(String::from("ffprobe"));
-    let re = check_ffprobe(&ffprobe).await?;
-    if !re {
-        return Err(PixivDownloaderError::from("ffprobe seems not works."));
-    }
     let (width, height) = get_image_size(&ffprobe, path).await?;
     let w = width as f64;
     let h = height as f64;

@@ -730,6 +730,21 @@ impl OptHelper {
             },
         }
     }
+
+    /// The path to ffmpeg executable.
+    pub fn ffmpeg(&self) -> Option<String> {
+        match &self.opt.get_ref().ffmpeg {
+            Some(s) => Some(s.clone()),
+            None => match self.settings.get_ref().get_str("ffmpeg") {
+                Some(s) => Some(s.clone()),
+                None => {
+                    #[cfg(feature = "docker")]
+                    return Some(String::from("ffmpeg"));
+                    None
+                }
+            },
+        }
+    }
 }
 
 impl Default for OptHelper {

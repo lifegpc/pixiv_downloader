@@ -1,7 +1,7 @@
 use super::super::super::preclude::*;
 use crate::db::push_task::{
     AuthorLocation, EveryPushConfig, PushConfig, PushDeerConfig, TelegramBackend,
-    TelegramPushConfig,
+    TelegramBigPhotoSendMethod, TelegramPushConfig,
 };
 use crate::error::PixivDownloaderError;
 use crate::formdata::FormDataPartBuilder;
@@ -12,10 +12,13 @@ use crate::pixivapp::illust::PixivAppIllust;
 use crate::push::every_push::{EveryPushClient, EveryPushTextType};
 use crate::push::pushdeer::PushdeerClient;
 use crate::push::telegram::botapi_client::{BotapiClient, BotapiClientConfig};
-use crate::push::telegram::image::{is_supported_image, MAX_PHOTO_SIZE};
+use crate::push::telegram::image::{
+    generate_image, get_thumbnail_filename, is_supported_image, MAX_PHOTO_SIZE,
+};
 use crate::push::telegram::text::{encode_data, TextSpliter};
 use crate::push::telegram::tg_type::{
-    InputFile, InputMedia, InputMediaPhotoBuilder, ParseMode, ReplyParametersBuilder,
+    InputFile, InputMedia, InputMediaDocumentBuilder, InputMediaPhotoBuilder, ParseMode,
+    ReplyParametersBuilder,
 };
 use crate::utils::{get_file_name_from_url, parse_pixiv_id};
 use crate::{get_helper, gettext};
@@ -225,6 +228,50 @@ impl RunContext {
                         };
                         let send_as_file =
                             !is_supported && (!too_big || cfg.big_photo.is_document());
+                        let p = if !is_supported && !send_as_file {
+                            match &cfg.big_photo {
+                                TelegramBigPhotoSendMethod::Compress(c) => {
+                                    if let Ok(filename) =
+                                        get_thumbnail_filename(&p, c.max_side, c.quality)
+                                    {
+                                        let fn1 = filename.to_string_lossy();
+                                        let o = match self.ctx.tmp_cache.get_local_cache(&fn1).await
+                                        {
+                                            Ok(o) => o,
+                                            Err(_) => None,
+                                        };
+                                        match o {
+                                            Some(o) => o,
+                                            None => {
+                                                match generate_image(
+                                                    &p, &filename, c.max_side, c.quality,
+                                                )
+                                                .await
+                                                {
+                                                    Ok(_) => {
+                                                        let _ = self
+                                                            .ctx
+                                                            .tmp_cache
+                                                            .push_local_cache(&fn1)
+                                                            .await;
+                                                        filename
+                                                    }
+                                                    Err(e) => {
+                                                        log::warn!(target: "pixiv_send_message", "Failed to generate thumbnial: {}", e);
+                                                        p
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        p
+                                    }
+                                }
+                                TelegramBigPhotoSendMethod::Document => p,
+                            }
+                        } else {
+                            p
+                        };
                         let name = p
                             .file_name()
                             .map(|a| a.to_str().unwrap_or(""))
@@ -899,28 +946,74 @@ impl RunContext {
             let mut i = 0u64;
             let mut photos = Vec::new();
             let mut photo_files = Vec::new();
+            let mut new_photos = Vec::new();
+            let mut new_photo_files = Vec::new();
+            let mut have_doc = false;
+            let mut have_nondoc = false;
+            let mut new_have_doc = false;
+            let mut new_have_nondoc = false;
             while i < len {
                 let (f, send_as_file) = self
                     .get_input_file(i, download_media, cfg)
                     .await?
                     .ok_or("Failed to get image.")?;
+                let mut is_content = false;
                 let u = match f {
                     InputFile::URL(u) => u,
                     InputFile::Content(c) => {
                         photo_files.push((format!("img{}", i), c));
+                        is_content = true;
                         format!("attach://img{}", i)
                     }
                 };
-                let mut img = InputMediaPhotoBuilder::default();
-                img.media(u).has_spoiler(is_r18);
-                if photos.is_empty() {
-                    let text = ts.to_html(None);
-                    img.caption(Some(text)).parse_mode(Some(ParseMode::HTML));
+                if send_as_file {
+                    let mut doc = InputMediaDocumentBuilder::default();
+                    doc.media(u);
+                    if photos.is_empty() {
+                        let text = ts.to_html(None);
+                        doc.caption(Some(text)).parse_mode(Some(ParseMode::HTML));
+                    }
+                    let doc = doc.build().map_err(|_| "Failed to gen.")?;
+                    if have_nondoc {
+                        new_photos.push(InputMedia::from(doc));
+                        if is_content {
+                            match photo_files.pop() {
+                                Some(p) => new_photo_files.push(p),
+                                None => {}
+                            }
+                        }
+                        new_have_doc = true;
+                    } else {
+                        photos.push(InputMedia::from(doc));
+                        have_doc = true;
+                    }
+                } else {
+                    let mut img = InputMediaPhotoBuilder::default();
+                    img.media(u).has_spoiler(is_r18);
+                    if photos.is_empty() {
+                        let text = ts.to_html(None);
+                        img.caption(Some(text)).parse_mode(Some(ParseMode::HTML));
+                    }
+                    let img = img.build().map_err(|_| "Failed to gen.")?;
+                    if have_doc {
+                        new_photos.push(InputMedia::from(img));
+                        if is_content {
+                            match photo_files.pop() {
+                                Some(p) => new_photo_files.push(p),
+                                None => {}
+                            }
+                        }
+                        new_have_nondoc = true;
+                    } else {
+                        photos.push(InputMedia::from(img));
+                        have_nondoc = true;
+                    }
                 }
-                let img = img.build().map_err(|_| "Failed to gen.")?;
-                photos.push(InputMedia::from(img));
                 i += 1;
-                if i == len || photos.len() == 10 {
+                while (i == len && !photos.is_empty())
+                    || photos.len() == 10
+                    || !new_photos.is_empty()
+                {
                     let r = match last_message_id {
                         Some(m) => Some(
                             ReplyParametersBuilder::default()
@@ -944,8 +1037,14 @@ impl RunContext {
                         .await?
                         .to_result()?;
                     last_message_id = m.first().map(|m| m.message_id);
-                    photos = Vec::new();
-                    photo_files = Vec::new();
+                    photos = new_photos;
+                    photo_files = new_photo_files;
+                    new_photos = Vec::new();
+                    new_photo_files = Vec::new();
+                    have_doc = new_have_doc;
+                    have_nondoc = new_have_nondoc;
+                    new_have_doc = false;
+                    new_have_nondoc = false;
                 }
             }
         }
