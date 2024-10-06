@@ -144,6 +144,8 @@ pub struct CommandOpts {
     /// The timeout is applied from when the request starts connecting until the response body
     /// has finished. Not used for downloader.
     pub client_timeout: Option<u64>,
+    /// The path to ffprobe executable.
+    pub ffprobe: Option<String>,
 }
 
 impl CommandOpts {
@@ -198,6 +200,7 @@ impl CommandOpts {
             ugoira_cli: None,
             connect_timeout: None,
             client_timeout: None,
+            ffprobe: None,
         }
     }
 
@@ -737,6 +740,12 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         "TIME",
     );
     opts.optopt("", "client-timeout", gettext("Set request timeout in milliseconds. The timeout is applied from when the request starts connecting until the response body has finished. Not used for downloader."), "TIME");
+    opts.optopt(
+        "",
+        "ffprobe",
+        gettext("The path to ffprobe executable."),
+        "PATH",
+    );
     let result = match opts.parse(&argv[1..]) {
         Ok(m) => m,
         Err(err) => {
@@ -1207,6 +1216,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
             return None;
         }
     }
+    re.as_mut().unwrap().ffprobe = result.opt_str("ffprobe");
     re
 }
 

@@ -69,7 +69,6 @@ pub fn get_settings_list() -> Vec<SettingDes> {
         SettingDes::new("push-task-max-push-count", gettext("The maximum number of tasks to push to client at the same time."), JsonValueType::Number, Some(check_nozero_usize)).unwrap(),
         SettingDes::new("fanbox-http-headers", gettext("Extra http headers for fanbox.cc."), JsonValueType::Object, Some(check_header_map)).unwrap(),
         SettingDes::new("log-cfg", gettext("The path to the config file of log4rs."), JsonValueType::Str, None).unwrap(),
-        #[cfg(feature = "server")]
         SettingDes::new("ffprobe", gettext("The path to ffprobe executable."), JsonValueType::Str, None).unwrap(),
         SettingDes::new("ugoira", gettext("The path to ugoira cli executable."), JsonValueType::Str, None).unwrap(),
         #[cfg(feature = "ugoira")]

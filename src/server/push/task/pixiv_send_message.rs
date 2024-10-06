@@ -12,6 +12,7 @@ use crate::pixivapp::illust::PixivAppIllust;
 use crate::push::every_push::{EveryPushClient, EveryPushTextType};
 use crate::push::pushdeer::PushdeerClient;
 use crate::push::telegram::botapi_client::{BotapiClient, BotapiClientConfig};
+use crate::push::telegram::image::{is_supported_image, MAX_PHOTO_SIZE};
 use crate::push::telegram::text::{encode_data, TextSpliter};
 use crate::push::telegram::tg_type::{
     InputFile, InputMedia, InputMediaPhotoBuilder, ParseMode, ReplyParametersBuilder,
@@ -199,7 +200,8 @@ impl RunContext {
         &self,
         index: u64,
         download_media: bool,
-    ) -> Result<Option<InputFile>, PixivDownloaderError> {
+        cfg: &TelegramPushConfig,
+    ) -> Result<Option<(InputFile, bool)>, PixivDownloaderError> {
         if download_media {
             match self._get_image_url(index) {
                 Some(u) => match self
@@ -209,6 +211,20 @@ impl RunContext {
                     .await
                 {
                     Ok(p) => {
+                        let (is_supported, too_big) = match is_supported_image(&p).await {
+                            Ok(s) => (s.supported, s.size_too_big),
+                            Err(e) => {
+                                log::warn!(target: "pixiv_send_message", "Failed to test image is supported by using ffprobe: {}", e);
+                                let meta = tokio::fs::metadata(&p).await?;
+                                if meta.len() >= MAX_PHOTO_SIZE {
+                                    (false, false)
+                                } else {
+                                    (true, false)
+                                }
+                            }
+                        };
+                        let send_as_file =
+                            !is_supported && (!too_big || cfg.big_photo.is_document());
                         let name = p
                             .file_name()
                             .map(|a| a.to_str().unwrap_or(""))
@@ -219,7 +235,7 @@ impl RunContext {
                             .filename(name)
                             .build()
                             .map_err(|_| "Failed to create FormDataPart.")?;
-                        Ok(Some(InputFile::Content(f)))
+                        Ok(Some((InputFile::Content(f), send_as_file)))
                     }
                     Err(e) => Err(e),
                 },
@@ -227,7 +243,7 @@ impl RunContext {
             }
         } else {
             match self.get_image_url(index).await {
-                Ok(Some(u)) => Ok(Some(InputFile::URL(u))),
+                Ok(Some(u)) => Ok(Some((InputFile::URL(u), false))),
                 Ok(None) => Ok(None),
                 Err(e) => Err(e),
             }
@@ -831,8 +847,8 @@ impl RunContext {
         let mut last_message_id: Option<i64> = None;
         let download_media = cfg.download_media.unwrap_or(c.is_custom());
         if len == 1 {
-            let f = self
-                .get_input_file(0, download_media)
+            let (f, send_as_file) = self
+                .get_input_file(0, download_media, cfg)
                 .await?
                 .ok_or("Failed to get image.")?;
             let r = match last_message_id {
@@ -845,8 +861,24 @@ impl RunContext {
                 None => None,
             };
             let text = ts.to_html(None);
-            let m = c
-                .send_photo(
+            let m = if send_as_file {
+                c.send_document(
+                    &cfg.chat_id,
+                    cfg.message_thread_id,
+                    f,
+                    None,
+                    Some(text.as_str()),
+                    Some(ParseMode::HTML),
+                    None,
+                    Some(cfg.disable_notification),
+                    Some(cfg.protect_content),
+                    None,
+                    r.as_ref(),
+                )
+                .await?
+                .to_result()?
+            } else {
+                c.send_photo(
                     &cfg.chat_id,
                     cfg.message_thread_id,
                     f,
@@ -860,15 +892,16 @@ impl RunContext {
                     r.as_ref(),
                 )
                 .await?
-                .to_result()?;
+                .to_result()?
+            };
             last_message_id = Some(m.message_id);
         } else {
             let mut i = 0u64;
             let mut photos = Vec::new();
             let mut photo_files = Vec::new();
             while i < len {
-                let f = self
-                    .get_input_file(i, download_media)
+                let (f, send_as_file) = self
+                    .get_input_file(i, download_media, cfg)
                     .await?
                     .ok_or("Failed to get image.")?;
                 let u = match f {

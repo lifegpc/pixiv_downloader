@@ -102,6 +102,58 @@ impl TmpCache {
         re
     }
 
+    async fn _get_local_cache(&self, url: &str) -> Result<Option<PathBuf>, PixivDownloaderError> {
+        match self.db.get_tmp_cache(url).await? {
+            Some(ent) => {
+                if tokio::fs::try_exists(&ent.path).await.unwrap_or(false) {
+                    match self.db.update_tmp_cache(url).await {
+                        Ok(_) => {}
+                        Err(e) => {
+                            log::warn!(target: "tmp_cache", "Failed to update tmp cache entry {} in database: {}", url, e);
+                        }
+                    }
+                    return Ok(Some(PathBuf::from(&ent.path)));
+                }
+            }
+            None => match self.db.delete_tmp_cache(url).await {
+                _ => {}
+            },
+        }
+        Ok(None)
+    }
+
+    pub async fn get_local_cache(
+        &self,
+        filename: &str,
+    ) -> Result<Option<PathBuf>, PixivDownloaderError> {
+        let mut tmp_dir = get_helper().temp_dir();
+        tmp_dir.push(filename);
+        if !tmp_dir.is_absolute() {
+            tmp_dir = tmp_dir.canonicalize()?;
+        }
+        let url = reqwest::Url::from_file_path(tmp_dir).expect("file is not absolute.");
+        self.wait_for_url(url.as_str()).await;
+        let re = self._get_local_cache(url.as_str()).await;
+        self.remove_for_url(url.as_str()).await;
+        re
+    }
+
+    pub async fn push_local_cache(&self, filename: &str) -> Result<(), PixivDownloaderError> {
+        let mut tmp_dir = get_helper().temp_dir();
+        tmp_dir.push(filename);
+        if !tmp_dir.is_absolute() {
+            tmp_dir = tmp_dir.canonicalize()?;
+        }
+        let url = reqwest::Url::from_file_path(&tmp_dir).expect("file is not absolute.");
+        self.wait_for_url(url.as_str()).await;
+        let re = self
+            .db
+            .put_tmp_cache(url.as_str(), tmp_dir.to_string_lossy().trim())
+            .await;
+        self.remove_for_url(url.as_str()).await;
+        Ok(re?)
+    }
+
     pub async fn remove_cache_entry(&self, ent: TmpCacheEntry) -> Result<(), PixivDownloaderError> {
         let t = self.in_cleaning.try_lock();
         if t.is_none() {

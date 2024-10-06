@@ -715,6 +715,21 @@ impl OptHelper {
                 .unwrap_or(30_000),
         )
     }
+
+    /// The path to ffprobe executable.
+    pub fn ffprobe(&self) -> Option<String> {
+        match &self.opt.get_ref().ffprobe {
+            Some(s) => Some(s.clone()),
+            None => match self.settings.get_ref().get_str("ffprobe") {
+                Some(s) => Some(s.clone()),
+                None => {
+                    #[cfg(feature = "docker")]
+                    return Some(String::from("ffprobe"));
+                    None
+                }
+            },
+        }
+    }
 }
 
 impl Default for OptHelper {

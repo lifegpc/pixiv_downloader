@@ -216,6 +216,48 @@ pub enum TelegramBackend {
     Botapi(BotapiClientConfig),
 }
 
+fn default_max_side() -> i64 {
+    1920
+}
+
+fn default_quality() -> i8 {
+    1
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+/// Control how to compress photo
+pub struct TelegramBigPhotoCompressConfig {
+    /// The pixels of lagest side
+    #[serde(default = "default_max_side")]
+    pub max_side: i64,
+    /// Image qulity
+    #[serde(default = "default_quality")]
+    pub quality: i8,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "camelCase")]
+/// How to send photo which are too big to telegram.
+/// Some photo always send as document.
+pub enum TelegramBigPhotoSendMethod {
+    /// Compress image and send as a photo
+    Compress(TelegramBigPhotoCompressConfig),
+    /// Send a file as document
+    Document,
+}
+
+impl TelegramBigPhotoSendMethod {
+    /// Returns true if send a file as document
+    pub fn is_document(&self) -> bool {
+        matches!(self, Self::Document)
+    }
+}
+
+fn default_big_photo() -> TelegramBigPhotoSendMethod {
+    TelegramBigPhotoSendMethod::Document
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TelegramPushConfig {
@@ -268,6 +310,9 @@ pub struct TelegramPushConfig {
     /// Add pixiv tag link to tag
     #[serde(default = "default_false")]
     pub add_link_to_tag: bool,
+    /// Control how to send big photo
+    #[serde(default = "default_big_photo")]
+    pub big_photo: TelegramBigPhotoSendMethod,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
