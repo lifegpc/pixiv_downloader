@@ -41,7 +41,7 @@ RUN cd ~ && git clone --depth 1 'https://code.videolan.org/videolan/x264.git' &&
     && make -j$(grep -c ^processor /proc/cpuinfo) && make install \
     && cd ~ && rm -rf x264
 RUN export PKG_CONFIG_PATH=/clib/lib/pkgconfig \
-    && cd ~ && git clone --depth 1 'https://git.ffmpeg.org/ffmpeg.git' && cd ffmpeg \
+    && cd ~ && git clone --depth 1 'https://github.com/FFmpeg/FFmpeg' && cd ffmpeg \
     && ./configure --enable-shared --disable-static --enable-gpl --enable-version3 --enable-libx264 --prefix=/clib \
     && make -j$(grep -c ^processor /proc/cpuinfo) && make install \
     && cd ~ && rm -rf ffmpeg

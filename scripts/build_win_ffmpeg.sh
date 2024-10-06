@@ -5,7 +5,7 @@ export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig
 export "LIB=$LIB;$PREFIX2/lib"
 export "INCLUDE=$INCLUDE;$PREFIX2/include"
 mkdir -p cbuild && cd cbuild || exit 1
-git clone --depth 1 'https://git.ffmpeg.org/ffmpeg.git' && cd ffmpeg || exit 1
+git clone --depth 1 'https://github.com/FFmpeg/FFmpeg' && cd ffmpeg || exit 1
 ./configure \
     --enable-gpl \
     --enable-shared \
