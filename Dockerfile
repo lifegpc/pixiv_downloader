@@ -28,7 +28,7 @@ ENV PATH=/root/.cargo/bin:$PATH
 RUN cd ~ && git clone --depth 1 'https://github.com/fmtlib/fmt' \
     && cd fmt && mkdir -p build && cd build \
     && cmake -DCMAKE_BUILD_TYPE=Release .. "-DCMAKE_INSTALL_PREFIX=/clib" \
-    -DFMT_DOC=OFF -DFMT_TEST=OFF \
+    -DBUILD_SHARED_LIBS=ON -DFMT_DOC=OFF -DFMT_TEST=OFF \
     && make -j$(grep -c ^processor /proc/cpuinfo) && make install \
     && cd ~ && rm -rf fmt
 RUN cd ~ && git clone --depth 1 'https://github.com/Exiv2/exiv2' \
