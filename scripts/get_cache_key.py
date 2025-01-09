@@ -7,7 +7,7 @@ from time import gmtime, time, strftime
 from typing import List
 
 
-ALL_FEATURES = ['exiv2', 'expat', 'ffmpeg', 'libzip', 'openssl', 'pkgconf', 'rapidjson', 'x264', 'zlib']
+ALL_FEATURES = ['exiv2', 'expat', 'ffmpeg', 'fmt', 'libzip', 'openssl', 'pkgconf', 'rapidjson', 'x264', 'zlib']
 
 def sha256(data) -> str:
     if isinstance(data, str):

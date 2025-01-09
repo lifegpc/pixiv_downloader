@@ -58,7 +58,7 @@ jobs:
         id: cache_key
         run: |
           cd scripts
-          python3 get_cache_key.py exiv2 libzip x264 ffmpeg rapidjson || exit 1
+          python3 get_cache_key.py fmt exiv2 libzip x264 ffmpeg rapidjson || exit 1
       - name: Cache
         id: cache
         uses: actions/cache@v4
@@ -73,6 +73,7 @@ jobs:
         run: |
           export PKG_CONFIG_PATH=`pwd`/clib/lib/pkgconfig
           cp scripts/build_*.sh -v ./ || exit 1
+          ./build_fmt.sh || exit 1
           ./build_exiv2.sh || exit 1
           ./build_libzip.sh || exit 1
           ./build_x264.sh || exit 1
