@@ -96,6 +96,11 @@ impl FanboxPostArticle {
     }
 
     #[inline]
+    pub fn is_commenting_restricted(&self) -> Option<bool> {
+        self.data["isCommentingRestricted"].as_bool()
+    }
+
+    #[inline]
     /// Create a new instance
     pub fn new(data: &JsonValue, client: Arc<FanboxClientInternal>) -> Self {
         Self {
@@ -193,6 +198,7 @@ impl CheckUnknown for FanboxPostArticle {
             "isPinned"+,
             "isRestricted"+,
             "likeCount"+,
+            "isCommentingRestricted",
             "nextPost",
             "prevPost",
             "publishedDatetime"+,
@@ -245,6 +251,7 @@ impl Debug for FanboxPostArticle {
             .field("is_pinned", &self.is_pinned())
             .field("is_restricted", &self.is_restricted())
             .field("like_count", &self.like_count())
+            .field("is_commenting_restricted", &self.is_commenting_restricted())
             .field("next_post", &self.next_post())
             .field("prev_post", &self.prev_post())
             .field("published_datetime", &self.published_datetime())
