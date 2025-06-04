@@ -3,16 +3,16 @@ use crate::db::check_db_config;
 use crate::ext::json::FromJson;
 use crate::ext::use_or_not::UseOrNot;
 use crate::gettext;
-use crate::retry_interval::check_retry_interval;
-use crate::settings::SettingDes;
-use crate::settings::JsonValueType;
 use crate::opt::author_name_filter::check_author_name_filters;
 use crate::opt::crf::check_crf;
 use crate::opt::header_map::check_header_map;
 use crate::opt::proxy::check_proxy;
 use crate::opt::size::parse_u32_size;
+use crate::retry_interval::check_retry_interval;
 #[cfg(feature = "server")]
 use crate::server::cors::parse_cors_entries;
+use crate::settings::JsonValueType;
+use crate::settings::SettingDes;
 use crate::ugoira::X264Profile;
 use json::JsonValue;
 #[cfg(feature = "server")]
@@ -76,7 +76,23 @@ pub fn get_settings_list() -> Vec<SettingDes> {
         SettingDes::new("connect-timeout", gettext("Set a timeout in milliseconds for only the connect phase of a client."), JsonValueType::Number, Some(check_nonzero_u64)).unwrap(),
         SettingDes::new("client-timeout", gettext("Set request timeout in milliseconds. The timeout is applied from when the request starts connecting until the response body has finished. Not used for downloader."), JsonValueType::Number, Some(check_nonzero_u64)).unwrap(),
         SettingDes::new("ffmpeg", gettext("The path to ffmpeg executable."), JsonValueType::Str, None).unwrap(),
+        SettingDes::new("browser", gettext("The browser emulation"), JsonValueType::Str, Some(check_browser)).unwrap(),
+        SettingDes::new("os", gettext("The OS emulation"), JsonValueType::Str, Some(check_os)).unwrap(),
     ]
+}
+
+fn check_browser(obj: &JsonValue) -> bool {
+    match obj.as_str() {
+        Some(s) => serde_json::from_str::<wreq_util::Emulation>(&format!("\"{}\"", s)).is_ok(),
+        None => false,
+    }
+}
+
+fn check_os(obj: &JsonValue) -> bool {
+    match obj.as_str() {
+        Some(s) => serde_json::from_str::<wreq_util::EmulationOS>(&format!("\"{}\"", s)).is_ok(),
+        None => false,
+    }
 }
 
 fn check_i64(obj: &JsonValue) -> bool {
@@ -101,7 +117,7 @@ fn check_socket_addr(obj: &JsonValue) -> bool {
         Some(s) => match SocketAddr::from_str(s) {
             Ok(_) => true,
             Err(_) => false,
-        }
+        },
         None => false,
     }
 }

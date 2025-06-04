@@ -1237,7 +1237,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
     re.as_mut().unwrap().ffmpeg = result.opt_str("ffmpeg");
     match result.opt_str("browser") {
         Some(r) => {
-            match serde_json::from_str(&r) {
+            match serde_json::from_str(&format!("\"{}\"", r)) {
                 Ok(r) => {
                     re.as_mut().unwrap().browser = Some(r);
                 }
@@ -1257,7 +1257,7 @@ pub fn parse_cmd() -> Option<CommandOpts> {
     }
     match result.opt_str("os") {
         Some(r) => {
-            match serde_json::from_str(&r) {
+            match serde_json::from_str(&format!("\"{}\"", r)) {
                 Ok(r) => {
                     re.as_mut().unwrap().os = Some(r);
                 }

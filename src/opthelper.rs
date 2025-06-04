@@ -482,12 +482,20 @@ impl OptHelper {
             Some(b) => return b.to_owned(),
             None => {}
         }
+        match self.settings.get_ref().get("browser") {
+            Some(w) => return serde_json::from_str(&format!("\"{}\"", w.as_str().unwrap())).unwrap(),
+            None => {}
+        }
         wreq_util::Emulation::Chrome134
     }
 
     pub fn os(&self) -> wreq_util::EmulationOS {
         match self.opt.get_ref().os.as_ref() {
             Some(b) => return b.to_owned(),
+            None => {}
+        }
+        match self.settings.get_ref().get("os") {
+            Some(w) => return serde_json::from_str(&format!("\"{}\"", w.as_str().unwrap())).unwrap(),
             None => {}
         }
         wreq_util::EmulationOS::Windows
