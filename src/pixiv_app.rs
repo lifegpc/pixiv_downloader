@@ -11,7 +11,7 @@ use crate::webclient::{ReqMiddleware, WebClient};
 use crate::{get_helper, gettext};
 use chrono::{DateTime, Local, SecondsFormat, Utc};
 use json::JsonValue;
-use reqwest::{Client, IntoUrl, Request, RequestBuilder};
+use wreq::{Client, IntoUrl, Request, RequestBuilder};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::ops::Deref;

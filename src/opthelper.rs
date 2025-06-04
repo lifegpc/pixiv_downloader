@@ -474,7 +474,23 @@ impl OptHelper {
             Some(ua) => return ua.as_str().unwrap().to_owned(),
             None => {}
         }
-        String::from("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36")
+        String::from("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36")
+    }
+
+    pub fn browser(&self) -> wreq_util::Emulation {
+        match self.opt.get_ref().browser.as_ref() {
+            Some(b) => return b.to_owned(),
+            None => {}
+        }
+        wreq_util::Emulation::Chrome134
+    }
+
+    pub fn os(&self) -> wreq_util::EmulationOS {
+        match self.opt.get_ref().os.as_ref() {
+            Some(b) => return b.to_owned(),
+            None => {}
+        }
+        wreq_util::EmulationOS::Windows
     }
 
     #[cfg(feature = "exif")]

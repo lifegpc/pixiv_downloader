@@ -1,8 +1,8 @@
 use derive_builder::Builder;
 use derive_getters::Getters;
 use derive_setters::Setters;
-use reqwest::header::HeaderMap;
-use reqwest::multipart::{Form, Part};
+use wreq::header::HeaderMap;
+use wreq::multipart::{Form, Part};
 use std::path::{Path, PathBuf};
 
 #[derive(derive_more::From)]
@@ -91,7 +91,7 @@ impl std::fmt::Debug for FormData {
 #[derive(Debug, derive_more::Display, derive_more::From)]
 pub enum FormDataError {
     IOError(std::io::Error),
-    Reqwest(reqwest::Error),
+    Reqwest(wreq::Error),
 }
 
 impl FormData {

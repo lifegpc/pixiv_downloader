@@ -9,7 +9,7 @@ use tokio::time::error::Elapsed;
 #[derive(Debug, derive_more::From)]
 pub enum DownloaderError {
     /// Request error
-    ReqwestError(reqwest::Error),
+    ReqwestError(wreq::Error),
     /// [PdFileError]
     PdFileError(PdFileError),
     /// Io Error
@@ -22,6 +22,17 @@ pub enum DownloaderError {
     Timeout(Elapsed),
     /// Failed to join
     JoinError(JoinError),
+}
+
+impl From<wreq::StatusCode> for DownloaderError {
+    fn from(value: wreq::StatusCode) -> Self {
+        match StatusCode::try_from(value.as_u16()) {
+            Ok(s) => Self::ErrorStatusCode(s),
+            Err(_) => {
+                Self::String(format!("HTTP Error {}", value))
+            }
+        }
+    }
 }
 
 impl Display for DownloaderError {

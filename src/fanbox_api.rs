@@ -13,7 +13,7 @@ use crate::parser::metadata::MetaDataParser;
 use crate::webclient::{ReqMiddleware, WebClient};
 use json::JsonValue;
 use proc_macros::fanbox_api_quick_test;
-use reqwest::{Client, IntoUrl, Request, RequestBuilder};
+use wreq::{Client, IntoUrl, Request, RequestBuilder};
 use std::ops::Deref;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;

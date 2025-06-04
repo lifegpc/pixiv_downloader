@@ -13,7 +13,7 @@ use crate::gettext;
 use futures_util::StreamExt;
 use http_content_range::ContentRange;
 use itertools::partition;
-use reqwest::Response;
+use wreq::Response;
 use std::io::Seek;
 use std::io::SeekFrom;
 use std::io::Write;

@@ -16,7 +16,7 @@ impl PushdeerClient {
         }
     }
 
-    async fn handle_result(re: reqwest::Response) -> Result<(), String> {
+    async fn handle_result(re: wreq::Response) -> Result<(), String> {
         let text = re
             .text()
             .await

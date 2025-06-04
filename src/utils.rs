@@ -1,6 +1,6 @@
 use crate::gettext;
 use json::JsonValue;
-use reqwest::IntoUrl;
+use wreq::IntoUrl;
 use std::env;
 use std::io::Write;
 use std::path::Path;

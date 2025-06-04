@@ -27,7 +27,7 @@ hex = { version = "0.4", optional = true }
 html5ever = "*"
 http = "0.2"
 http-content-range = "0.1"
-hyper = { version="0.14", features = ["server"], optional = true }
+hyper = { version="0.14", features = ["server", "tcp", "http1"], optional = true }
 indicatif = "0.17.3"
 int-enum = "0.5"
 is-terminal = "0.4"
@@ -46,7 +46,6 @@ percent-encoding = "*"
 proc_macros = { path = "proc_macros" }
 rand = { version = "0", optional = true }
 regex = "1"
-reqwest = { version = "0.11", features = ["brotli", "deflate", "gzip", "multipart", "socks", "stream"] }
 rusqlite = { version = "0.29", features = ["bundled", "chrono"], optional = true }
 RustyXML = "0.3"
 serde = "1"
@@ -57,6 +56,8 @@ tokio = { version = "1.27", features = ["rt", "macros", "rt-multi-thread", "time
 url = "2.3"
 urlparse = "0.7"
 utf16string = { version= "0.2", optional = true }
+wreq = { version = "5", features = ["brotli", "deflate", "gzip", "multipart", "socks", "stream"] }
+wreq-util = { version = "2", features = ["emulation-serde"] }
 
 [build-dependencies]
 bindgen = { version = "0.64", optional = true }
@@ -76,9 +77,6 @@ ugoira = ["avdict", "bindgen", "cmake", "link-cplusplus"]
 [patch.crates-io]
 async-trait = { git = "https://github.com/lifegpc/async-trait" }
 buf_redux = { git = "https://github.com/lifegpc/buf_redux" }
-openssl = { git = "https://github.com/lifegpc/rust-openssl" }
-openssl-sys = { git = "https://github.com/lifegpc/rust-openssl" }
-native-tls = { git = "https://github.com/lifegpc/rust-native-tls" }
 tempfile = { git = "https://github.com/Stebalien/tempfile" }
 
 [profile.release-with-debug]

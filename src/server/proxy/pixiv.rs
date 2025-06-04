@@ -66,7 +66,8 @@ impl ResponseFor<Body, Pin<Box<HttpBodyType>>> for ProxyPixivContext {
             502,
             client.get(url, None).await.ok_or("Failed to get image.")
         );
-        builder = builder.status(re.status());
+        let status = re.status();
+        builder = builder.status(status.as_u16());
         let keys = [
             "cache-control",
             "content-length",

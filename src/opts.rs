@@ -148,6 +148,10 @@ pub struct CommandOpts {
     pub ffprobe: Option<String>,
     /// The path to ffmpeg executable.
     pub ffmpeg: Option<String>,
+    /// Browser emulation
+    pub browser: Option<wreq_util::Emulation>,
+    /// OS emulation
+    pub os: Option<wreq_util::EmulationOS>,
 }
 
 impl CommandOpts {
@@ -204,6 +208,8 @@ impl CommandOpts {
             client_timeout: None,
             ffprobe: None,
             ffmpeg: None,
+            browser: None,
+            os: None,
         }
     }
 
@@ -755,6 +761,8 @@ pub fn parse_cmd() -> Option<CommandOpts> {
         gettext("The path to ffmpeg executable."),
         "PATH",
     );
+    opts.optopt("", "browser", gettext("The browser emulation"), "BROWSER");
+    opts.optopt("", "os", gettext("The OS emulation"), "OS");
     let result = match opts.parse(&argv[1..]) {
         Ok(m) => m,
         Err(err) => {
@@ -1227,6 +1235,46 @@ pub fn parse_cmd() -> Option<CommandOpts> {
     }
     re.as_mut().unwrap().ffprobe = result.opt_str("ffprobe");
     re.as_mut().unwrap().ffmpeg = result.opt_str("ffmpeg");
+    match result.opt_str("browser") {
+        Some(r) => {
+            match serde_json::from_str(&r) {
+                Ok(r) => {
+                    re.as_mut().unwrap().browser = Some(r);
+                }
+                Err(e) => {
+                    log::error!(
+                "{} {}",
+                gettext("Failed to parse <opt>:")
+                    .replace("<opt>", "browser")
+                    .as_str(),
+                e
+            );
+            return None;
+                }
+            }
+        }
+        None => {}
+    }
+    match result.opt_str("os") {
+        Some(r) => {
+            match serde_json::from_str(&r) {
+                Ok(r) => {
+                    re.as_mut().unwrap().os = Some(r);
+                }
+                Err(e) => {
+                    log::error!(
+                "{} {}",
+                gettext("Failed to parse <opt>:")
+                    .replace("<opt>", "os")
+                    .as_str(),
+                e
+            );
+            return None;
+                }
+            }
+        }
+        None => {}
+    }
     re
 }
 

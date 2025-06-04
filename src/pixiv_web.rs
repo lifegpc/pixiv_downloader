@@ -5,7 +5,7 @@ use crate::opthelper::get_helper;
 use crate::parser::metadata::MetaDataParser;
 use crate::webclient::WebClient;
 use json::JsonValue;
-use reqwest::Response;
+use wreq::Response;
 use std::sync::atomic::AtomicBool;
 use std::sync::RwLock;
 

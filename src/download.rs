@@ -41,7 +41,7 @@ use crate::Main;
 use indicatif::MultiProgress;
 use json::JsonValue;
 use proc_macros::print_error;
-use reqwest::IntoUrl;
+use wreq::IntoUrl;
 use std::fs::{create_dir_all, File};
 use std::io::Write;
 use std::ops::Deref;

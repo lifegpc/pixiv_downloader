@@ -131,7 +131,7 @@ impl TmpCache {
         if !tmp_dir.is_absolute() {
             tmp_dir = tmp_dir.canonicalize()?;
         }
-        let url = reqwest::Url::from_file_path(tmp_dir).expect("file is not absolute.");
+        let url = wreq::Url::from_file_path(tmp_dir).expect("file is not absolute.");
         self.wait_for_url(url.as_str()).await;
         let re = self._get_local_cache(url.as_str()).await;
         self.remove_for_url(url.as_str()).await;
@@ -144,7 +144,7 @@ impl TmpCache {
         if !tmp_dir.is_absolute() {
             tmp_dir = tmp_dir.canonicalize()?;
         }
-        let url = reqwest::Url::from_file_path(&tmp_dir).expect("file is not absolute.");
+        let url = wreq::Url::from_file_path(&tmp_dir).expect("file is not absolute.");
         self.wait_for_url(url.as_str()).await;
         let re = self
             .db

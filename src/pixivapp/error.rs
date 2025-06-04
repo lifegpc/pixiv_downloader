@@ -2,7 +2,7 @@ use super::check::CheckUnknown;
 use crate::error::PixivDownloaderError;
 use json::JsonValue;
 use proc_macros::check_json_keys;
-use reqwest::{Response, StatusCode};
+use wreq::{Response, StatusCode};
 
 #[derive(Debug)]
 pub struct PixivAppHTTPError {

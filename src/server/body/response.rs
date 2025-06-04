@@ -1,6 +1,6 @@
 use crate::error::PixivDownloaderError;
 use hyper::body::HttpBody;
-use reqwest::Response;
+use wreq::Response;
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};

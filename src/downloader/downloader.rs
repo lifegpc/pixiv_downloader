@@ -20,7 +20,7 @@ use crate::webclient::WebClient;
 use indicatif::MultiProgress;
 use indicatif::ProgressBar;
 use indicatif::ProgressStyle;
-use reqwest::IntoUrl;
+use wreq::IntoUrl;
 use std::borrow::Cow;
 use std::collections::HashMap;
 #[cfg(test)]

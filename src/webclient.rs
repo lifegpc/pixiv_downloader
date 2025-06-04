@@ -11,8 +11,8 @@ use crate::list::NonTailList;
 use crate::opthelper::get_helper;
 use json::JsonValue;
 use proc_macros::print_error;
-use reqwest::multipart::Form;
-use reqwest::{Client, ClientBuilder, IntoUrl, Request, Response};
+use wreq::multipart::Form;
+use wreq::{Client, ClientBuilder, IntoUrl, Request, Response};
 use serde::ser::Serialize;
 use std::collections::HashMap;
 use std::default::Default;
@@ -605,9 +605,11 @@ impl Default for WebClient {
         let mut c = ClientBuilder::new();
         let chain = opt.proxy_chain();
         if !chain.is_empty() {
-            c = c.proxy(reqwest::Proxy::custom(move |url| chain.r#match(url)));
+            c = c.proxy(wreq::Proxy::custom(move |url| chain.r#match(url)));
         }
         c = c.connect_timeout(opt.connect_timeout());
+        let b = wreq_util::EmulationOption::builder().emulation(opt.browser()).emulation_os(opt.os()).build();
+        c = c.emulation(b);
         let c = c.build().unwrap();
         let c = Self::new(c);
         match opt.retry() {

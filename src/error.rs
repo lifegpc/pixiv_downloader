@@ -25,7 +25,7 @@ pub enum PixivDownloaderError {
     #[cfg(feature = "openssl")]
     OpenSSLError(openssl::error::ErrorStack),
     ParseIntError(std::num::ParseIntError),
-    ReqwestError(reqwest::Error),
+    ReqwestError(wreq::Error),
     PixivAppError(crate::pixivapp::error::PixivAppError),
     SerdeJsonError(serde_json::Error),
     #[cfg(feature = "serde_urlencoded")]

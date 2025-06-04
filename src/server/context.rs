@@ -16,7 +16,7 @@ use crate::utils::get_file_name_from_url;
 use futures_util::lock::Mutex;
 use hyper::{http::response::Builder, Body, Request, Response};
 use json::JsonValue;
-use reqwest::IntoUrl;
+use wreq::IntoUrl;
 use std::collections::{BTreeMap, HashMap};
 use std::pin::Pin;
 use std::sync::Arc;

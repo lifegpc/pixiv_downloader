@@ -7,7 +7,7 @@ use crate::ext::try_err::TryErr;
 use crate::gettext;
 use crate::webclient::ToHeaders;
 use crate::webclient::WebClient;
-use reqwest::IntoUrl;
+use wreq::IntoUrl;
 use std::path::Path;
 use std::sync::Arc;
 use url::Url;

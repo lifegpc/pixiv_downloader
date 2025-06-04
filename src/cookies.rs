@@ -4,7 +4,7 @@ use crate::gettext;
 use chrono::DateTime;
 use chrono::TimeZone;
 use chrono::Utc;
-use reqwest::IntoUrl;
+use wreq::IntoUrl;
 use std::collections::HashMap;
 #[cfg(test)]
 use std::fs::create_dir;
