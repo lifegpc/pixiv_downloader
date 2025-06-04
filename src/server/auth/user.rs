@@ -5,7 +5,7 @@ use crate::ext::try_err::{TryErr, TryErr3};
 use crate::gettext;
 use base64::{engine::general_purpose::STANDARD as base64, Engine};
 use bytes::BytesMut;
-use openssl::{hash::MessageDigest, pkcs5::pbkdf2_hmac};
+use pbkdf2::pbkdf2_hmac;
 
 #[derive(Clone, Debug)]
 /// Action to perform on a user.
@@ -101,14 +101,7 @@ impl AuthUserContext {
                                 .decrypt(&password)
                                 .try_err3(7, gettext("Failed to decrypt password with RSA:"))?;
                             let mut hashed_password = [0; 64];
-                            pbkdf2_hmac(
-                                &password,
-                                &PASSWORD_SALT,
-                                PASSWORD_ITER,
-                                MessageDigest::sha512(),
-                                &mut hashed_password,
-                            )
-                            .try_err3(11, gettext("Failed to hash password:"))?;
+                            pbkdf2_hmac::<sha2::Sha512>(&password, &PASSWORD_SALT, PASSWORD_ITER, &mut hashed_password);
                             if root_user.is_none() {
                                 let user = self
                                     .ctx
@@ -207,14 +200,7 @@ impl AuthUserContext {
                                 .decrypt(&password)
                                 .try_err3(7, gettext("Failed to decrypt password with RSA:"))?;
                             let mut hashed_password = [0; 64];
-                            pbkdf2_hmac(
-                                &password,
-                                &PASSWORD_SALT,
-                                PASSWORD_ITER,
-                                MessageDigest::sha512(),
-                                &mut hashed_password,
-                            )
-                            .try_err3(11, gettext("Failed to hash password:"))?;
+                            pbkdf2_hmac::<sha2::Sha512>(&password, &PASSWORD_SALT, PASSWORD_ITER, &mut hashed_password);
                             let user = self
                                 .ctx
                                 .db
@@ -402,14 +388,7 @@ impl AuthUserContext {
                                     .decrypt(&password)
                                     .try_err3(7, gettext("Failed to decrypt password with RSA:"))?;
                                 let mut hashed_password = [0; 64];
-                                pbkdf2_hmac(
-                                    &password,
-                                    &PASSWORD_SALT,
-                                    PASSWORD_ITER,
-                                    MessageDigest::sha512(),
-                                    &mut hashed_password,
-                                )
-                                .try_err3(11, gettext("Failed to hash password:"))?;
+                                pbkdf2_hmac::<sha2::Sha512>(&password, &PASSWORD_SALT, PASSWORD_ITER, &mut hashed_password);
                                 let pw: &[u8] = &user.password;
                                 if &hashed_password != pw {
                                     let pw: &[u8] = &hashed_password;

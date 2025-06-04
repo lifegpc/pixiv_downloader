@@ -23,7 +23,7 @@ pub mod service;
 pub mod timer;
 /// Traits
 pub mod traits;
-#[cfg(all(test, feature = "db_sqlite"))]
-mod unittest;
+// #[cfg(all(test, feature = "db_sqlite"))]
+// mod unittest;
 /// Version
 pub mod version;

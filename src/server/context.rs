@@ -18,8 +18,10 @@ use hyper::{http::response::Builder, Body, Request, Response};
 use json::JsonValue;
 use wreq::IntoUrl;
 use std::collections::{BTreeMap, HashMap};
+use std::io::Write;
 use std::pin::Pin;
 use std::sync::Arc;
+use sha2::Digest;
 
 pub struct ServerContext {
     pub cors: CorsContext,
@@ -62,11 +64,11 @@ impl ServerContext {
         let mut map = HashMap::new();
         map.insert("url", u.as_str());
         let secret = self.db.get_proxy_pixiv_secrets().await?;
-        let mut sha512 = openssl::sha::Sha512::new();
+        let mut sha512 = sha2::Sha512::new();
         sha512.update(secret.as_bytes());
         sha512.update("url".as_bytes());
         sha512.update(u.as_str().as_bytes());
-        let sign = hex::encode(sha512.finish());
+        let sign = hex::encode(sha512.finalize());
         map.insert("sign", &sign);
         let name = get_file_name_from_url(u.as_str())
             .map(|v| format!("/{}", v))
@@ -202,7 +204,7 @@ impl ServerContext {
             }
             par.insert(k, v);
         }
-        let mut sha = openssl::sha::Sha512::new();
+        let mut sha = sha2::Sha512::new();
         sha.update(&token.token);
         for (k, v) in par {
             for v in v {
@@ -210,7 +212,7 @@ impl ServerContext {
                 sha.update(v.as_bytes());
             }
         }
-        let sha = hex::encode(sha.finish());
+        let sha = hex::encode(sha.finalize());
         if sign != sha {
             return Err(PixivDownloaderError::from(gettext("Sign not match.")));
         }
@@ -269,7 +271,7 @@ impl ServerContext {
             }
             par.insert(k, v);
         }
-        let mut sha = openssl::sha::Sha512::new();
+        let mut sha = sha2::Sha512::new();
         sha.update(secrets.as_bytes());
         for (k, v) in par {
             for v in v {
@@ -277,7 +279,7 @@ impl ServerContext {
                 sha.update(v.as_bytes());
             }
         }
-        let sha = hex::encode(sha.finish());
+        let sha = hex::encode(sha.finalize());
         if sign != sha {
             return Err(PixivDownloaderError::from(gettext("Sign not match.")));
         }

@@ -1,41 +1,35 @@
 use super::super::preclude::*;
 use crate::ext::{json::ToJson2, try_err::TryErr3};
 use crate::gettext;
-use bytes::BytesMut;
 use chrono::{DateTime, Utc};
-use openssl::{
-    pkey::Private,
-    rsa::{Padding, Rsa},
-};
+use rsa::pkcs1::EncodeRsaPublicKey;
+use rsa::{Pkcs1v15Encrypt, RsaPrivateKey};
 
 pub struct RSAKey {
-    pub key: Rsa<Private>,
+    pub key: RsaPrivateKey,
     pub generated_time: DateTime<Utc>,
 }
 
 impl RSAKey {
-    pub fn new() -> Result<Self, openssl::error::ErrorStack> {
+    pub fn new() -> Result<Self, rsa::Error> {
+        let mut rng = rand::thread_rng(); // rand@0.8
+        let bits = 4096;
+        let key = RsaPrivateKey::new(&mut rng, bits).expect("failed to generate a key");
         Ok(Self {
-            key: Rsa::generate(4096)?,
+            key,
             generated_time: Utc::now(),
         })
     }
 
-    pub fn decrypt(&self, data: &[u8]) -> Result<BytesMut, openssl::error::ErrorStack> {
-        let tosize = self.key.size() as usize;
-        let mut buf = BytesMut::with_capacity(tosize);
-        buf.resize(tosize, 0);
-        let real = self.key.private_decrypt(&data, &mut buf, Padding::PKCS1)?;
-        buf.truncate(real);
+    pub fn decrypt(&self, data: &[u8]) -> Result<Vec<u8>, rsa::Error> {
+        let buf = self.key.decrypt(Pkcs1v15Encrypt, data)?;
         Ok(buf)
     }
 
     #[cfg(test)]
-    pub fn encrypt(&self, data: &[u8]) -> Result<BytesMut, openssl::error::ErrorStack> {
-        let tosize = self.key.size() as usize;
-        let mut buf = BytesMut::with_capacity(tosize);
-        buf.resize(tosize, 0);
-        self.key.public_encrypt(&data, &mut buf, Padding::PKCS1)?;
+    pub fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, rsa::Error> {
+        let mut rng = rand::thread_rng();
+        let buf = self.key.to_public_key().encrypt(&mut rng, Pkcs1v15Encrypt, data)?;
         Ok(buf)
     }
 
@@ -67,9 +61,13 @@ impl AuthPubkeyContext {
             }
         }
         let rsa_key = rsa_key.as_ref().unwrap();
-        let key = rsa_key.key.public_key_to_pem().try_err3(2, gettext("Failed to serializes the public key into a PEM-encoded SubjectPublicKeyInfo structure:"))?;
+        let key = rsa_key
+            .key
+            .to_public_key()
+            .to_pkcs1_pem(rsa::pkcs8::LineEnding::LF)
+            .try_err3(2, gettext("Failed to serialize the public key into PEM format:"))?;
         Ok(json::object! {
-            "key": String::from_utf8(key).try_err3(3, gettext("Failed to encode pem with UTF-8:"))?,
+            "key": key,
             "generated_time": rsa_key.generated_time.timestamp(),
         })
     }
@@ -123,6 +121,8 @@ impl MatchRoute<Body, Pin<Box<HttpBodyType>>> for AuthPubkeyRoute {
 
 #[test]
 fn test_rsa_decrypt() {
+    use rand::prelude::*;
+    use bytes::BytesMut;
     let key = RSAKey::new().unwrap();
     let data = b"Hello, world!";
     let enc = key.encrypt(data).unwrap();
@@ -130,7 +130,8 @@ fn test_rsa_decrypt() {
     assert_eq!(data, &dec[..]);
     let mut data = BytesMut::with_capacity(256);
     data.resize(256, 0);
-    openssl::rand::rand_bytes(&mut data).unwrap();
+    let mut rng = rand::thread_rng();
+    data.shuffle(&mut rng);
     let enc = key.encrypt(&data).unwrap();
     let dec = key.decrypt(&enc).unwrap();
     assert_eq!(data, dec);

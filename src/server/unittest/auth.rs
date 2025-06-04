@@ -5,7 +5,6 @@ use crate::server::result::JSONResult;
 use base64::{engine::general_purpose::STANDARD as base64, Engine};
 use bytes::BytesMut;
 use hyper::{Body, Request};
-use openssl::rsa::{Padding, Rsa};
 
 /// Test authentification methods
 /// Returns token

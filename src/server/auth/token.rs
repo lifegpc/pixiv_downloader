@@ -5,7 +5,8 @@ use crate::ext::json::ToJson2;
 use crate::ext::try_err::TryErr3;
 use crate::gettext;
 use base64::{engine::general_purpose::STANDARD as base64, Engine};
-use openssl::{hash::MessageDigest, pkcs5::pbkdf2_hmac};
+use pbkdf2::pbkdf2_hmac;
+use rand::prelude::*;
 
 /// Action to perform about token
 pub enum AuthTokenAction {
@@ -30,6 +31,13 @@ impl AuthTokenContext {
             action,
             is_restful,
         }
+    }
+
+    fn get_token() -> [u8; 64] {
+        let mut rng = rand::thread_rng();
+        let mut token = [0; 64];
+        token.shuffle(&mut rng);
+        token
     }
 
     async fn handle(&self, mut req: Request<Body>) -> JSONResult {
@@ -61,15 +69,8 @@ impl AuthTokenContext {
                     let password = key
                         .decrypt(&password)
                         .try_err3(6, gettext("Failed to decrypt password with RSA:"))?;
-                    let mut hashed_password = [0; 64];
-                    pbkdf2_hmac(
-                        &password,
-                        &PASSWORD_SALT,
-                        PASSWORD_ITER,
-                        MessageDigest::sha512(),
-                        &mut hashed_password,
-                    )
-                    .try_err3(7, gettext("Failed to hash password:"))?;
+                    let mut hashed_password = [0u8; 64];
+                    pbkdf2_hmac::<sha2::Sha512>(&password, &PASSWORD_SALT, PASSWORD_ITER, &mut hashed_password);
                     let user = self
                         .ctx
                         .db
@@ -81,9 +82,7 @@ impl AuthTokenContext {
                     if pass != &hashed_password {
                         return Err((9, gettext("Wrong password.")).into());
                     }
-                    let mut token = [0; 64];
-                    openssl::rand::rand_bytes(&mut token)
-                        .try_err3(-1003, gettext("Failed to generate token:"))?;
+                    let token = Self::get_token();
                     let created_at = chrono::Utc::now();
                     let expired_at = created_at + chrono::Duration::days(30);
                     let token = loop {

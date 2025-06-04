@@ -139,7 +139,9 @@ pub trait PixivDownloaderDb {
     async fn get_proxy_pixiv_secrets(&self) -> Result<String, PixivDownloaderDbError> {
         self.get_config_or_set_default("proxy_pixiv_secrets", || {
             let mut buf = [0; 32];
-            openssl::rand::rand_bytes(&mut buf)?;
+            use rand::prelude::*;
+            let mut rng = rand::thread_rng();
+            buf.shuffle(&mut rng);
             Ok(base64::Engine::encode(
                 &base64::engine::general_purpose::STANDARD,
                 &buf,

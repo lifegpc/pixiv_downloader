@@ -14,4 +14,4 @@ const PASSWORD_SALT: [u8; 64] = [
     25, 195, 207, 144, 204, 171, 95, 8, 113, 93, 40, 41, 116, 80, 126, 253, 142, 245, 147, 148,
     136, 121, 220,
 ];
-const PASSWORD_ITER: usize = 10000;
+const PASSWORD_ITER: u32 = 10000;
